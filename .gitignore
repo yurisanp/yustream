@@ -1,0 +1,31 @@
+# Dados do Ant Media Server
+ant-media-data/
+
+# Logs
+logs/
+*.log
+
+# Certificados SSL
+ssl/
+*.pem
+*.key
+*.crt
+
+# Docker volumes
+volumes/
+
+# Arquivos temporários
+*.tmp
+*.temp
+
+# Arquivos de sistema
+.DS_Store
+Thumbs.db
+
+# Configurações locais
+.env
+local.conf
+
+# Backups
+*.bak
+backup/

@@ -1,0 +1,265 @@
+/* OvenStreamPlayer - Design Moderno para Smartphones e TVs */
+
+/* Variáveis CSS para consistência */
+:root {
+  --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  --dark-gradient: linear-gradient(135deg, #0c0c0c 0%, #1a1a1a 100%);
+  --glass-bg: rgba(255, 255, 255, 0.1);
+  --glass-border: rgba(255, 255, 255, 0.2);
+  --live-color: #ff4757;
+  --success-color: #2ed573;
+  --warning-color: #ffa502;
+  --error-color: #ff3838;
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.8);
+  --text-muted: rgba(255, 255, 255, 0.6);
+  --shadow-soft: 0 8px 32px rgba(0, 0, 0, 0.3);
+  --shadow-strong: 0 16px 64px rgba(0, 0, 0, 0.5);
+  --border-radius: 16px;
+  --border-radius-small: 12px;
+  --border-radius-large: 24px;
+  --transition-fast: 0.2s ease-out;
+  --transition-smooth: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Player Principal */
+.stream-player {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  background: var(--dark-gradient);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  cursor: none;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+
+.stream-player:hover {
+  cursor: default;
+}
+
+.stream-player.fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+}
+
+/* Container do OvenPlayer */
+.oven-player-container {
+  width: 100%;
+  height: 100%;
+  background: #000;
+  position: relative;
+}
+
+/* Estilo global do OvenPlayer */
+.oven-player-container video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  background: #000;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.oven-player-container video:hover {
+  transform: scale(1.001);
+}
+
+/* Mostrar controles nativos do OvenPlayer */
+.oven-player-container .op-controls {
+  display: block !important;
+}
+
+.oven-player-container .op-ui {
+  display: block !important;
+}
+
+/* Overlays com Glassmorphism */
+.stream-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  animation: fadeIn 0.5s ease-out;
+}
+
+.overlay-content {
+  text-align: center;
+  color: var(--text-primary);
+  padding: 2rem;
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius-large);
+  box-shadow: var(--shadow-strong);
+  animation: slideUp 0.6s ease-out;
+}
+
+.overlay-content .loading-spinner {
+  width: 80px;
+  height: 80px;
+  border: 4px solid rgba(255, 255, 255, 0.2);
+  border-top: 4px solid var(--primary-gradient);
+  border-radius: 50%;
+  animation: spin 1s linear infinite, pulse 2s ease-in-out infinite;
+  margin: 0 auto 2rem;
+  background: conic-gradient(from 0deg, transparent, rgba(102, 126, 234, 0.3));
+}
+
+.overlay-content .status-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 2rem;
+  display: block;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3));
+}
+
+.status-icon.live {
+  color: var(--live-color);
+  animation: pulse 2s infinite, glow 3s ease-in-out infinite;
+}
+
+.status-icon.error {
+  color: var(--error-color);
+  animation: shake 0.5s ease-in-out;
+}
+
+.status-text {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  background: var(--primary-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.retry-btn {
+  background: var(--primary-gradient);
+  color: var(--text-primary);
+  border: none;
+  padding: 16px 32px;
+  border-radius: var(--border-radius);
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  box-shadow: var(--shadow-soft);
+  position: relative;
+  overflow: hidden;
+}
+
+.retry-btn:hover {
+  transform: translateY(-4px) scale(1.05);
+  box-shadow: 0 12px 40px rgba(102, 126, 234, 0.4);
+}
+
+
+
+
+
+/* Animações */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.1); }
+}
+
+@keyframes glow {
+  0%, 100% { filter: drop-shadow(0 0 5px currentColor); }
+  50% { filter: drop-shadow(0 0 20px currentColor) drop-shadow(0 0 30px currentColor); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(40px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes slideInLeft {
+  from { transform: translateX(-40px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(40px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+@keyframes rotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(180deg); }
+}
+
+/* RESPONSIVIDADE PARA SMARTPHONES */
+@media (max-width: 768px) {
+  .stream-player {
+    height: 100vh;
+    height: 100dvh;
+  }
+}
+
+/* OTIMIZAÇÕES PARA SMART TVs */
+@media (min-width: 1200px) {
+  .status-text {
+    font-size: 2rem;
+  }
+
+  .overlay-content .loading-spinner,
+  .overlay-content .status-icon {
+    width: 100px;
+    height: 100px;
+  }
+
+  .retry-btn {
+    padding: 20px 40px;
+    font-size: 1.2rem;
+  }
+}
+
+
+
+
+
+
+
+/* Redução de movimento para acessibilidade */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

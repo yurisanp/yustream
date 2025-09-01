@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<VirtualHost>
+    <Name>default</Name>
+
+    <Host>
+        <Names>
+            <Name>*</Name>
+        </Names>
+    </Host>
+
+    <Applications>
+        <Application>
+            <Name>live</Name>
+            <Type>live</Type>
+
+            <!-- Perfis de saída com múltiplas qualidades -->
+            <OutputProfiles>
+                <!-- Perfil ABR (Adaptive Bitrate) com múltiplas qualidades -->
+                <OutputProfile>
+                    <Name>abr_stream</Name>
+                    <OutputStreamName>${OriginStreamName}</OutputStreamName>
+                    <Playlist>
+                        <Name>for Webrtc</Name>
+                        <FileName>abr_webrtc</FileName>
+                        <Options>
+                            <WebRtcAutoAbr>true</WebRtcAutoAbr> 
+                        </Options>
+                        <Rendition>
+                            <Name>fonte</Name>
+                            <Video>bypass_video</Video>
+                            <Audio>opus</Audio>
+                        </Rendition>
+                    </Playlist>
+                    <Playlist>
+                        <Name>for LLHLS</Name>
+                        <FileName>abr</FileName>
+                        <Rendition>
+                            <Name>fonte</Name>
+                            <Video>bypass_video</Video>
+                            <Audio>bypass_audio</Audio>
+                        </Rendition>
+                    </Playlist>
+                    <Encodes>
+                        <!-- Configuração de áudio -->
+                        <Audio>
+                            <Name>bypass_audio</Name>
+                            <Bypass>True</Bypass>
+                        </Audio>
+                        <Video>
+                            <Name>bypass_video</Name>
+                            <Bypass>True</Bypass>
+                        </Video>
+                        <Audio>
+                            <Name>opus</Name>
+                            <Codec>opus</Codec>
+                            <Bitrate>128000</Bitrate>
+                            <Samplerate>48000</Samplerate>
+                            <Channel>2</Channel>
+                        </Audio>
+                    </Encodes>
+                </OutputProfile>
+            </OutputProfiles>
+
+            <!-- Configurações de provedores -->
+            <Providers>
+                <RTMP>
+                    <BlockDuplicateStreamName>false</BlockDuplicateStreamName>
+                </RTMP>
+            </Providers>
+
+            <!-- Configurações de publicadores -->
+            <Publishers>
+                <AppWorkerCount>1</AppWorkerCount>
+                <StreamWorkerCount>8</StreamWorkerCount>
+                
+                <HLS>
+                    <SegmentDuration>4</SegmentDuration>
+                    <SegmentCount>10</SegmentCount>
+                    <CrossDomains>
+                        <Url>*</Url>
+                    </CrossDomains>
+                </HLS>
+                
+                <LLHLS>
+                    <SegmentDuration>4</SegmentDuration>
+                    <SegmentCount>10</SegmentCount>
+                    <PartHoldBack>7</PartHoldBack>
+                    <CrossDomains>
+                        <Url>*</Url>
+                    </CrossDomains>
+                </LLHLS>
+                
+                <WebRTC>
+                    <Timeout>30000</Timeout>
+                    <Rtx>false</Rtx>
+                    <Ulpfec>false</Ulpfec>
+                    <JitterBuffer>false</JitterBuffer>
+                </WebRTC>
+            </Publishers>
+        </Application>
+    </Applications>
+</VirtualHost>

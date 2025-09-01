@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Server version="8">
+    <Name>YustreamOME</Name>
+    <Type>origin</Type>
+    <IP>*</IP>
+
+    <Modules>
+        <ERTMP>
+            <Enable>true</Enable>
+        </ERTMP>
+    </Modules>
+    <!-- Configurações de porta -->
+    <Bind>
+        <Providers>
+            <RTMP>
+                <Port>1935</Port>
+                <WorkerCount>2</WorkerCount>
+            </RTMP>
+        </Providers>
+
+        <Publishers>
+            <HLS>
+                <Port>8080</Port>
+                <TLSPort>8443</TLSPort>
+                <WorkerCount>2</WorkerCount>
+            </HLS>
+            <LLHLS>
+                <Port>8080</Port>
+                <TLSPort>8443</TLSPort>
+                <WorkerCount>2</WorkerCount>
+            </LLHLS>
+            <WebRTC>
+                <Signalling>
+                    <Port>3333</Port>
+                    <TLSPort>3334</TLSPort>
+                    <WorkerCount>1</WorkerCount>
+                </Signalling>
+                <IceCandidates>
+                    <TcpRelay>*:3478</TcpRelay>
+                    <IceCandidate>*:10000-10005/udp</IceCandidate>
+                </IceCandidates>
+            </WebRTC>
+        </Publishers>
+    </Bind>
+
+    <VirtualHosts>
+        <VirtualHost include="VHost.xml" />
+    </VirtualHosts>
+</Server>
