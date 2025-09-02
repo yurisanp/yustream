@@ -9,7 +9,7 @@
         <TLS>
             <CertPath>/opt/ovenmediaengine/bin/certs/cert.pem</CertPath>
             <KeyPath>/opt/ovenmediaengine/bin/certs/privkey.pem</KeyPath>
-            <ChainCertPath>/opt/ovenmediaengine/bin/certs/fullchain.pem</ChainCertPath>
+            <ChainCertPath>/opt/ovenmediaengine/bin/certs/chain.pem</ChainCertPath>
         </TLS>
     </Host>
 
