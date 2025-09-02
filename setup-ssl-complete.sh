@@ -51,9 +51,13 @@ mkdir -p ./logs
 chmod +x ./scripts/setup-ssl.sh
 chmod +x ./scripts/setup-ome-ssl.sh
 
-# Configurar SSL
-echo "🔐 Configurando SSL..."
-./scripts/setup-ssl.sh
+# Verificar DNS e conectividade
+echo "🔍 Verificando DNS e conectividade..."
+./scripts/check-dns-connectivity.sh
+
+# Configurar SSL usando método standalone
+echo "🔐 Configurando SSL usando método standalone..."
+./scripts/setup-ssl-standalone.sh
 
 # Configurar SSL no OME
 echo "🔐 Configurando SSL no OvenMediaEngine..."
