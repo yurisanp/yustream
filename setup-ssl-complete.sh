@@ -50,7 +50,6 @@ mkdir -p ./logs
 # Tornar scripts executáveis
 chmod +x ./scripts/setup-ssl.sh
 chmod +x ./scripts/setup-ome-ssl.sh
-chmod +x ./scripts/renew-ssl.sh
 
 # Configurar SSL
 echo "🔐 Configurando SSL..."
