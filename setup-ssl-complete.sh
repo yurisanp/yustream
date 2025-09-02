@@ -61,11 +61,6 @@ echo "🔐 Configurando SSL usando método standalone..."
 echo "🔐 Configurando SSL no OvenMediaEngine..."
 ./scripts/setup-ome-ssl.sh
 
-# Construir e iniciar serviços
-echo "🏗️ Construindo e iniciando serviços..."
-cd yustream-react
-npm run build
-cd ..
 
 docker compose up -d
 

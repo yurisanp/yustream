@@ -23,7 +23,7 @@ services:
     volumes:
       - ./ome-config:/opt/ovenmediaengine/bin/origin_conf
       - ./ome-logs:/var/log/ovenmediaengine
-      - ./ssl/letsencrypt/live/yustream.yurisp.com.br:/opt/ovenmediaengine/bin/origin_conf/ssl
+      - ./ssl/letsencrypt/live/yustream.yurisp.com.br:/opt/ovenmediaengine/bin/certs
     environment:
       - OME_HOST_IP=0.0.0.0
     networks:

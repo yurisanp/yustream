@@ -6,6 +6,11 @@
         <Names>
             <Name>*</Name>
         </Names>
+        <TLS>
+            <CertPath>/opt/ovenmediaengine/bin/certs/cert.pem</CertPath>
+            <KeyPath>/opt/ovenmediaengine/bin/certs/privkey.pem</KeyPath>
+            <ChainCertPath>/opt/ovenmediaengine/bin/certs/chain.pem</ChainCertPath>
+        </TLS>
     </Host>
 
     <!-- Admission Webhooks para controle de acesso -->
