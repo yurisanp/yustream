@@ -53,10 +53,6 @@ chmod +x ./scripts/setup-ome-ssl.sh
 chmod +x ./scripts/check-dns-connectivity.sh
 chmod +x ./scripts/setup-ssl-standalone.sh
 
-# Verificar DNS e conectividade
-echo "🔍 Verificando DNS e conectividade..."
-./scripts/check-dns-connectivity.sh
-
 # Configurar SSL usando método standalone
 echo "🔐 Configurando SSL usando método standalone..."
 ./scripts/setup-ssl-standalone.sh
