@@ -11,6 +11,8 @@ ssl/
 *.key
 *.crt
 
+mongodb_data
+
 # Docker volumes
 volumes/
 

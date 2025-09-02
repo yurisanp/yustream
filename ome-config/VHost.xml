@@ -8,6 +8,17 @@
         </Names>
     </Host>
 
+    <!-- Admission Webhooks para controle de acesso -->
+    <AdmissionWebhooks>
+        <ControlServerUrl>http://yustream-auth:3001/webhook/admission</ControlServerUrl>
+        <SecretKey>yustream-webhook-secret-2024</SecretKey>
+        <Timeout>30000</Timeout>
+        <Enables>
+            <Providers>rtmp</Providers>
+            <Publishers>webrtc,llhls</Publishers>
+        </Enables>
+    </AdmissionWebhooks>
+
     <Applications>
         <Application>
             <Name>live</Name>

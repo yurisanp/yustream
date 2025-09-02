@@ -2,6 +2,8 @@ import { useState } from 'react'
 import './App.css'
 import OvenStreamPlayer from './components/OvenStreamPlayer'
 import Toast from './components/Toast'
+import Login from './components/Login'
+import { AuthProvider, useAuth } from './contexts/AuthContext'
 
 export interface ToastMessage {
   message: string
@@ -9,7 +11,8 @@ export interface ToastMessage {
   id: number
 }
 
-function App() {
+const AppContent = () => {
+  const { isAuthenticated, isLoading, login } = useAuth()
   const [toasts, setToasts] = useState<ToastMessage[]>([])
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
@@ -29,11 +32,25 @@ function App() {
     setToasts(prev => prev.filter(t => t.id !== id))
   }
 
+  // Mostrar loading durante verificação de autenticação
+  if (isLoading) {
+    return (
+      <div className="app">
+        <div className="loading-screen">
+          <div className="loading-spinner" />
+          <p>Carregando...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    
     <div className="app">
-      {/* OvenPlayer - Tela cheia */}
-      <OvenStreamPlayer showToast={showToast} />
+      {!isAuthenticated ? (
+        <Login onLogin={login} showToast={showToast} />
+      ) : (
+        <OvenStreamPlayer showToast={showToast} />
+      )}
 
       {/* Toast Container */}
       <div className="toast-container">
@@ -47,6 +64,14 @@ function App() {
         ))}
       </div>
     </div>
+  )
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   )
 }
 

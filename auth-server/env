@@ -1,0 +1,5 @@
+NODE_ENV=production
+PORT=3001
+JWT_SECRET=yustream-jwt-secret-change-in-production-2024
+CORS_ORIGIN=*
+STREAM_CHECK_URL=http://ovenmediaengine:8080/live/live/abr.m3u8

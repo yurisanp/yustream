@@ -26,6 +26,42 @@ services:
     networks:
       - streaming-network
 
+  mongodb:
+    image: mongo:7
+    container_name: yustream-mongodb
+    restart: unless-stopped
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=yustream
+      - MONGO_INITDB_ROOT_PASSWORD=yustream123
+      - MONGO_INITDB_DATABASE=yustream
+    volumes:
+      - ./mongodb_data:/data/db
+      - ./mongo-init:/docker-entrypoint-initdb.d
+    ports:
+      - "27017:27017"
+    networks:
+      - streaming-network
+
+  yustream-auth:
+    build: ./auth-server
+    container_name: yustream-auth
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - JWT_SECRET=yustream-jwt-secret-change-in-production-2024
+      - CORS_ORIGIN=*
+      - STREAM_CHECK_URL=http://ovenmediaengine:8080/live/live/abr.m3u8
+      - MONGODB_URI=mongodb://yustream:yustream123@mongodb:27017/yustream?authSource=admin
+      - WEBHOOK_SECRET=yustream-webhook-secret-2024
+    volumes:
+      - ./auth-server:/app
+      - /app/node_modules
+    depends_on:
+      - mongodb
+    networks:
+      - streaming-network
+
   nginx:
     image: nginx:alpine
     container_name: nginx-proxy
@@ -40,6 +76,7 @@ services:
       - ./ssl:/etc/nginx/ssl
     depends_on:
       - ovenmediaengine
+      - yustream-auth
     networks:
       - streaming-network
 

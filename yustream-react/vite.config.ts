@@ -13,11 +13,12 @@ export default defineConfig({
   server: {
     port: 3000,
     host: true,
+    cors: false,
     proxy: {
-      '/live': {
-        target: 'http://localhost:5080',
+      '/api': {
+        target: 'http://localhost/api',
         changeOrigin: true,
-        secure: false,
+        rewrite: (path) => path.replace(/^\/api/, '')
       }
     }
   }

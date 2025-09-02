@@ -33,11 +33,11 @@ mkdir -p ant-media-data logs ssl
 
 echo
 echo "Iniciando serviços..."
-docker-compose up -d
+docker-compose up --build -d
 
 echo
 echo "Aguardando inicialização dos serviços..."
-sleep 15
+sleep 20
 
 # Verificar se os containers estão rodando
 if docker-compose ps | grep -q "Up"; then
@@ -47,17 +47,21 @@ if docker-compose ps | grep -q "Up"; then
     echo "========================================"
     echo
     echo "Interface Web: http://localhost"
-    echo "Admin Panel:   http://localhost:5080"
+    echo "API Auth:      http://localhost/api"
+    echo
+    echo "Usuários de teste:"
+    echo "  - admin / admin123 (administrador)"
+    echo "  - user / password (usuário comum)"
     echo
     echo "Para OBS Studio:"
     echo "  Servidor RTMP: rtmp://localhost:1935/live"
     echo "  Chave Stream:  live (stream padrão única)"
     echo
-    echo "Para VLC Player:"
-    echo "  URL HLS:  http://localhost/live/streams/live.m3u8"
+    echo "Para VLC Player (requer autenticação):"
+    echo "  URL HLS:  http://localhost/hls/live/abr.m3u8?token=<TOKEN>"
     echo "  URL RTMP: rtmp://localhost:1935/live/live"
     echo
-    echo "Stream Player Web: http://localhost (auto-play ativado)"
+    echo "Stream Player Web: http://localhost (login obrigatório)"
     echo
     echo "Comandos úteis:"
     echo "  Parar serviços: docker-compose down"
