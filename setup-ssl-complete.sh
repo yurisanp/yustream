@@ -37,7 +37,7 @@ apt-get install -y curl wget certbot
 
 # Parar serviços
 echo "⏸️ Parando serviços..."
-docker-compose down
+docker compose down
 
 # Criar diretórios necessários
 echo "📁 Criando diretórios..."
@@ -66,7 +66,7 @@ cd yustream-react
 npm run build
 cd ..
 
-docker-compose up -d
+docker compose up -d
 
 # Aguardar serviços estarem prontos
 echo "⏳ Aguardando serviços estarem prontos..."
