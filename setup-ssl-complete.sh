@@ -50,6 +50,8 @@ mkdir -p ./logs
 # Tornar scripts executáveis
 chmod +x ./scripts/setup-ssl.sh
 chmod +x ./scripts/setup-ome-ssl.sh
+chmod +x ./scripts/check-dns-connectivity.sh
+chmod +x ./scripts/setup-ssl-standalone.sh
 
 # Verificar DNS e conectividade
 echo "🔍 Verificando DNS e conectividade..."
