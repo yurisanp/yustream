@@ -20,26 +20,6 @@ fi
 
 echo "✅ DNS configurado corretamente."
 
-# Parar todos os serviços que usam as portas 80 e 443
-echo "⏸️ Parando serviços que usam portas 80 e 443..."
-docker compose down
-
-# Verificar se as portas estão livres
-echo "🔍 Verificando se as portas 80 e 443 estão livres..."
-if lsof -i :80 > /dev/null 2>&1; then
-    echo "❌ Erro: A porta 80 está em uso. Pare o serviço que está usando esta porta."
-    lsof -i :80
-    exit 1
-fi
-
-if lsof -i :443 > /dev/null 2>&1; then
-    echo "❌ Erro: A porta 443 está em uso. Pare o serviço que está usando esta porta."
-    lsof -i :443
-    exit 1
-fi
-
-echo "✅ Portas 80 e 443 estão livres."
-
 # Criar diretório para certificados
 echo "📁 Criando diretórios para certificados..."
 mkdir -p ./ssl/letsencrypt/live
