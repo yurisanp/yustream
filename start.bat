@@ -14,7 +14,7 @@ if %errorlevel% neq 0 (
 )
 
 echo Verificando Docker Compose...
-docker-compose --version >nul 2>&1
+docker compose --version >nul 2>&1
 if %errorlevel% neq 0 (
     echo ERRO: Docker Compose nao encontrado.
     pause
@@ -29,7 +29,7 @@ if not exist "ssl" mkdir ssl
 
 echo.
 echo Iniciando servicos...
-docker-compose up -d
+docker compose up -d
 
 echo.
 echo Aguardando inicializacao dos servicos...
@@ -59,8 +59,8 @@ echo   - LLHLS (baixa latencia)
 echo   - HLS (compativel)
 echo   - Qualidades: Auto, 4K, 1440p, 1080p, 720p, 480p, 360p
 echo.
-echo Para parar os servicos, execute: docker-compose down
-echo Para ver logs, execute: docker-compose logs
+echo Para parar os servicos, execute: docker compose down
+echo Para ver logs, execute: docker compose logs
 echo.
 echo ========================================
 pause

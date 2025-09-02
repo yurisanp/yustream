@@ -24,7 +24,7 @@ if %errorlevel% equ 0 (
     
     echo.
     echo Reiniciando Nginx...
-    docker-compose restart nginx
+    docker compose restart nginx
     
     echo.
     echo ========================================

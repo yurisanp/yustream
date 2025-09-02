@@ -23,7 +23,7 @@ echo "✅ DNS configurado corretamente."
 
 # Parar o container nginx temporariamente
 echo "⏸️ Parando container Nginx..."
-docker-compose stop nginx
+docker compose stop nginx
 
 # Criar diretório para certificados
 echo "📁 Criando diretórios para certificados..."
@@ -52,7 +52,7 @@ EOF
 
 # Iniciar Nginx temporário
 echo "🚀 Iniciando Nginx temporário..."
-docker-compose up -d nginx
+docker compose up -d nginx
 
 # Aguardar Nginx estar pronto
 echo "⏳ Aguardando Nginx estar pronto..."
@@ -82,7 +82,7 @@ echo "✅ Certificados SSL obtidos com sucesso!"
 
 # Parar Nginx temporário
 echo "⏸️ Parando Nginx temporário..."
-docker-compose stop nginx
+docker compose stop nginx
 
 # Remover configuração temporária
 rm -f nginx/conf.d/temp-ssl.conf
@@ -106,7 +106,7 @@ if docker run --rm \
     echo "🔐 Renovando certificados SSL..."
     
     # Parar Nginx
-    docker-compose stop nginx
+    docker compose stop nginx
     
     # Renovar certificados
     docker run --rm \
@@ -117,7 +117,7 @@ if docker run --rm \
         --webroot-path=/var/www/certbot
     
     # Reiniciar Nginx
-    docker-compose start nginx
+    docker compose start nginx
     
     echo "✅ Certificados renovados com sucesso!"
 else
@@ -133,7 +133,7 @@ echo "⏰ Configurando cron job para renovação automática..."
 
 # Iniciar serviços com SSL
 echo "🚀 Iniciando serviços com SSL..."
-docker-compose up -d
+docker compose up -d
 
 echo ""
 echo "🎉 SSL configurado com sucesso!"

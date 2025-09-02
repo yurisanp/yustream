@@ -42,7 +42,7 @@ sed -i "s|/opt/ovenmediaengine/bin/origin_conf/chain.pem|/opt/ovenmediaengine/bi
 
 # Reiniciar OME
 echo "🔄 Reiniciando OvenMediaEngine..."
-docker-compose restart ovenmediaengine
+docker compose restart ovenmediaengine
 
 # Aguardar OME estar pronto
 echo "⏳ Aguardando OME estar pronto..."
@@ -54,7 +54,7 @@ if curl -k -s "https://localhost:8443/live/live/abr.m3u8" > /dev/null; then
     echo "✅ OME configurado com SSL com sucesso!"
 else
     echo "⚠️ Aviso: OME pode não estar respondendo via HTTPS ainda."
-    echo "   Verifique os logs: docker-compose logs ovenmediaengine"
+    echo "   Verifique os logs: docker compose logs ovenmediaengine"
 fi
 
 echo ""
@@ -65,5 +65,5 @@ echo "   - HTTP: http://$DOMAIN:8080/live/live/abr.m3u8"
 echo "   - HTTPS: https://$DOMAIN:8443/live/live/abr.m3u8"
 echo ""
 echo "🔧 Para verificar os logs do OME:"
-echo "   docker-compose logs -f ovenmediaengine"
+echo "   docker compose logs -f ovenmediaengine"
 echo ""
