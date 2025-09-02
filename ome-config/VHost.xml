@@ -7,14 +7,14 @@
             <Name>*</Name>
         </Names>
         <TLS>
-            <CertPath>/opt/ovenmediaengine/bin/certs/cert.pem</CertPath>
-            <KeyPath>/opt/ovenmediaengine/bin/certs/privkey.pem</KeyPath>
-            <ChainCertPath>/opt/ovenmediaengine/bin/certs/chain.pem</ChainCertPath>
+            <CertPath>/opt/ovenmediaengine/bin/cert/cert.pem</CertPath>
+            <KeyPath>/opt/ovenmediaengine/bin/cert/privkey.pem</KeyPath>
+            <ChainCertPath>/opt/ovenmediaengine/bin/cert/chain.pem</ChainCertPath>
         </TLS>
     </Host>
 
     <!-- Admission Webhooks para controle de acesso -->
-    <!-- <AdmissionWebhooks>
+    <AdmissionWebhooks>
         <ControlServerUrl>http://yustream-auth:3001/webhook/admission</ControlServerUrl>
         <SecretKey>yustream-webhook-secret-2024</SecretKey>
         <Timeout>30000</Timeout>
@@ -22,7 +22,7 @@
             <Providers>rtmp</Providers>
             <Publishers>webrtc,llhls</Publishers>
         </Enables>
-    </AdmissionWebhooks> -->
+    </AdmissionWebhooks>
 
     <Applications>
         <Application>
