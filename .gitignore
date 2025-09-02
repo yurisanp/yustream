@@ -11,6 +11,8 @@ ssl/
 *.key
 *.crt
 
+auth-server/node_modules
+stremio-addon/node_modules
 mongodb_data
 
 # Docker volumes

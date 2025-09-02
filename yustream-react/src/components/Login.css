@@ -164,10 +164,47 @@
   border-top: 1px solid #e1e5e9;
 }
 
-.login-footer p {
+.stremio-link-btn {
+  width: 100%;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #2ed573, #1e90ff);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-bottom: 20px;
+}
+
+.stremio-link-btn:hover {
+  background: linear-gradient(135deg, #26c765, #1c7ed6);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(46, 213, 115, 0.3);
+}
+
+.divider {
+  position: relative;
+  text-align: center;
+  margin: 20px 0 15px 0;
+}
+
+.divider::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: #e1e5e9;
+}
+
+.divider span {
+  background: white;
+  padding: 0 12px;
   color: #666;
   font-size: 0.9rem;
-  margin-bottom: 10px;
 }
 
 .test-users {

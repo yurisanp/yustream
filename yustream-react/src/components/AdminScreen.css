@@ -1,0 +1,80 @@
+.admin-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #0c0c0c 0%, #1a1a1a 100%);
+  color: white;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-screen-header {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 15px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.admin-screen-header .back-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+}
+
+.admin-screen-header .back-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.admin-screen-header .user-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.admin-screen-header .user-role {
+  opacity: 0.7;
+  font-size: 12px;
+}
+
+.admin-screen-content {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.admin-screen-content .admin-panel {
+  position: static;
+  background: transparent;
+  height: 100%;
+  padding: 0;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .admin-screen-header {
+    padding: 12px 15px;
+  }
+  
+  .admin-screen-header .back-btn {
+    font-size: 13px;
+    padding: 6px 10px;
+  }
+}
+

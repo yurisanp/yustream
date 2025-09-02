@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Wifi, WifiOff, AlertCircle, LogOut, Settings } from "lucide-react";
+import { Wifi, WifiOff, AlertCircle, LogOut, Settings, Play } from "lucide-react";
 import OvenPlayer from "ovenplayer";
 import Hls from "hls.js";
 import { useAuth } from "../contexts/AuthContext";
-import AdminPanel from "./AdminPanel";
+import AdminScreen from "./AdminScreen";
+import StremioConfig from "./StremioConfig";
 import "./OvenStreamPlayer.css";
 
 interface OvenStreamPlayerProps {
@@ -38,7 +39,8 @@ const OvenStreamPlayer = ({ showToast }: OvenStreamPlayerProps) => {
 
 	// Estados principais
 	const [status, setStatus] = useState<StreamStatus>("connecting");
-	const [showAdminPanel, setShowAdminPanel] = useState<boolean>(false);
+	const [showAdminScreen, setShowAdminScreen] = useState<boolean>(false);
+	const [showStremioConfig, setShowStremioConfig] = useState<boolean>(false);
 	const [retryCount, setRetryCount] = useState<number>(0);
 	const [lastInitTime, setLastInitTime] = useState<number>(0);
 
@@ -59,7 +61,13 @@ const OvenStreamPlayer = ({ showToast }: OvenStreamPlayerProps) => {
 	// Configurações do OvenPlayer para OvenMediaEngine
 	const getPlayerConfig = useCallback((streamTokenPr: string | null) => {
 		const hostname = window.location.hostname;
+		const isSecure = window.location.protocol === 'https:';
+		const wsProtocol = isSecure ? 'wss:' : 'ws:';
+		const httpProtocol = isSecure ? 'https:' : 'http:';
+		const wsPort = isSecure ? '3334' : '3333';
+		const httpPort = isSecure ? '8443' : '8080';
 		const tokenParam = streamTokenPr ? `?token=${streamTokenPr}` : "";
+		
 		return {
 			autoStart: true,
 			autoFallback: true,
@@ -73,13 +81,13 @@ const OvenStreamPlayer = ({ showToast }: OvenStreamPlayerProps) => {
 				{
 					label: "WebRTC",
 					type: "webrtc" as const,
-					file: `ws://${hostname}:3333/live/${STREAM_ID}/abr_webrtc${tokenParam}`,
+					file: `${wsProtocol}//${hostname}:${wsPort}/live/${STREAM_ID}/abr_webrtc${tokenParam}`,
 					lowLatency: true,
 				},
 				{
 					label: "LLHLS",
 					type: "llhls" as const,
-					file: `http://${hostname}:8080/live/${STREAM_ID}/abr.m3u8${tokenParam}`,
+					file: `${httpProtocol}//${hostname}:${httpPort}/live/${STREAM_ID}/abr.m3u8${tokenParam}`,
 					lowLatency: true,
 				},
 			],
@@ -254,7 +262,11 @@ const OvenStreamPlayer = ({ showToast }: OvenStreamPlayerProps) => {
 	};
 
 	const handleAdminPanel = () => {
-		setShowAdminPanel(true);
+		setShowAdminScreen(true);
+	};
+
+	const handleStremioConfig = () => {
+		setShowStremioConfig(true);
 	};
 
 	const handleManualRetry = () => {
@@ -273,6 +285,10 @@ const OvenStreamPlayer = ({ showToast }: OvenStreamPlayerProps) => {
 					<span className="user-role">({user?.role})</span>
 				</div>
 				<div className="header-actions">
+					<button className="stremio-btn" onClick={handleStremioConfig}>
+						<Play size={16} />
+						Stremio
+					</button>
 					{user?.role === "admin" && (
 						<button className="admin-btn" onClick={handleAdminPanel}>
 							<Settings size={16} />
@@ -325,11 +341,20 @@ const OvenStreamPlayer = ({ showToast }: OvenStreamPlayerProps) => {
 				</div>
 			)}
 
-			{/* Painel Administrativo */}
-			{showAdminPanel && (
-				<AdminPanel
+			{/* Tela Administrativa */}
+			{showAdminScreen && (
+				<AdminScreen
 					showToast={showToastRef.current}
-					onClose={() => setShowAdminPanel(false)}
+					onBack={() => setShowAdminScreen(false)}
+					user={user}
+				/>
+			)}
+
+			{/* Configuração do Stremio */}
+			{showStremioConfig && (
+				<StremioConfig
+					showToast={showToastRef.current}
+					onBack={() => setShowStremioConfig(false)}
 				/>
 			)}
 		</div>

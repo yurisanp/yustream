@@ -118,11 +118,13 @@ const Login = ({ onLogin, showToast }: LoginProps) => {
         </form>
 
         <div className="login-footer">
-          <p>Usuários de teste:</p>
-          <div className="test-users">
-            <small><strong>admin</strong> / admin123</small>
-            <small><strong>user</strong> / password</small>
-          </div>
+          <button 
+            type="button"
+            className="stremio-link-btn"
+            onClick={() => window.location.href = '/configure'}
+          >
+            🎬 Configurar Addon Stremio
+          </button>
         </div>
       </div>
     </div>

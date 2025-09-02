@@ -43,6 +43,13 @@
         </Publishers>
     </Bind>
 
+    <!-- Configuração SSL/TLS -->
+    <TLS>
+        <CertPath>/opt/ovenmediaengine/bin/origin_conf/cert.pem</CertPath>
+        <KeyPath>/opt/ovenmediaengine/bin/origin_conf/key.pem</KeyPath>
+        <ChainCertPath>/opt/ovenmediaengine/bin/origin_conf/chain.pem</ChainCertPath>
+    </TLS>
+
     <VirtualHosts>
         <VirtualHost include="VHost.xml" />
     </VirtualHosts>
