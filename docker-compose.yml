@@ -8,10 +8,6 @@ services:
     ports:
       # RTMP port for OBS streaming
       - "1935:1935"
-      # WebRTC Signaling port
-      - "3333:3333"
-      # WebRTC TCP port
-      - "3334:3334"
       # HLS/DASH HTTP port
       - "8080:8080"
       # HLS/DASH HTTPS port

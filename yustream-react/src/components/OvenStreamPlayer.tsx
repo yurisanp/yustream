@@ -62,9 +62,7 @@ const OvenStreamPlayer = ({ showToast }: OvenStreamPlayerProps) => {
 	const getPlayerConfig = useCallback((streamTokenPr: string | null) => {
 		const hostname = window.location.hostname;
 		const isSecure = window.location.protocol === 'https:';
-		const wsProtocol = isSecure ? 'wss:' : 'ws:';
 		const httpProtocol = isSecure ? 'https:' : 'http:';
-		const wsPort = isSecure ? '3334' : '3333';
 		const httpPort = isSecure ? '8443' : '8080';
 		const tokenParam = streamTokenPr ? `?token=${streamTokenPr}` : "";
 		
@@ -79,24 +77,12 @@ const OvenStreamPlayer = ({ showToast }: OvenStreamPlayerProps) => {
 			playsinline: true,
 			sources: [
 				{
-					label: "WebRTC",
-					type: "webrtc" as const,
-					file: `${wsProtocol}//${hostname}:${wsPort}/live/${STREAM_ID}/abr_webrtc${tokenParam}`,
-					lowLatency: true,
-				},
-				{
 					label: "LLHLS",
 					type: "llhls" as const,
 					file: `${httpProtocol}//${hostname}:${httpPort}/live/${STREAM_ID}/abr.m3u8${tokenParam}`,
 					lowLatency: true,
 				},
 			],
-			webrtcConfig: {
-				iceServers: [
-					{ urls: "stun:stun.l.google.com:19302" },
-					{ urls: "stun:stun1.l.google.com:19302" },
-				],
-			},
 			hlsConfig: {
 				lowLatencyMode: true,
 				backBufferLength: 90,

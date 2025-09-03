@@ -55,9 +55,9 @@ const builder = new addonBuilder({
 	version: "1.0.0",
 	name: "YuStream Live",
 	description: "Assista streams ao vivo do YuStream diretamente no Stremio",
-	logo: "https://via.placeholder.com/256x256/667eea/ffffff?text=YuStream",
+	logo: "https://yustream.yurisp.com.br/stremio-assets/logo.svg",
 	background:
-		"https://via.placeholder.com/1920x1080/667eea/ffffff?text=YuStream+Live",
+		"https://yustream.yurisp.com.br/stremio-assets/background.svg",
 
 	// Tipos de conteúdo suportados
 	types: ["tv"],
@@ -78,7 +78,7 @@ const builder = new addonBuilder({
 	idPrefixes: ["yustream_"],
 
 	config: [
-		{ key: "email", type: "text", title: "Email", required: true },
+		{ key: "username", type: "text", title: "Username", required: true },
 		{ key: "password", type: "password", title: "Senha", required: true },
 	],
 
@@ -111,6 +111,13 @@ const extractCredentialsFromRequest = (req) => {
 				const credentials = JSON.parse(decodedCreds);
 				console.log("Parsed credentials:", credentials);
 
+				// Suporte para compatibilidade com email (migração)
+				if (credentials.email && !credentials.username) {
+					console.log("Migrando de email para username...");
+					// Se tem email mas não tem username, usar email como username
+					credentials.username = credentials.email.split('@')[0];
+				}
+
 				return credentials;
 			} catch (error) {
 				console.log("Erro ao extrair credenciais da URL:", error.message);
@@ -128,22 +135,30 @@ builder.defineCatalogHandler(async (args, callback, req) => {
 		const { config } = args;
 
 		// Tentar extrair credenciais da URL primeiro, depois dos parâmetros extras
-		let email, password;
+		let username, password;
 
-		email = config && config.email;
-		password = config && config.password;
-		console.log("Using config parameters");
+		// Primeiro tentar extrair da URL
+		const urlCredentials = extractCredentialsFromRequest(req);
+		if (urlCredentials) {
+			username = urlCredentials.username;
+			password = urlCredentials.password;
+			console.log("Using URL credentials");
+		} else {
+			username = config && config.username;
+			password = config && config.password;
+			console.log("Using config parameters");
+		}
 
-		console.log(`👤 Email: ${email ? "presente" : "ausente"}`);
+		console.log(`👤 Username: ${username ? "presente" : "ausente"}`);
 
 		// Validar credenciais se fornecidas
 		let isAuthenticated = false;
 		let user = null;
 
-		if (email && password) {
+		if (username && password) {
 			try {
 				user = await User.findOne({
-					email: email.toLowerCase(),
+					username: username.toLowerCase(),
 					isActive: true,
 				});
 
@@ -165,30 +180,44 @@ builder.defineCatalogHandler(async (args, callback, req) => {
 		let metas = [];
 
 		if (isAuthenticated) {
-			// Verificar se stream está online
+			// Gerar token para verificação da stream
+			const streamToken = jwt.sign(
+				{
+					userId: user._id,
+					username: user.username,
+					streamAccess: true,
+					stremio: true,
+				},
+				JWT_SECRET,
+				{ expiresIn: "6h" }
+			);
+
+			// Verificar se stream está online com token
 			let streamOnline = false;
 			try {
-				const response = await axios.get(STREAM_CHECK_URL, {
+				const streamCheckUrl = `${STREAM_CHECK_URL}?token=${streamToken}`;
+				console.log("Checking stream with token:", streamCheckUrl);
+				
+				const response = await axios.get(streamCheckUrl, {
 					timeout: 5000,
 					validateStatus: (status) => status < 500,
 				});
 				streamOnline =
 					response.status === 200 && response.data.includes("#EXTM3U");
+				console.log("Stream status:", streamOnline ? "ONLINE" : "OFFLINE");
 			} catch (error) {
 				console.log("Stream offline:", error.message);
 			}
-
-			streamOnline = true;
 			// Stream principal
 			metas.push({
 				id: "yustream_live_main",
 				type: "tv",
 				name: streamOnline ? "🔴 YuStream Live" : "📴 YuStream Live (Offline)",
 				poster: streamOnline
-					? "https://via.placeholder.com/300x450/2ed573/ffffff?text=LIVE"
-					: "https://via.placeholder.com/300x450/ff6b6b/ffffff?text=OFFLINE",
+					? "https://yustream.yurisp.com.br/stremio-assets/poster-live.svg"
+					: "https://yustream.yurisp.com.br/stremio-assets/poster-offline.svg",
 				background:
-					"https://via.placeholder.com/1920x1080/667eea/ffffff?text=YuStream+Live",
+					"https://yustream.yurisp.com.br/stremio-assets/background.svg",
 				description: streamOnline
 					? "Stream ao vivo do YuStream - Transmissão em tempo real"
 					: "Stream do YuStream está offline no momento",
@@ -208,9 +237,9 @@ builder.defineCatalogHandler(async (args, callback, req) => {
 				id: "yustream_config",
 				type: "tv",
 				name: "⚙️ Configurar YuStream",
-				poster: "https://via.placeholder.com/300x450/ffa502/ffffff?text=CONFIG",
+				poster: "https://yustream.yurisp.com.br/stremio-assets/poster-config.svg",
 				background:
-					"https://via.placeholder.com/1920x1080/ffa502/ffffff?text=Configure+YuStream",
+					"https://yustream.yurisp.com.br/stremio-assets/background.svg",
 				description:
 					"Configure suas credenciais para acessar o YuStream. Use email e senha nos parâmetros do addon.",
 				genre: ["Configuração"],
@@ -234,17 +263,25 @@ builder.defineStreamHandler(async (args, callback, req) => {
 		const { type, id, config } = args;
 
 		// Tentar extrair credenciais da URL primeiro, depois dos parâmetros extras
-		let email, password;
+		let username, password;
 
-		email = config && config.email;
-		password = config && config.password;
-		console.log("Using config parameters for stream");
+		// Primeiro tentar extrair da URL
+		const urlCredentials = extractCredentialsFromRequest(req);
+		if (urlCredentials) {
+			username = urlCredentials.username;
+			password = urlCredentials.password;
+			console.log("Using URL credentials for stream");
+		} else {
+			username = config && config.username;
+			password = config && config.password;
+			console.log("Using config parameters for stream");
+		}
 
 		console.log(`🎬 Stream Request: ${type}/${id}`);
-		console.log(`👤 Email: ${email ? "presente" : "ausente"}`);
+		console.log(`👤 Username: ${username ? "presente" : "ausente"}`);
 
 		// Validar credenciais
-		if (!email || !password) {
+		if (!username || !password) {
 			return Promise.resolve({
 				streams: [
 					{
@@ -261,7 +298,7 @@ builder.defineStreamHandler(async (args, callback, req) => {
 		let user;
 		try {
 			user = await User.findOne({
-				email: email.toLowerCase(),
+				username: username.toLowerCase(),
 				isActive: true,
 			});
 
@@ -272,7 +309,7 @@ builder.defineStreamHandler(async (args, callback, req) => {
 							title: "❌ Credenciais Inválidas",
 							url: "https://www.stremio.com/",
 							description:
-								"Email ou senha incorretos. Verifique suas credenciais.",
+								"Username ou senha incorretos. Verifique suas credenciais.",
 						},
 					],
 				});
@@ -296,24 +333,27 @@ builder.defineStreamHandler(async (args, callback, req) => {
 			{ expiresIn: "6h" }
 		);
 
-		// Verificar se stream está online
+		// Verificar se stream está online com token
 		let streamOnline = false;
 		try {
-			const response = await axios.get(STREAM_CHECK_URL, {
+			const streamCheckUrl = `${STREAM_CHECK_URL}?token=${streamToken}`;
+			console.log("Checking stream with token:", streamCheckUrl);
+			
+			const response = await axios.get(streamCheckUrl, {
 				timeout: 5000,
 				validateStatus: (status) => status < 500,
 			});
 			streamOnline =
 				response.status === 200 && response.data.includes("#EXTM3U");
+			console.log("Stream status:", streamOnline ? "ONLINE" : "OFFLINE");
 		} catch (error) {
 			console.log("Stream offline:", error.message);
 		}
 
 		const streams = [];
-		streamOnline = true;
 		if (streamOnline && id === "yustream_live_main") {
 			// Usar localhost pois será acessado via Nginx
-			const baseUrl = "http://127.0.0.1";
+			const baseUrl = "https://yustream.yurisp.com.br";
 
 			streams.push({
 				title: "🔴 YuStream Live - Qualidade Adaptativa",
@@ -369,6 +409,7 @@ serveHTTP(builder.getInterface(), {
 	.then(() => {
 		console.log(`🚀 YuStream Stremio Addon rodando na porta ${PORT}`);
 		console.log(`📋 Manifest: http://localhost:${PORT}/manifest.json`);
+		console.log(`🎨 Assets: https://yustream.yurisp.com.br/stremio-assets/`);
 		console.log("🎯 Pronto para uso no Stremio!");
 	})
 	.catch((err) => {

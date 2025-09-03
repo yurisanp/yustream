@@ -20,7 +20,7 @@
         <Timeout>30000</Timeout>
         <Enables>
             <Providers>rtmp</Providers>
-            <Publishers>webrtc,llhls</Publishers>
+            <Publishers>llhls</Publishers>
         </Enables>
     </AdmissionWebhooks>
 
@@ -36,22 +36,10 @@
                     <Name>abr_stream</Name>
                     <OutputStreamName>${OriginStreamName}</OutputStreamName>
                     <Playlist>
-                        <Name>for Webrtc</Name>
-                        <FileName>abr_webrtc</FileName>
-                        <Options>
-                            <WebRtcAutoAbr>true</WebRtcAutoAbr> 
-                        </Options>
-                        <Rendition>
-                            <Name>fonte</Name>
-                            <Video>bypass_video</Video>
-                            <Audio>opus</Audio>
-                        </Rendition>
-                    </Playlist>
-                    <Playlist>
                         <Name>for LLHLS</Name>
                         <FileName>abr</FileName>
                         <Rendition>
-                            <Name>fonte</Name>
+                            <Name>Fonte</Name>
                             <Video>bypass_video</Video>
                             <Audio>bypass_audio</Audio>
                         </Rendition>
@@ -66,13 +54,6 @@
                             <Name>bypass_video</Name>
                             <Bypass>True</Bypass>
                         </Video>
-                        <Audio>
-                            <Name>opus</Name>
-                            <Codec>opus</Codec>
-                            <Bitrate>128000</Bitrate>
-                            <Samplerate>48000</Samplerate>
-                            <Channel>2</Channel>
-                        </Audio>
                     </Encodes>
                 </OutputProfile>
             </OutputProfiles>
@@ -87,16 +68,7 @@
             <!-- Configurações de publicadores -->
             <Publishers>
                 <AppWorkerCount>1</AppWorkerCount>
-                <StreamWorkerCount>8</StreamWorkerCount>
-                
-                <HLS>
-                    <SegmentDuration>4</SegmentDuration>
-                    <SegmentCount>10</SegmentCount>
-                    <CrossDomains>
-                        <Url>*</Url>
-                    </CrossDomains>
-                </HLS>
-                
+                <StreamWorkerCount>8</StreamWorkerCount>               
                 <LLHLS>
                     <SegmentDuration>4</SegmentDuration>
                     <SegmentCount>10</SegmentCount>
@@ -104,14 +76,7 @@
                     <CrossDomains>
                         <Url>*</Url>
                     </CrossDomains>
-                </LLHLS>
-                
-                <WebRTC>
-                    <Timeout>30000</Timeout>
-                    <Rtx>false</Rtx>
-                    <Ulpfec>false</Ulpfec>
-                    <JitterBuffer>false</JitterBuffer>
-                </WebRTC>
+                </LLHLS>  
             </Publishers>
         </Application>
     </Applications>

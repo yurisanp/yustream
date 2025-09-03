@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Play, Download, Eye, EyeOff, ArrowLeft, Zap } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Play, Download, Eye, EyeOff, ArrowLeft } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import './StremioConfig.css'
 
@@ -13,65 +13,28 @@ interface StremioConfigProps {
 const StremioConfig = ({ showToast, onBack }: StremioConfigProps) => {
   const { user, isAuthenticated } = useAuth()
   const [credentials, setCredentials] = useState({
-    email: '',
+    username: '',
     password: ''
   })
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
 
-  // Instalação rápida para usuário logado
-  const handleQuickInstall = async () => {
-    if (!user) return
-    
-    setIsLoading(true)
-    
-    try {
-      // Usar dados do usuário logado
-      const credentialsObj = {
-        email: `${user.username}@yustream.com`, // Gerar email baseado no username
-        password: 'logged-in-user' // Placeholder - será validado pelo token JWT no backend
-      }
-      
-      // Converter para JSON e depois para URL encoding
-      const jsonCredentials = JSON.stringify(credentialsObj)
-      const encodedCredentials = encodeURIComponent(jsonCredentials)
-      
-      // URL do addon com credenciais encoded corretamente
-      const addonUrl = `${window.location.origin}/${encodedCredentials}/manifest.json`
-      
-      // URL para instalar no Stremio
-      const stremioUrl = `stremio://${addonUrl.replace('http://', '').replace('https://', '')}`
-      
-      console.log('Quick Install - Stremio URL:', stremioUrl)
-      
-      showToast('Instalando addon automaticamente...', 'info')
-      
-      // Tentar abrir no Stremio
-      window.location.href = stremioUrl
-      
-      // Fallback para web após 2 segundos
-      setTimeout(() => {
-        const webUrl = 'https://web.stremio.com/#/addons?addon=' + encodeURIComponent(addonUrl)
-        
-        setIsLoading(false)
-        showToast('Addon instalado! Verifique o Stremio.', 'success')
-        
-        if (confirm('✅ Addon instalado!\n\nSe o Stremio não abriu, clique OK para abrir no navegador:')) {
-          window.open(webUrl, '_blank')
-        }
-      }, 2000)
-
-    } catch (error) {
-      console.error('Erro na instalação rápida:', error)
-      showToast('Erro na instalação rápida. Use o formulário manual.', 'error')
-      setIsLoading(false)
+  // Preencher username quando usuário estiver logado
+  useEffect(() => {
+    if (isAuthenticated && user?.username) {
+      setCredentials(prev => ({
+        ...prev,
+        username: user.username
+      }))
     }
-  }
+  }, [isAuthenticated, user])
+
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!credentials.email || !credentials.password) {
+    if (!credentials.username || !credentials.password) {
       showToast('Por favor, preencha todos os campos', 'error')
       return
     }
@@ -81,7 +44,7 @@ const StremioConfig = ({ showToast, onBack }: StremioConfigProps) => {
     try {
       // Criar objeto de credenciais
       const credentialsObj = {
-        email: credentials.email,
+        username: credentials.username,
         password: credentials.password
       }
       
@@ -152,45 +115,16 @@ const StremioConfig = ({ showToast, onBack }: StremioConfigProps) => {
           </div>
         </div>
 
-        {/* Instalação rápida para usuários logados */}
-        {isAuthenticated && (
-          <div className="quick-install">
-            <h3>⚡ Instalação Rápida</h3>
-            <p>Você já está logado! Instale o addon automaticamente:</p>
-            <button 
-              className="quick-install-btn"
-              onClick={handleQuickInstall}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <div className="loading-spinner" />
-                  Instalando...
-                </>
-              ) : (
-                <>
-                  <Zap size={20} />
-                  Instalar Agora ({user?.username})
-                </>
-              )}
-            </button>
-            
-            <div className="divider">
-              <span>ou configure manualmente</span>
-            </div>
-          </div>
-        )}
-
         <form onSubmit={handleSubmit} className="stremio-form">
           <div className="input-group">
             <div className="input-wrapper">
               <input
-                type="email"
-                placeholder="📧 Email"
-                value={credentials.email}
-                onChange={(e) => handleInputChange('email', e.target.value)}
-                disabled={isLoading}
-                autoComplete="email"
+                type="text"
+                placeholder="👤 Username"
+                value={credentials.username}
+                onChange={(e) => handleInputChange('username', e.target.value)}
+                disabled={isLoading || isAuthenticated}
+                autoComplete="username"
                 required
               />
             </div>
@@ -240,11 +174,16 @@ const StremioConfig = ({ showToast, onBack }: StremioConfigProps) => {
         <div className="instructions">
           <h3>📋 Como usar:</h3>
           <ol>
-            <li>Digite suas credenciais do YuStream</li>
+            <li>Digite seu username e senha do YuStream</li>
             <li>Clique em "Instalar no Stremio"</li>
             <li>O Stremio abrirá automaticamente</li>
             <li>Vá para "YuStream Live" para assistir</li>
           </ol>
+          {isAuthenticated && (
+            <div className="logged-in-info">
+              <p>✅ Seu username já foi preenchido automaticamente!</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
