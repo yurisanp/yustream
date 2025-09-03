@@ -17,7 +17,7 @@
     <AdmissionWebhooks>
         <ControlServerUrl>http://yustream-auth:3001/webhook/admission</ControlServerUrl>
         <SecretKey>yustream-webhook-secret-2024</SecretKey>
-        <Timeout>30000</Timeout>
+        <Timeout>3000</Timeout>
         <Enables>
             <Providers>rtmp</Providers>
             <Publishers>llhls</Publishers>
@@ -61,7 +61,7 @@
             <!-- Configurações de provedores -->
             <Providers>
                 <RTMP>
-                    <BlockDuplicateStreamName>false</BlockDuplicateStreamName>
+                    <BlockDuplicateStreamName>true</BlockDuplicateStreamName>
                 </RTMP>
             </Providers>
 
