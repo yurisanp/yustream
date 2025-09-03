@@ -357,7 +357,7 @@ builder.defineStreamHandler(async (args, callback, req) => {
 
 			streams.push({
 				title: "🔴 YuStream Live - Qualidade Adaptativa",
-				url: `${baseUrl}:8080/live/live/abr.m3u8?token=${streamToken}`,
+				url: `${baseUrl}:8443/live/live/abr.m3u8?token=${streamToken}`,
 				description: "Stream ao vivo em qualidade adaptativa (LLHLS)",
 				behaviorHints: {
 					notWebReady: false,
