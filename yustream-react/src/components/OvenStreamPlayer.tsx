@@ -1,52 +1,41 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { Wifi, WifiOff, AlertCircle, LogOut, Settings, Play } from "lucide-react";
-import OvenPlayer from "ovenplayer";
-import Hls from "hls.js";
+import { useState, useRef, useCallback, memo, useEffect } from "react";
+import {
+	Box,
+	AppBar,
+	Toolbar,
+	Typography,
+	Button,
+	IconButton,
+	Chip,
+	CircularProgress,
+	Paper,
+} from "@mui/material";
+import {
+	Wifi,
+	WifiOff,
+	ErrorOutline,
+	Logout,
+	Settings,
+	PlayArrow,
+	Refresh,
+} from "@mui/icons-material";
 import { useAuth } from "../contexts/AuthContext";
+import { useStreamPlayer } from "../hooks/useStreamPlayer";
 import AdminScreen from "./AdminScreen";
 import StremioConfig from "./StremioConfig";
-import "./OvenStreamPlayer.css";
 
 interface OvenStreamPlayerProps {
 	showToast: (message: string, type: "success" | "error" | "info") => void;
 }
 
-// Interface básica para o OvenPlayer
-interface OvenPlayerInstance {
-	destroy?: () => void;
-	remove?: () => void;
-	on?: (event: string, callback: (data?: unknown) => void) => void;
-	play?: () => void;
-	pause?: () => void;
-	setMute?: (muted: boolean) => void;
-	setVolume?: (volume: number) => void;
-	getSources?: () => Array<{ type?: string; label?: string; index: number }>;
-	setCurrentSource?: (index: number) => void;
-}
-
-type StreamStatus =
-	| "connecting"
-	| "playing"
-	| "paused"
-	| "error"
-	| "offline"
-	| "idle";
-
-const STREAM_ID = "live";
-
-const OvenStreamPlayer = ({ showToast }: OvenStreamPlayerProps) => {
+const OvenStreamPlayer = memo(({ showToast }: OvenStreamPlayerProps) => {
 	const { user, logout, getStreamToken } = useAuth();
 
 	// Estados principais
-	const [status, setStatus] = useState<StreamStatus>("connecting");
 	const [showAdminScreen, setShowAdminScreen] = useState<boolean>(false);
 	const [showStremioConfig, setShowStremioConfig] = useState<boolean>(false);
-	const [retryCount, setRetryCount] = useState<number>(0);
-	const [lastInitTime, setLastInitTime] = useState<number>(0);
 
 	// Refs
-	const playerContainerRef = useRef<HTMLDivElement>(null);
-	const ovenPlayerRef = useRef<OvenPlayerInstance | null>(null);
 	const showToastRef = useRef(showToast);
 
 	// Atualizar ref sempre que showToast mudar
@@ -54,191 +43,79 @@ const OvenStreamPlayer = ({ showToast }: OvenStreamPlayerProps) => {
 		showToastRef.current = showToast;
 	}, [showToast]);
 
-	// Constantes para retry
-	const MAX_RETRY_ATTEMPTS = 3;
-	const MIN_RETRY_INTERVAL = 10000; // 10 segundos mínimo entre tentativas
-
-	// Configurações do OvenPlayer para OvenMediaEngine
-	const getPlayerConfig = useCallback((streamTokenPr: string | null) => {
-		const hostname = window.location.hostname;
-		const isSecure = window.location.protocol === 'https:';
-		const httpProtocol = isSecure ? 'https:' : 'http:';
-		const httpPort = isSecure ? '8443' : '8080';
-		const tokenParam = streamTokenPr ? `?token=${streamTokenPr}` : "";
-		
-		return {
-			autoStart: true,
-			autoFallback: true,
-			controls: true, // Usar controles nativos do OvenPlayer
-			loop: false,
-			muted: false,
-			volume: 100,
-			playbackRate: 1,
-			playsinline: true,
-			sources: [
-				{
-					label: "LLHLS",
-					type: "llhls" as const,
-					file: `${httpProtocol}//${hostname}:${httpPort}/live/${STREAM_ID}/abr.m3u8${tokenParam}`,
-					lowLatency: true,
-				},
-			],
-			hlsConfig: {
-				lowLatencyMode: true,
-				backBufferLength: 90,
-			},
-		};
+	// Callback para mudanças no status da stream
+	const handleStreamOnlineChange = useCallback((isOnline: boolean) => {
+		if (isOnline) {
+			showToastRef.current("Stream está online", "success");
+		} else {
+			showToastRef.current("Stream está offline", "info");
+		}
 	}, []);
 
-	// Função simples para retry com controle de tempo
-	const scheduleRetry = useCallback(() => {
-		const now = Date.now();
+	// Hook do player com validação de stream
+	const {
+		status,
+		retryCount,
+		playerContainerRef,
+		handleManualRetry,
+		MAX_RETRY_ATTEMPTS,
+		streamStatus,
+	} = useStreamPlayer({
+		onStatusChange: (newStatus: string) => {
+			console.log("Player status changed:", newStatus);
+		},
+		onError: (error: any) => {
+			console.error("Player error:", error);
+			showToastRef.current(`Erro no player: ${error}`, "error");
+		},
+		onStreamOnlineChange: handleStreamOnlineChange,
+		getStreamToken,
+	});
 
-		// Verificar se já passou tempo suficiente desde a última tentativa
-		if (now - lastInitTime < MIN_RETRY_INTERVAL) {
-			console.log("Retry muito rápido, ignorando...");
-			return;
-		}
-
-		// Verificar se ainda pode tentar
-		if (retryCount >= MAX_RETRY_ATTEMPTS) {
-			setStatus("offline");
-			showToastRef.current(
-				'Stream offline. Use "Tentar Novamente" para reconectar.',
-				"info"
-			);
-			return;
-		}
-
-		setRetryCount((prev) => prev + 1);
-		setLastInitTime(now);
-
-		showToastRef.current(
-			`Tentando reconectar... (${retryCount + 1}/${MAX_RETRY_ATTEMPTS})`,
-			"info"
-		);
-
-		setTimeout(() => {
-			initializePlayer();
-		}, 5000); // 5 segundos de delay
-	}, [retryCount, MAX_RETRY_ATTEMPTS, lastInitTime, MIN_RETRY_INTERVAL]);
-
-	const initializePlayer = useCallback(async () => {
-		if (!playerContainerRef.current) return;
-
-		try {
-			setStatus("connecting");
-
-			// Obter token de stream
-			const token = await getStreamToken();
-			if (!token) {
-				setStatus("error");
-				showToastRef.current("Erro ao obter token de acesso à stream", "error");
-				return;
-			}
-			// Criar novo OvenPlayer
-			ovenPlayerRef.current = OvenPlayer.create(
-				"ovenPlayer",
-				getPlayerConfig(token)
-			);
-
-			if (!ovenPlayerRef.current) {
-				throw new Error("Falha ao criar instância do OvenPlayer");
-			}
-
-			// Event listeners do OvenPlayer
-			const player = ovenPlayerRef.current;
-
-			player.on?.("ready", () => {
-				console.log("OvenPlayer pronto");
-				setStatus("playing");
-			});
-
-			player.on?.("stateChanged", (data: unknown) => {
-				const stateData = data as { prevstate: string; newstate: string };
-				console.log("Estado mudou:", stateData);
-
-				switch (stateData.newstate) {
-					case "playing":
-						setStatus("playing");
-						break;
-					case "paused":
-						setStatus("paused");
-						break;
-					case "loading":
-						setStatus("connecting");
-						break;
-					case "error":
-						setStatus("error");
-						showToastRef.current("Erro na reprodução", "error");
-						break;
-				}
-			});
-
-			player.on?.("error", (error: unknown) => {
-				const errorData = error as { message?: string; code?: number };
-				console.error("Erro do OvenPlayer:", errorData);
-        setStatus('error')
-				scheduleRetry();
-			});
-
-      player.on?.('destroy', () => {
-        console.log('OvenPlayer destruído')
-        setStatus('offline')
-      })
-
-			console.log("OvenPlayer inicializado com sucesso");
-		} catch (error) {
-			console.error("Erro ao inicializar OvenPlayer:", error);
-			scheduleRetry();
-		}
-	}, [getStreamToken, getPlayerConfig, scheduleRetry]);
-
-	useEffect(() => {// Configurar HLS.js globalmente para o OvenPlayer
-    if (typeof window !== 'undefined') {
-      (window as typeof window & { Hls: typeof Hls }).Hls = Hls
-    }
-
-    const cleanupPlayer = () => {
-      if (ovenPlayerRef.current) {
-        try {
-          if (typeof ovenPlayerRef.current.destroy === 'function') {
-            ovenPlayerRef.current.destroy()
-          } else if (typeof ovenPlayerRef.current.remove === 'function') {
-            ovenPlayerRef.current.remove()
-          }
-          ovenPlayerRef.current = null
-        } catch (error) {
-          console.error('Erro ao destruir player:', error)
-        }
-      }
-    }
-    
-    // Aguardar o próximo ciclo de renderização para garantir que o DOM esteja pronto
-    const timer = setTimeout(() => {
-      initializePlayer()
-    }, 50)
-    
-    return () => {
-      clearTimeout(timer)
-      cleanupPlayer()
-    }
-	}, []); // Dependência: initializePlayer
-
-	// Não usar useEffect para retry - deixar apenas os event listeners do player lidarem com isso
+	// Funções de callback para ações do usuário
 
 	const getStatusIcon = () => {
 		switch (status) {
 			case "connecting":
-				return <div className="loading-spinner" />;
+				return <CircularProgress size={24} color="primary" />;
 			case "playing":
-				return <Wifi className="status-icon live" />;
+				return <Wifi color="success" />;
 			case "offline":
-				return <AlertCircle className="status-icon offline" />;
+				return <ErrorOutline color="warning" />;
 			case "error":
-				return <WifiOff className="status-icon error" />;
+				return <WifiOff color="error" />;
 			default:
-				return <Wifi className="status-icon" />;
+				return <Wifi color="action" />;
+		}
+	};
+
+	const getStatusText = () => {
+		switch (status) {
+			case "connecting":
+				return "Conectando à stream...";
+			case "playing":
+				return "Stream ao vivo";
+			case "offline":
+				return "Stream offline";
+			case "error":
+				return "Erro na conexão";
+			default:
+				return "Status desconhecido";
+		}
+	};
+
+	const getStatusColor = () => {
+		switch (status) {
+			case "connecting":
+				return "info";
+			case "playing":
+				return "success";
+			case "offline":
+				return "warning";
+			case "error":
+				return "error";
+			default:
+				return "default";
 		}
 	};
 
@@ -255,76 +132,230 @@ const OvenStreamPlayer = ({ showToast }: OvenStreamPlayerProps) => {
 		setShowStremioConfig(true);
 	};
 
-	const handleManualRetry = () => {
-		setRetryCount(0);
-		setLastInitTime(0);
-		setStatus("connecting");
-		initializePlayer();
-	};
-
 	return (
-		<div ref={playerContainerRef} className="stream-player">
+		<Box
+			ref={playerContainerRef}
+			sx={{ minHeight: "100vh", bgcolor: "background.default" }}
+		>
 			{/* Header com informações do usuário */}
-			<div className="stream-header">
-				<div className="user-info">
-					<span>Bem-vindo, {user?.username}</span>
-					<span className="user-role">({user?.role})</span>
-				</div>
-				<div className="header-actions">
-					<button className="stremio-btn" onClick={handleStremioConfig}>
-						<Play size={16} />
-						Stremio
-					</button>
-					{user?.role === "admin" && (
-						<button className="admin-btn" onClick={handleAdminPanel}>
-							<Settings size={16} />
-							Admin
-						</button>
-					)}
-					<button className="logout-btn" onClick={handleLogout}>
-						<LogOut size={16} />
-						Sair
-					</button>
-				</div>
-			</div>
+			<AppBar
+				position="static"
+				elevation={0}
+				sx={{
+					bgcolor: "background.paper",
+					borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
+				}}
+			>
+				<Toolbar>
+					<Box
+						sx={{ flexGrow: 1, display: "flex", alignItems: "center", gap: 2 }}
+					>
+						<Typography variant="h6" component="div" color="text.primary">
+							Bem-vindo, {user?.username}
+						</Typography>
+						<Chip
+							label={user?.role}
+							size="small"
+							color="primary"
+							variant="outlined"
+						/>
+						<Chip
+							icon={getStatusIcon()}
+							label={getStatusText()}
+							color={getStatusColor() as any}
+							size="small"
+							variant="filled"
+						/>
+						{/* Status da Stream */}
+						<Chip
+							icon={
+								streamStatus.isOnline ? (
+									<Wifi color="success" />
+								) : (
+									<WifiOff color="error" />
+								)
+							}
+							label={streamStatus.isOnline ? "Stream Online" : "Stream Offline"}
+							color={streamStatus.isOnline ? "success" : "error"}
+							size="small"
+							variant="outlined"
+						/>
+						{streamStatus.isLoading && (
+							<Chip
+								icon={<CircularProgress size={16} color="primary" />}
+								label="Verificando..."
+								color="info"
+								size="small"
+								variant="outlined"
+							/>
+						)}
+					</Box>
+					<Box sx={{ display: "flex", gap: 1 }}>
+						<Button
+							variant="outlined"
+							startIcon={<PlayArrow />}
+							onClick={handleStremioConfig}
+							sx={{
+								color: "text.primary",
+								borderColor: "rgba(255, 255, 255, 0.3)",
+							}}
+						>
+							Stremio
+						</Button>
+						{user?.role === "admin" && (
+							<Button
+								variant="outlined"
+								startIcon={<Settings />}
+								onClick={handleAdminPanel}
+								sx={{
+									color: "text.primary",
+									borderColor: "rgba(255, 255, 255, 0.3)",
+								}}
+							>
+								Admin
+							</Button>
+						)}
+						<IconButton
+							color="inherit"
+							onClick={handleLogout}
+							sx={{ color: "text.primary" }}
+						>
+							<Logout />
+						</IconButton>
+					</Box>
+				</Toolbar>
+			</AppBar>
 
 			{/* Container do OvenPlayer */}
-			<div id="ovenPlayer" className="oven-player-container" />
+			<Box
+				id="ovenPlayer"
+				sx={{
+					width: "100%",
+					height: "calc(100vh - 64px)",
+					position: "relative",
+					"& .oven-player": {
+						width: "100%",
+						height: "100%",
+					},
+				}}
+			/>
+
+			{/* Stream Offline Banner - Não bloqueia a interface */}
+			{status === "offline" && (
+				<Box
+					sx={{
+						position: "absolute",
+						top: "50%",
+						left: "50%",
+						transform: "translate(-50%, -50%)",
+						zIndex: 1000,
+						textAlign: "center",
+						pointerEvents: "none", // Permite cliques através do banner
+					}}
+				>
+					<Paper
+						elevation={8}
+						sx={{
+							p: 3,
+							bgcolor: "background.paper",
+							border: "1px solid rgba(255, 255, 255, 0.1)",
+							borderRadius: 2,
+							opacity: 0.9,
+							backdropFilter: "blur(10px)",
+						}}
+					>
+						<Box sx={{ mb: 2 }}>
+							<ErrorOutline color="warning" sx={{ fontSize: 48 }} />
+						</Box>
+						<Typography variant="h6" color="text.primary" gutterBottom>
+							Stream Offline
+						</Typography>
+						<Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+							A stream não está disponível no momento
+						</Typography>
+						{!streamStatus.isOnline && (
+							<Typography variant="body2" color="error.main" sx={{ mb: 1 }}>
+								Status da Stream: Offline
+							</Typography>
+						)}
+						{streamStatus.error && (
+							<Typography variant="body2" color="error.main" sx={{ mb: 1 }}>
+								Erro: {streamStatus.error}
+							</Typography>
+						)}
+						{streamStatus.lastChecked && (
+							<Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+								Última verificação:{" "}
+								{streamStatus.lastChecked.toLocaleTimeString()}
+							</Typography>
+						)}
+						{retryCount < MAX_RETRY_ATTEMPTS ? (
+							<Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+								Tentativas automáticas: {retryCount}/{MAX_RETRY_ATTEMPTS}
+							</Typography>
+						) : (
+							<Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+								Tentativas automáticas esgotadas
+							</Typography>
+						)}
+						<Button
+							variant="contained"
+							startIcon={<Refresh />}
+							onClick={handleManualRetry}
+							sx={{
+								pointerEvents: "auto", // Permite cliques no botão
+								mt: 1,
+							}}
+						>
+							Tentar Novamente
+						</Button>
+					</Paper>
+				</Box>
+			)}
 
 			{/* Loading/Status Overlay */}
-			{(status === "connecting" ||
-				status === "error" ||
-				status === "offline") && (
-				<div className="stream-overlay">
-					<div className="overlay-content">
-						{getStatusIcon()}
-						<p className="status-text">
-							{status === "connecting" && "Conectando à stream..."}
-							{status === "offline" && "Stream está offline"}
-							{status === "error" && "Erro na conexão"}
-						</p>
-						{(status === "error" || status === "offline") && (
-							<button className="retry-btn" onClick={handleManualRetry}>
+			{(status === "connecting" || status === "error") && (
+				<Box
+					sx={{
+						position: "fixed",
+						top: 0,
+						left: 0,
+						right: 0,
+						bottom: 0,
+						backgroundColor: "rgba(0, 0, 0, 0.8)",
+						zIndex: 1300,
+						display: "flex",
+						alignItems: "center",
+						justifyContent: "center",
+					}}
+				>
+					<Paper
+						elevation={8}
+						sx={{
+							p: 4,
+							bgcolor: "background.paper",
+							border: "1px solid rgba(255, 255, 255, 0.1)",
+							borderRadius: 2,
+							textAlign: "center",
+							minWidth: 300,
+						}}
+					>
+						<Box sx={{ mb: 2 }}>{getStatusIcon()}</Box>
+						<Typography variant="h6" color="text.primary" gutterBottom>
+							{getStatusText()}
+						</Typography>
+						{status === "error" && (
+							<Button
+								variant="contained"
+								startIcon={<Refresh />}
+								onClick={handleManualRetry}
+								sx={{ mt: 2 }}
+							>
 								Tentar Novamente
-							</button>
+							</Button>
 						)}
-						{status === "offline" && (
-							<div className="offline-info">
-								<p>A stream não está disponível no momento.</p>
-								{retryCount < MAX_RETRY_ATTEMPTS ? (
-									<p>
-										Tentativas automáticas: {retryCount}/{MAX_RETRY_ATTEMPTS}
-									</p>
-								) : (
-									<p>
-										Tentativas automáticas esgotadas. Use "Tentar Novamente"
-										para reconectar.
-									</p>
-								)}
-							</div>
-						)}
-					</div>
-				</div>
+					</Paper>
+				</Box>
 			)}
 
 			{/* Tela Administrativa */}
@@ -343,8 +374,10 @@ const OvenStreamPlayer = ({ showToast }: OvenStreamPlayerProps) => {
 					onBack={() => setShowStremioConfig(false)}
 				/>
 			)}
-		</div>
+		</Box>
 	);
-};
+});
+
+OvenStreamPlayer.displayName = "YuStream";
 
 export default OvenStreamPlayer;

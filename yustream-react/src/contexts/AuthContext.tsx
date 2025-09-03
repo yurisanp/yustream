@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, memo } from 'react'
 import type { ReactNode } from 'react'
 
 interface User {
@@ -34,7 +34,7 @@ interface AuthProviderProps {
   children: ReactNode
 }
 
-export const AuthProvider = ({ children }: AuthProviderProps) => {
+export const AuthProvider = memo(({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null)
   const [token, setToken] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -307,4 +307,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       {children}
     </AuthContext.Provider>
   )
-}
+})
+
+AuthProvider.displayName = 'AuthProvider'

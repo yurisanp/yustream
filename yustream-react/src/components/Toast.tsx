@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { X, CheckCircle, AlertCircle, Info } from 'lucide-react'
-import './Toast.css'
+import { Snackbar, Alert } from '@mui/material'
+import { CheckCircle, AlertCircle, Info } from 'lucide-react'
 
 interface ToastProps {
   message: string
@@ -9,24 +9,33 @@ interface ToastProps {
 }
 
 const Toast = ({ message, type, onClose }: ToastProps) => {
-  const [isVisible, setIsVisible] = useState(false)
+  const [open, setOpen] = useState(true)
 
   useEffect(() => {
-    // Mostrar toast
-    setTimeout(() => setIsVisible(true), 100)
-    
     // Auto close após 4 segundos
     const timer = setTimeout(() => {
-      setIsVisible(false)
-      setTimeout(onClose, 300)
+      handleClose()
     }, 4000)
 
     return () => clearTimeout(timer)
-  }, [onClose])
+  }, [])
 
   const handleClose = () => {
-    setIsVisible(false)
+    setOpen(false)
     setTimeout(onClose, 300)
+  }
+
+  const getSeverity = () => {
+    switch (type) {
+      case 'success':
+        return 'success'
+      case 'error':
+        return 'error'
+      case 'info':
+        return 'info'
+      default:
+        return 'info'
+    }
   }
 
   const getIcon = () => {
@@ -43,15 +52,28 @@ const Toast = ({ message, type, onClose }: ToastProps) => {
   }
 
   return (
-    <div className={`toast toast-${type} ${isVisible ? 'show' : ''}`}>
-      <div className="toast-content">
-        {getIcon()}
-        <span className="toast-message">{message}</span>
-      </div>
-      <button className="toast-close" onClick={handleClose}>
-        <X size={16} />
-      </button>
-    </div>
+    <Snackbar
+      open={open}
+      autoHideDuration={4000}
+      onClose={handleClose}
+      anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      sx={{ mt: 8 }}
+    >
+      <Alert
+        onClose={handleClose}
+        severity={getSeverity() as any}
+        icon={getIcon()}
+        variant="filled"
+        sx={{ 
+          width: '100%',
+          '& .MuiAlert-message': {
+            width: '100%'
+          }
+        }}
+      >
+        {message}
+      </Alert>
+    </Snackbar>
   )
 }
 

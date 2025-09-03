@@ -9,6 +9,21 @@ export default defineConfig({
     assetsDir: 'assets',
     sourcemap: false,
     minify: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Separar Material UI em chunk próprio
+          'mui': ['@mui/material', '@mui/icons-material', '@emotion/react', '@emotion/styled'],
+          // Separar bibliotecas de streaming
+          'streaming': ['ovenplayer', 'hls.js', '@antmedia/webrtc_adaptor'],
+          // Separar React e dependências core
+          'react-vendor': ['react', 'react-dom'],
+          // Separar ícones
+          'icons': ['lucide-react']
+        }
+      }
+    },
+    chunkSizeWarningLimit: 1000
   },
   server: {
     port: 3000,
