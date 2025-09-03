@@ -10,16 +10,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@antmedia/webrtc_adaptor": "^2.15.0",
     "@emotion/react": "^11.13.5",
     "@emotion/styled": "^11.13.5",
     "@mui/icons-material": "^6.3.0",
     "@mui/material": "^6.3.0",
     "@mui/system": "^6.3.0",
-    "@stream-io/video-react-sdk": "^1.20.1",
     "hls.js": "^1.6.11",
     "lucide-react": "^0.542.0",
-    "ovenplayer": "^0.10.46-beta.0",
+    "ovenplayer": "^0.10.45",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   },

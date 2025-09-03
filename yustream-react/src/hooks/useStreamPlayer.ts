@@ -5,9 +5,15 @@ import { useStreamStatus } from './useStreamStatus';
 
 type StreamStatus = 'connecting' | 'playing' | 'paused' | 'error' | 'offline' | 'idle';
 
+interface OvenPlayerInstance {
+  on?: (event: string, callback: (data?: unknown) => void) => void;
+  destroy?: () => void;
+  remove?: () => void;
+}
+
 interface UseStreamPlayerOptions {
   onStatusChange?: (status: StreamStatus) => void;
-  onError?: (error: any) => void;
+  onError?: (error: string | Error | { message?: string; code?: number }) => void;
   onStreamOnlineChange?: (isOnline: boolean) => void;
   getStreamToken: () => Promise<string | null>;
 }
@@ -23,17 +29,18 @@ export const useStreamPlayer = ({
   const [lastInitTime, setLastInitTime] = useState(0);
   const [currentToken, setCurrentToken] = useState<string | null>(null);
   
-  const ovenPlayerRef = useRef<any>(null);
+  const ovenPlayerRef = useRef<OvenPlayerInstance | null>(null);
   const playerContainerRef = useRef<HTMLDivElement>(null);
   
   const MAX_RETRY_ATTEMPTS = 3;
   const MIN_RETRY_INTERVAL = 10000;
   const STREAM_ID = 'live';
 
-  // Hook para verificar status da stream
+  // Hook para verificar status da stream - SEM verificação periódica
   const streamStatus = useStreamStatus({
-    checkInterval: 30000, // Verificar a cada 30 segundos
-    onStatusChange: onStreamOnlineChange
+    checkInterval: 30000, // Intervalo para caso seja habilitado
+    onStatusChange: onStreamOnlineChange,
+    enablePeriodicCheck: false // Desabilitar verificação periódica por padrão
   });
 
   const getPlayerConfig = useCallback((streamToken: string | null) => {
@@ -89,7 +96,10 @@ export const useStreamPlayer = ({
     setLastInitTime(now);
 
     setTimeout(() => {
-      initializePlayer();
+      // Usar uma referência para evitar dependência circular
+      if (typeof window !== 'undefined') {
+        window.location.reload();
+      }
     }, 5000);
   }, [retryCount, lastInitTime, updateStatus]);
 
@@ -117,9 +127,9 @@ export const useStreamPlayer = ({
       console.log('✅ Token obtido:', token.substring(0, 20) + '...');
       setCurrentToken(token);
 
-      // Verificar se a stream está online antes de inicializar o player
-      console.log('🔍 Verificando status da stream...');
-      const isStreamOnline = await streamStatus.checkStreamStatus(token);
+      // Verificar se a stream está online antes de inicializar o player (verificação única)
+      console.log('🔍 Verificando status da stream na inicialização...');
+      const isStreamOnline = await streamStatus.checkOnce(token);
       console.log('📊 Status da stream:', isStreamOnline ? 'ONLINE' : 'OFFLINE');
       
       if (!isStreamOnline) {
@@ -129,9 +139,8 @@ export const useStreamPlayer = ({
         return;
       }
 
-      // Iniciar verificação periódica do status da stream
-      console.log('⏰ Iniciando verificação periódica...');
-      streamStatus.startPeriodicCheck(token);
+      // NÃO iniciar verificação periódica - apenas verificação única na inicialização
+      console.log('✅ Stream online, inicializando player sem verificação periódica');
 
       ovenPlayerRef.current = OvenPlayer.create(
         'ovenPlayer',
@@ -169,12 +178,25 @@ export const useStreamPlayer = ({
         }
       });
 
-      player.on?.('error', (error: unknown) => {
+      player.on?.('error', async (error: unknown) => {
         const errorData = error as { message?: string; code?: number };
         console.error('Erro do OvenPlayer:', errorData);
-        updateStatus('error');
-        onError?.(errorData);
-        scheduleRetry();
+        
+        // Verificar se a stream ainda está online quando há erro
+        console.log('🚨 Verificando status da stream devido ao erro...');
+        const isStreamStillOnline = await streamStatus.checkOnError(currentToken || undefined);
+        console.log('📊 Status da stream após erro:', isStreamStillOnline ? 'ONLINE' : 'OFFLINE');
+        
+        if (!isStreamStillOnline) {
+          console.log('❌ Stream offline, mudando status para offline');
+          updateStatus('offline');
+          onError?.('Stream está offline');
+        } else {
+          console.log('⚠️ Stream online, mas player com erro - tentando reconectar');
+          updateStatus('error');
+          onError?.(errorData);
+          scheduleRetry();
+        }
       });
 
       player.on?.('destroy', () => {
@@ -185,17 +207,34 @@ export const useStreamPlayer = ({
       console.log('OvenPlayer inicializado com sucesso');
     } catch (error) {
       console.error('Erro ao inicializar OvenPlayer:', error);
-      onError?.(error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      onError?.(errorMessage);
       scheduleRetry();
     }
-  }, [getStreamToken, getPlayerConfig, updateStatus, onError, scheduleRetry]);
+  }, [getStreamToken, getPlayerConfig, updateStatus, onError, scheduleRetry, streamStatus, currentToken]);
 
-  const handleManualRetry = useCallback(() => {
+  const handleManualRetry = useCallback(async () => {
+    console.log('🔄 Retry manual solicitado...');
+    
+    // Verificar se a stream está online antes de tentar reconectar
+    if (currentToken) {
+      console.log('🔍 Verificando status da stream antes do retry manual...');
+      const isStreamOnline = await streamStatus.checkOnce(currentToken);
+      console.log('📊 Status da stream no retry:', isStreamOnline ? 'ONLINE' : 'OFFLINE');
+      
+      if (!isStreamOnline) {
+        console.log('❌ Stream offline, não fazendo retry');
+        updateStatus('offline');
+        onError?.('Stream está offline');
+        return;
+      }
+    }
+    
     setRetryCount(0);
     setLastInitTime(0);
     updateStatus('connecting');
     initializePlayer();
-  }, [initializePlayer, updateStatus]);
+  }, [initializePlayer, updateStatus, currentToken, streamStatus, onError]);
 
   const cleanupPlayer = useCallback(() => {
     // Parar verificação periódica da stream
@@ -203,10 +242,11 @@ export const useStreamPlayer = ({
     
     if (ovenPlayerRef.current) {
       try {
-        if (typeof ovenPlayerRef.current.destroy === 'function') {
-          ovenPlayerRef.current.destroy();
-        } else if (typeof ovenPlayerRef.current.remove === 'function') {
-          ovenPlayerRef.current.remove();
+        const player = ovenPlayerRef.current;
+        if (typeof player.destroy === 'function') {
+          player.destroy();
+        } else if (typeof player.remove === 'function') {
+          player.remove();
         }
         ovenPlayerRef.current = null;
       } catch (error) {
@@ -228,15 +268,11 @@ export const useStreamPlayer = ({
       clearTimeout(timer);
       cleanupPlayer();
     };
-  }, []); // Remover dependências para evitar loop infinito
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Dependências removidas para evitar loop infinito
 
-  // Efeito para monitorar mudanças no status da stream
-  useEffect(() => {
-    if (currentToken && streamStatus.isOnline === false && status === 'playing') {
-      console.log('Stream went offline, updating player status');
-      updateStatus('offline');
-    }
-  }, [streamStatus.isOnline, currentToken, status, updateStatus]);
+  // Removido: Efeito para monitorar mudanças no status da stream
+  // Agora só verificamos o status na inicialização e quando há erros
 
   return {
     status,

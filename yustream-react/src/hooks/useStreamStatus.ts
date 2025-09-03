@@ -10,12 +10,14 @@ interface StreamStatusResult {
 interface UseStreamStatusOptions {
   checkInterval?: number; // Intervalo em ms para verificação automática
   onStatusChange?: (isOnline: boolean) => void;
+  enablePeriodicCheck?: boolean; // Se deve fazer verificação periódica
 }
 
 export const useStreamStatus = (options: UseStreamStatusOptions = {}) => {
   const {
     checkInterval = 30000, // 30 segundos por padrão
-    onStatusChange
+    onStatusChange,
+    enablePeriodicCheck = false // Por padrão, não fazer verificação periódica
   } = options;
 
   const [status, setStatus] = useState<StreamStatusResult>({
@@ -91,13 +93,13 @@ export const useStreamStatus = (options: UseStreamStatusOptions = {}) => {
         onStatusChange?.(false);
         return false;
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Ignorar erros de abort
-      if (error.name === 'AbortError') {
+      if (error instanceof Error && error.name === 'AbortError') {
         return status.isOnline;
       }
 
-      const errorMessage = error.message || 'Unknown error';
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.log('Stream offline:', errorMessage);
 
       setStatus(prev => ({
@@ -122,11 +124,16 @@ export const useStreamStatus = (options: UseStreamStatusOptions = {}) => {
     // Verificação inicial
     checkStreamStatus(token);
 
-    // Configurar verificação periódica
-    intervalRef.current = setInterval(() => {
-      checkStreamStatus(token);
-    }, checkInterval);
-  }, [checkStreamStatus, checkInterval]);
+    // Só configurar verificação periódica se habilitada
+    if (enablePeriodicCheck) {
+      console.log('🔄 [useStreamStatus] Iniciando verificação periódica...');
+      intervalRef.current = setInterval(() => {
+        checkStreamStatus(token);
+      }, checkInterval);
+    } else {
+      console.log('⏸️ [useStreamStatus] Verificação periódica desabilitada');
+    }
+  }, [checkStreamStatus, checkInterval, enablePeriodicCheck]);
 
   const stopPeriodicCheck = useCallback(() => {
     if (intervalRef.current) {
@@ -150,9 +157,23 @@ export const useStreamStatus = (options: UseStreamStatusOptions = {}) => {
     });
   }, []);
 
+  // Função para verificação única (sem período)
+  const checkOnce = useCallback(async (token?: string): Promise<boolean> => {
+    console.log('🔍 [useStreamStatus] Verificação única solicitada...');
+    return await checkStreamStatus(token);
+  }, [checkStreamStatus]);
+
+  // Função para verificação apenas em caso de erro
+  const checkOnError = useCallback(async (token?: string): Promise<boolean> => {
+    console.log('🚨 [useStreamStatus] Verificação por erro solicitada...');
+    return await checkStreamStatus(token);
+  }, [checkStreamStatus]);
+
   return {
     ...status,
     checkStreamStatus,
+    checkOnce,
+    checkOnError,
     startPeriodicCheck,
     stopPeriodicCheck,
     resetStatus

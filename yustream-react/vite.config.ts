@@ -15,9 +15,7 @@ export default defineConfig({
           // Separar Material UI em chunk próprio
           'mui': ['@mui/material', '@mui/icons-material', '@emotion/react', '@emotion/styled'],
           // Separar bibliotecas de streaming
-          'streaming': ['ovenplayer', 'hls.js', '@antmedia/webrtc_adaptor'],
-          // Separar React e dependências core
-          'react-vendor': ['react', 'react-dom'],
+          'streaming': ['ovenplayer', 'hls.js'],
           // Separar ícones
           'icons': ['lucide-react']
         }

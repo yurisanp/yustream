@@ -70,9 +70,18 @@ const OvenStreamPlayer = memo(({ showToast }: OvenStreamPlayerProps) => {
 		onStatusChange: (newStatus: string) => {
 			console.log("Player status changed:", newStatus);
 		},
-		onError: (error: string | Error) => {
+		onError: (error: string | Error | { message?: string; code?: number }) => {
 			console.error("Player error:", error);
-			const errorMessage = error instanceof Error ? error.message : String(error);
+			let errorMessage: string;
+			
+			if (error instanceof Error) {
+				errorMessage = error.message;
+			} else if (typeof error === 'string') {
+				errorMessage = error;
+			} else {
+				errorMessage = error.message || 'Erro desconhecido';
+			}
+			
 			showToastRef.current(`Erro no player: ${errorMessage}`, "error");
 		},
 		onStreamOnlineChange: handleStreamOnlineChange,
