@@ -9,6 +9,9 @@ import {
 	Chip,
 	CircularProgress,
 	Paper,
+	useMediaQuery,
+	useTheme,
+	Stack,
 } from "@mui/material";
 import {
 	Wifi,
@@ -30,6 +33,9 @@ interface OvenStreamPlayerProps {
 
 const OvenStreamPlayer = memo(({ showToast }: OvenStreamPlayerProps) => {
 	const { user, logout, getStreamToken } = useAuth();
+	const theme = useTheme();
+	const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+	const isTablet = useMediaQuery(theme.breakpoints.down('lg'));
 
 	// Estados principais
 	const [showAdminScreen, setShowAdminScreen] = useState<boolean>(false);
@@ -64,9 +70,10 @@ const OvenStreamPlayer = memo(({ showToast }: OvenStreamPlayerProps) => {
 		onStatusChange: (newStatus: string) => {
 			console.log("Player status changed:", newStatus);
 		},
-		onError: (error: any) => {
+		onError: (error: string | Error) => {
 			console.error("Player error:", error);
-			showToastRef.current(`Erro no player: ${error}`, "error");
+			const errorMessage = error instanceof Error ? error.message : String(error);
+			showToastRef.current(`Erro no player: ${errorMessage}`, "error");
 		},
 		onStreamOnlineChange: handleStreamOnlineChange,
 		getStreamToken,
@@ -104,7 +111,7 @@ const OvenStreamPlayer = memo(({ showToast }: OvenStreamPlayerProps) => {
 		}
 	};
 
-	const getStatusColor = () => {
+	const getStatusColor = (): "info" | "success" | "warning" | "error" | "default" => {
 		switch (status) {
 			case "connecting":
 				return "info";
@@ -132,12 +139,14 @@ const OvenStreamPlayer = memo(({ showToast }: OvenStreamPlayerProps) => {
 		setShowStremioConfig(true);
 	};
 
+
+
 	return (
 		<Box
 			ref={playerContainerRef}
 			sx={{ minHeight: "100vh", bgcolor: "background.default" }}
 		>
-			{/* Header com informações do usuário */}
+			{/* Header responsivo com informações do usuário */}
 			<AppBar
 				position="static"
 				elevation={0}
@@ -146,79 +155,160 @@ const OvenStreamPlayer = memo(({ showToast }: OvenStreamPlayerProps) => {
 					borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
 				}}
 			>
-				<Toolbar>
-					<Box
-						sx={{ flexGrow: 1, display: "flex", alignItems: "center", gap: 2 }}
-					>
-						<Typography variant="h6" component="div" color="text.primary">
-							Bem-vindo, {user?.username}
-						</Typography>
-						<Chip
-							label={user?.role}
-							size="small"
-							color="primary"
-							variant="outlined"
-						/>
-						<Chip
-							icon={getStatusIcon()}
-							label={getStatusText()}
-							color={getStatusColor() as any}
-							size="small"
-							variant="filled"
-						/>
-						{/* Status da Stream */}
-						<Chip
-							icon={
-								streamStatus.isOnline ? (
-									<Wifi color="success" />
-								) : (
-									<WifiOff color="error" />
-								)
-							}
-							label={streamStatus.isOnline ? "Stream Online" : "Stream Offline"}
-							color={streamStatus.isOnline ? "success" : "error"}
-							size="small"
-							variant="outlined"
-						/>
-						{streamStatus.isLoading && (
-							<Chip
-								icon={<CircularProgress size={16} color="primary" />}
-								label="Verificando..."
-								color="info"
-								size="small"
-								variant="outlined"
-							/>
-						)}
-					</Box>
-					<Box sx={{ display: "flex", gap: 1 }}>
-						<Button
-							variant="outlined"
-							startIcon={<PlayArrow />}
-							onClick={handleStremioConfig}
-							sx={{
-								color: "text.primary",
-								borderColor: "rgba(255, 255, 255, 0.3)",
+				<Toolbar sx={{ 
+					px: { xs: 1, sm: 2, md: 3 },
+					minHeight: { xs: 56, sm: 64 },
+					flexWrap: { xs: 'wrap', sm: 'nowrap' }
+				}}>
+					{/* Informações do usuário - sempre visível */}
+					<Box sx={{ 
+						flexGrow: 1, 
+						display: "flex", 
+						alignItems: "center", 
+						gap: { xs: 1, sm: 2 },
+						minWidth: 0,
+						flexWrap: { xs: 'wrap', sm: 'nowrap' }
+					}}>
+						<Typography 
+							variant={isMobile ? "body1" : "h6"} 
+							component="div" 
+							color="text.primary"
+							sx={{ 
+								fontWeight: 600,
+								overflow: 'hidden',
+								textOverflow: 'ellipsis',
+								whiteSpace: 'nowrap',
+								flexShrink: 0
 							}}
 						>
-							Stremio
-						</Button>
-						{user?.role === "admin" && (
-							<Button
+							{isMobile ? user?.username : `Bem-vindo, ${user?.username}`}
+						</Typography>
+						
+						{/* Chips de status - responsivos */}
+						<Stack 
+							direction={{ xs: 'column', sm: 'row' }} 
+							spacing={{ xs: 0.5, sm: 1 }}
+							sx={{ 
+								alignItems: { xs: 'flex-start', sm: 'center' },
+								flexWrap: 'wrap'
+							}}
+						>
+							<Chip
+								label={user?.role}
+								size="small"
+								color="primary"
 								variant="outlined"
-								startIcon={<Settings />}
-								onClick={handleAdminPanel}
-								sx={{
-									color: "text.primary",
-									borderColor: "rgba(255, 255, 255, 0.3)",
-								}}
-							>
-								Admin
-							</Button>
+								sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
+							/>
+							
+							{!isMobile && (
+								<Chip
+									icon={getStatusIcon()}
+									label={getStatusText()}
+									color={getStatusColor()}
+									size="small"
+									variant="filled"
+								/>
+							)}
+							
+							{/* Status da Stream - sempre visível */}
+							<Chip
+								icon={
+									streamStatus.isOnline ? (
+										<Wifi color="success" />
+									) : (
+										<WifiOff color="error" />
+									)
+								}
+								label={isMobile ? (streamStatus.isOnline ? "Online" : "Offline") : (streamStatus.isOnline ? "Stream Online" : "Stream Offline")}
+								color={streamStatus.isOnline ? "success" : "error"}
+								size="small"
+								variant="outlined"
+								sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
+							/>
+							
+							{streamStatus.isLoading && (
+								<Chip
+									icon={<CircularProgress size={16} color="primary" />}
+									label={isMobile ? "..." : "Verificando..."}
+									color="info"
+									size="small"
+									variant="outlined"
+									sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
+								/>
+							)}
+						</Stack>
+					</Box>
+
+					{/* Ações - responsivas */}
+					<Box sx={{ 
+						display: "flex", 
+						gap: { xs: 0.5, sm: 1 },
+						alignItems: 'center',
+						flexShrink: 0
+					}}>
+						{/* Desktop/Tablet: botões completos */}
+						{!isMobile && (
+							<>
+								<Button
+									variant="outlined"
+									startIcon={<PlayArrow />}
+									onClick={handleStremioConfig}
+									size={isTablet ? "small" : "medium"}
+									sx={{
+										color: "text.primary",
+										borderColor: "rgba(255, 255, 255, 0.3)",
+										fontSize: { sm: '0.875rem', md: '0.9rem' }
+									}}
+								>
+									Stremio
+								</Button>
+								{user?.role === "admin" && (
+									<Button
+										variant="outlined"
+										startIcon={<Settings />}
+										onClick={handleAdminPanel}
+										size={isTablet ? "small" : "medium"}
+										sx={{
+											color: "text.primary",
+											borderColor: "rgba(255, 255, 255, 0.3)",
+											fontSize: { sm: '0.875rem', md: '0.9rem' }
+										}}
+									>
+										Admin
+									</Button>
+								)}
+							</>
 						)}
+
+						{/* Mobile: menu hambúrguer */}
+						{isMobile && (
+							<>
+								<IconButton
+									onClick={handleStremioConfig}
+									sx={{ color: "text.primary" }}
+									size="small"
+								>
+									<PlayArrow />
+								</IconButton>
+								{user?.role === "admin" && (
+									<IconButton
+										onClick={handleAdminPanel}
+										sx={{ color: "text.primary" }}
+										size="small"
+									>
+										<Settings />
+									</IconButton>
+								)}
+							</>
+						)}
+
+						{/* Logout - sempre visível */}
 						<IconButton
 							color="inherit"
 							onClick={handleLogout}
 							sx={{ color: "text.primary" }}
+							size={isMobile ? "small" : "medium"}
 						>
 							<Logout />
 						</IconButton>
@@ -226,21 +316,30 @@ const OvenStreamPlayer = memo(({ showToast }: OvenStreamPlayerProps) => {
 				</Toolbar>
 			</AppBar>
 
-			{/* Container do OvenPlayer */}
+			{/* Container do OvenPlayer - responsivo */}
 			<Box
 				id="ovenPlayer"
 				sx={{
 					width: "100%",
-					height: "calc(100vh - 64px)",
+					height: { 
+						xs: "calc(100vh - 56px)", // Mobile: altura da toolbar menor
+						sm: "calc(100vh - 64px)"  // Desktop: altura padrão
+					},
 					position: "relative",
+					overflow: "hidden",
 					"& .oven-player": {
+						width: "100%",
+						height: "100%",
+					},
+					"& video": {
+						objectFit: "cover",
 						width: "100%",
 						height: "100%",
 					},
 				}}
 			/>
 
-			{/* Stream Offline Banner - Não bloqueia a interface */}
+			{/* Stream Offline Banner - Responsivo */}
 			{status === "offline" && (
 				<Box
 					sx={{
@@ -251,12 +350,14 @@ const OvenStreamPlayer = memo(({ showToast }: OvenStreamPlayerProps) => {
 						zIndex: 1000,
 						textAlign: "center",
 						pointerEvents: "none", // Permite cliques através do banner
+						width: { xs: "90%", sm: "80%", md: "60%", lg: "50%" },
+						maxWidth: 500,
 					}}
 				>
 					<Paper
 						elevation={8}
 						sx={{
-							p: 3,
+							p: { xs: 2, sm: 3, md: 4 },
 							bgcolor: "background.paper",
 							border: "1px solid rgba(255, 255, 255, 0.1)",
 							borderRadius: 2,
@@ -264,47 +365,104 @@ const OvenStreamPlayer = memo(({ showToast }: OvenStreamPlayerProps) => {
 							backdropFilter: "blur(10px)",
 						}}
 					>
-						<Box sx={{ mb: 2 }}>
-							<ErrorOutline color="warning" sx={{ fontSize: 48 }} />
+						<Box sx={{ mb: { xs: 1.5, sm: 2 } }}>
+							<ErrorOutline 
+								color="warning" 
+								sx={{ 
+									fontSize: { xs: 40, sm: 48, md: 56 },
+									display: "block",
+									mx: "auto"
+								}} 
+							/>
 						</Box>
-						<Typography variant="h6" color="text.primary" gutterBottom>
+						<Typography 
+							variant={isMobile ? "h6" : "h5"} 
+							color="text.primary" 
+							gutterBottom
+							sx={{ fontWeight: 600 }}
+						>
 							Stream Offline
 						</Typography>
-						<Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+						<Typography 
+							variant="body2" 
+							color="text.secondary" 
+							sx={{ 
+								mb: 2,
+								fontSize: { xs: '0.875rem', sm: '0.9rem' }
+							}}
+						>
 							A stream não está disponível no momento
 						</Typography>
-						{!streamStatus.isOnline && (
-							<Typography variant="body2" color="error.main" sx={{ mb: 1 }}>
-								Status da Stream: Offline
-							</Typography>
-						)}
-						{streamStatus.error && (
-							<Typography variant="body2" color="error.main" sx={{ mb: 1 }}>
-								Erro: {streamStatus.error}
-							</Typography>
-						)}
-						{streamStatus.lastChecked && (
-							<Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-								Última verificação:{" "}
-								{streamStatus.lastChecked.toLocaleTimeString()}
-							</Typography>
-						)}
-						{retryCount < MAX_RETRY_ATTEMPTS ? (
-							<Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-								Tentativas automáticas: {retryCount}/{MAX_RETRY_ATTEMPTS}
-							</Typography>
-						) : (
-							<Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-								Tentativas automáticas esgotadas
-							</Typography>
-						)}
+						
+						{/* Informações de status - responsivas */}
+						<Box sx={{ 
+							mb: 2,
+							display: "flex",
+							flexDirection: "column",
+							gap: 0.5,
+							alignItems: "center"
+						}}>
+							{!streamStatus.isOnline && (
+								<Typography 
+									variant="body2" 
+									color="error.main" 
+									sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
+								>
+									Status da Stream: Offline
+								</Typography>
+							)}
+							{streamStatus.error && (
+								<Typography 
+									variant="body2" 
+									color="error.main" 
+									sx={{ 
+										fontSize: { xs: '0.8rem', sm: '0.875rem' },
+										wordBreak: "break-word",
+										textAlign: "center"
+									}}
+								>
+									Erro: {streamStatus.error}
+								</Typography>
+							)}
+							{streamStatus.lastChecked && (
+								<Typography 
+									variant="body2" 
+									color="text.secondary" 
+									sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
+								>
+									Última verificação: {streamStatus.lastChecked.toLocaleTimeString()}
+								</Typography>
+							)}
+							{retryCount < MAX_RETRY_ATTEMPTS ? (
+								<Typography 
+									variant="body2" 
+									color="text.secondary" 
+									sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
+								>
+									Tentativas automáticas: {retryCount}/{MAX_RETRY_ATTEMPTS}
+								</Typography>
+							) : (
+								<Typography 
+									variant="body2" 
+									color="text.secondary" 
+									sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
+								>
+									Tentativas automáticas esgotadas
+								</Typography>
+							)}
+						</Box>
+						
 						<Button
 							variant="contained"
 							startIcon={<Refresh />}
 							onClick={handleManualRetry}
+							size={isMobile ? "small" : "medium"}
 							sx={{
 								pointerEvents: "auto", // Permite cliques no botão
 								mt: 1,
+								px: { xs: 2, sm: 3 },
+								py: { xs: 1, sm: 1.5 },
+								fontSize: { xs: '0.875rem', sm: '0.9rem' }
 							}}
 						>
 							Tentar Novamente
@@ -313,7 +471,7 @@ const OvenStreamPlayer = memo(({ showToast }: OvenStreamPlayerProps) => {
 				</Box>
 			)}
 
-			{/* Loading/Status Overlay */}
+			{/* Loading/Status Overlay - Responsivo */}
 			{(status === "connecting" || status === "error") && (
 				<Box
 					sx={{
@@ -327,21 +485,38 @@ const OvenStreamPlayer = memo(({ showToast }: OvenStreamPlayerProps) => {
 						display: "flex",
 						alignItems: "center",
 						justifyContent: "center",
+						p: { xs: 2, sm: 3 }
 					}}
 				>
 					<Paper
 						elevation={8}
 						sx={{
-							p: 4,
+							p: { xs: 3, sm: 4, md: 5 },
 							bgcolor: "background.paper",
 							border: "1px solid rgba(255, 255, 255, 0.1)",
 							borderRadius: 2,
 							textAlign: "center",
-							minWidth: 300,
+							width: { xs: "100%", sm: "auto" },
+							maxWidth: { xs: "100%", sm: 400, md: 500 },
+							minWidth: { xs: 280, sm: 300 }
 						}}
 					>
-						<Box sx={{ mb: 2 }}>{getStatusIcon()}</Box>
-						<Typography variant="h6" color="text.primary" gutterBottom>
+						<Box sx={{ 
+							mb: { xs: 2, sm: 3 },
+							display: "flex",
+							justifyContent: "center"
+						}}>
+							{getStatusIcon()}
+						</Box>
+						<Typography 
+							variant={isMobile ? "h6" : "h5"} 
+							color="text.primary" 
+							gutterBottom
+							sx={{ 
+								fontWeight: 600,
+								fontSize: { xs: '1.1rem', sm: '1.25rem', md: '1.5rem' }
+							}}
+						>
 							{getStatusText()}
 						</Typography>
 						{status === "error" && (
@@ -349,7 +524,13 @@ const OvenStreamPlayer = memo(({ showToast }: OvenStreamPlayerProps) => {
 								variant="contained"
 								startIcon={<Refresh />}
 								onClick={handleManualRetry}
-								sx={{ mt: 2 }}
+								size={isMobile ? "small" : "medium"}
+								sx={{ 
+									mt: { xs: 2, sm: 3 },
+									px: { xs: 2, sm: 3 },
+									py: { xs: 1, sm: 1.5 },
+									fontSize: { xs: '0.875rem', sm: '0.9rem' }
+								}}
 							>
 								Tentar Novamente
 							</Button>

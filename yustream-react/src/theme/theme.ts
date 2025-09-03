@@ -49,49 +49,112 @@ export const theme = createTheme({
     mode: 'dark',
     ...colors,
   },
+  breakpoints: {
+    values: {
+      xs: 0,
+      sm: 600,
+      md: 900,
+      lg: 1200,
+      xl: 1536,
+    },
+  },
   typography: {
     fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
     h1: {
       fontSize: '2.5rem',
       fontWeight: 600,
       lineHeight: 1.2,
+      '@media (max-width:600px)': {
+        fontSize: '2rem',
+      },
+      '@media (min-width:1920px)': {
+        fontSize: '3rem',
+      },
     },
     h2: {
       fontSize: '2rem',
       fontWeight: 600,
       lineHeight: 1.3,
+      '@media (max-width:600px)': {
+        fontSize: '1.75rem',
+      },
+      '@media (min-width:1920px)': {
+        fontSize: '2.5rem',
+      },
     },
     h3: {
       fontSize: '1.75rem',
       fontWeight: 500,
       lineHeight: 1.4,
+      '@media (max-width:600px)': {
+        fontSize: '1.5rem',
+      },
+      '@media (min-width:1920px)': {
+        fontSize: '2.25rem',
+      },
     },
     h4: {
       fontSize: '1.5rem',
       fontWeight: 500,
       lineHeight: 1.4,
+      '@media (max-width:600px)': {
+        fontSize: '1.25rem',
+      },
+      '@media (min-width:1920px)': {
+        fontSize: '2rem',
+      },
     },
     h5: {
       fontSize: '1.25rem',
       fontWeight: 500,
       lineHeight: 1.5,
+      '@media (max-width:600px)': {
+        fontSize: '1.1rem',
+      },
+      '@media (min-width:1920px)': {
+        fontSize: '1.75rem',
+      },
     },
     h6: {
       fontSize: '1rem',
       fontWeight: 500,
       lineHeight: 1.6,
+      '@media (max-width:600px)': {
+        fontSize: '0.9rem',
+      },
+      '@media (min-width:1920px)': {
+        fontSize: '1.5rem',
+      },
     },
     body1: {
       fontSize: '1rem',
       lineHeight: 1.5,
+      '@media (max-width:600px)': {
+        fontSize: '0.9rem',
+      },
+      '@media (min-width:1920px)': {
+        fontSize: '1.25rem',
+      },
     },
     body2: {
       fontSize: '0.875rem',
       lineHeight: 1.43,
+      '@media (max-width:600px)': {
+        fontSize: '0.8rem',
+      },
+      '@media (min-width:1920px)': {
+        fontSize: '1.1rem',
+      },
     },
     button: {
       textTransform: 'none',
       fontWeight: 500,
+      '@media (max-width:600px)': {
+        fontSize: '0.875rem',
+      },
+      '@media (min-width:1920px)': {
+        fontSize: '1.1rem',
+      },
     },
   },
   shape: {
@@ -105,11 +168,31 @@ export const theme = createTheme({
           textTransform: 'none',
           fontWeight: 500,
           padding: '8px 16px',
+          '@media (max-width:600px)': {
+            padding: '6px 12px',
+            fontSize: '0.875rem',
+          },
+          '@media (min-width:1920px)': {
+            padding: '12px 24px',
+            fontSize: '1.1rem',
+          },
         },
         contained: {
           boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
           '&:hover': {
             boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+          },
+        },
+        sizeSmall: {
+          '@media (max-width:600px)': {
+            padding: '4px 8px',
+            fontSize: '0.8rem',
+          },
+        },
+        sizeLarge: {
+          '@media (min-width:1920px)': {
+            padding: '16px 32px',
+            fontSize: '1.2rem',
           },
         },
       },
@@ -120,6 +203,12 @@ export const theme = createTheme({
           backgroundColor: colors.background.paper,
           border: `1px solid rgba(255, 255, 255, 0.1)`,
           borderRadius: 12,
+          '@media (max-width:600px)': {
+            borderRadius: 8,
+          },
+          '@media (min-width:1920px)': {
+            borderRadius: 16,
+          },
         },
       },
     },
@@ -128,6 +217,12 @@ export const theme = createTheme({
         root: {
           '& .MuiOutlinedInput-root': {
             borderRadius: 8,
+            '@media (max-width:600px)': {
+              borderRadius: 6,
+            },
+            '@media (min-width:1920px)': {
+              borderRadius: 12,
+            },
             '& fieldset': {
               borderColor: 'rgba(255, 255, 255, 0.2)',
             },
@@ -145,6 +240,20 @@ export const theme = createTheme({
       styleOverrides: {
         root: {
           borderRadius: 16,
+          '@media (max-width:600px)': {
+            borderRadius: 12,
+            fontSize: '0.75rem',
+          },
+          '@media (min-width:1920px)': {
+            borderRadius: 20,
+            fontSize: '0.9rem',
+          },
+        },
+        sizeSmall: {
+          '@media (max-width:600px)': {
+            height: 24,
+            fontSize: '0.7rem',
+          },
         },
       },
     },

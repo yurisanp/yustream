@@ -1,7 +1,31 @@
 import { useState, useEffect } from 'react'
-import { Play, Download, Eye, EyeOff, ArrowLeft } from 'lucide-react'
+import { 
+  Box, 
+  Card, 
+  CardContent, 
+  TextField, 
+  Button, 
+  Typography, 
+  InputAdornment, 
+  IconButton,
+  CircularProgress,
+  Container,
+  useMediaQuery,
+  useTheme,
+  Stack,
+  Paper,
+  Divider
+} from '@mui/material'
+import { 
+  PlayArrow, 
+  Download, 
+  Visibility, 
+  VisibilityOff, 
+  ArrowBack,
+  Person,
+  Lock
+} from '@mui/icons-material'
 import { useAuth } from '../contexts/AuthContext'
-import './StremioConfig.css'
 
 interface StremioConfigProps {
   showToast: (message: string, type: 'success' | 'error' | 'info') => void
@@ -12,6 +36,9 @@ interface StremioConfigProps {
 
 const StremioConfig = ({ showToast, onBack }: StremioConfigProps) => {
   const { user, isAuthenticated } = useAuth()
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
+  
   const [credentials, setCredentials] = useState({
     username: '',
     password: ''
@@ -96,97 +123,274 @@ const StremioConfig = ({ showToast, onBack }: StremioConfigProps) => {
   }
 
   return (
-    <div className="stremio-config-container">
-      <div className="stremio-config-card">
-        <div className="stremio-header">
-          <button className="back-btn" onClick={onBack}>
-            <ArrowLeft size={20} />
-            Voltar
-          </button>
-          <div className="header-content">
-            <Play className="stremio-icon" size={32} />
-            <h1>Stremio Addon</h1>
-            <p>
-              {isAuthenticated 
-                ? `Olá, ${user?.username}! Configure o addon para o Stremio`
-                : 'Configure suas credenciais para assistir no Stremio'
-              }
-            </p>
-          </div>
-        </div>
-
-        <form onSubmit={handleSubmit} className="stremio-form">
-          <div className="input-group">
-            <div className="input-wrapper">
-              <input
-                type="text"
-                placeholder="👤 Username"
-                value={credentials.username}
-                onChange={(e) => handleInputChange('username', e.target.value)}
-                disabled={isLoading || isAuthenticated}
-                autoComplete="username"
-                required
-              />
-            </div>
-          </div>
-
-          <div className="input-group">
-            <div className="input-wrapper">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                placeholder="🔒 Senha"
-                value={credentials.password}
-                onChange={(e) => handleInputChange('password', e.target.value)}
-                disabled={isLoading}
-                autoComplete="current-password"
-                required
-              />
-              <button
-                type="button"
-                className="password-toggle"
-                onClick={() => setShowPassword(!showPassword)}
-                disabled={isLoading}
+    <Box
+      sx={{
+        minHeight: '100vh',
+        bgcolor: 'background.default',
+        background: 'linear-gradient(135deg, #0c0c0c 0%, #1a1a1a 100%)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        p: { xs: 2, sm: 3 }
+      }}
+    >
+      <Container 
+        maxWidth="sm"
+        sx={{
+          width: '100%',
+          maxWidth: { xs: '100%', sm: 600, md: 700 }
+        }}
+      >
+        <Card
+          elevation={8}
+          sx={{
+            bgcolor: 'rgba(255, 255, 255, 0.05)',
+            backdropFilter: 'blur(20px)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: 3,
+            overflow: 'visible'
+          }}
+        >
+          <CardContent sx={{ p: { xs: 3, sm: 4, md: 5 } }}>
+            {/* Header */}
+            <Box sx={{ mb: 4, position: 'relative' }}>
+              <Button
+                startIcon={<ArrowBack />}
+                onClick={onBack}
+                sx={{
+                  position: { xs: 'relative', sm: 'absolute' },
+                  top: { sm: 0 },
+                  left: { sm: 0 },
+                  mb: { xs: 2, sm: 0 },
+                  color: 'text.primary',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  '&:hover': {
+                    bgcolor: 'rgba(255, 255, 255, 0.1)'
+                  }
+                }}
               >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
-          </div>
+                Voltar
+              </Button>
+              
+              <Box sx={{ textAlign: 'center', mt: { xs: 0, sm: 2 } }}>
+                <PlayArrow 
+                  sx={{ 
+                    fontSize: { xs: 40, sm: 48 },
+                    color: 'primary.main',
+                    mb: 2,
+                    filter: 'drop-shadow(0 4px 12px rgba(102, 126, 234, 0.3))'
+                  }} 
+                />
+                <Typography 
+                  variant={isMobile ? "h4" : "h3"} 
+                  component="h1"
+                  sx={{
+                    fontWeight: 700,
+                    background: 'linear-gradient(135deg, #667eea, #764ba2)',
+                    backgroundClip: 'text',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    mb: 2
+                  }}
+                >
+                  Stremio Addon
+                </Typography>
+                <Typography 
+                  variant="body1" 
+                  color="text.secondary"
+                  sx={{ 
+                    fontSize: { xs: '1rem', sm: '1.1rem' },
+                    maxWidth: 400,
+                    mx: 'auto'
+                  }}
+                >
+                  {isAuthenticated 
+                    ? `Olá, ${user?.username}! Configure o addon para o Stremio`
+                    : 'Configure suas credenciais para assistir no Stremio'
+                  }
+                </Typography>
+              </Box>
+            </Box>
 
-          <button 
-            type="submit" 
-            className="install-button"
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <>
-                <div className="loading-spinner" />
-                Configurando...
-              </>
-            ) : (
-              <>
-                <Download size={20} />
-                Instalar no Stremio
-              </>
-            )}
-          </button>
-        </form>
+            {/* Form */}
+            <Box component="form" onSubmit={handleSubmit} sx={{ mb: 4 }}>
+              <Stack spacing={3}>
+                <TextField
+                  fullWidth
+                  label="Username"
+                  value={credentials.username}
+                  onChange={(e) => handleInputChange('username', e.target.value)}
+                  disabled={isLoading || isAuthenticated}
+                  autoComplete="username"
+                  required
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Person color="action" />
+                      </InputAdornment>
+                    ),
+                  }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      bgcolor: 'rgba(255, 255, 255, 0.05)',
+                      '& fieldset': {
+                        borderColor: 'rgba(255, 255, 255, 0.2)',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: 'rgba(255, 255, 255, 0.3)',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: 'primary.main',
+                      },
+                    },
+                    '& .MuiInputLabel-root': {
+                      color: 'text.secondary',
+                    },
+                    '& .MuiInputBase-input': {
+                      color: 'text.primary',
+                    }
+                  }}
+                />
 
-        <div className="instructions">
-          <h3>📋 Como usar:</h3>
-          <ol>
-            <li>Digite seu username e senha do YuStream</li>
-            <li>Clique em "Instalar no Stremio"</li>
-            <li>O Stremio abrirá automaticamente</li>
-            <li>Vá para "YuStream Live" para assistir</li>
-          </ol>
-          {isAuthenticated && (
-            <div className="logged-in-info">
-              <p>✅ Seu username já foi preenchido automaticamente!</p>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+                <TextField
+                  fullWidth
+                  label="Senha"
+                  type={showPassword ? 'text' : 'password'}
+                  value={credentials.password}
+                  onChange={(e) => handleInputChange('password', e.target.value)}
+                  disabled={isLoading}
+                  autoComplete="current-password"
+                  required
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Lock color="action" />
+                      </InputAdornment>
+                    ),
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          onClick={() => setShowPassword(!showPassword)}
+                          disabled={isLoading}
+                          edge="end"
+                        >
+                          {showPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      bgcolor: 'rgba(255, 255, 255, 0.05)',
+                      '& fieldset': {
+                        borderColor: 'rgba(255, 255, 255, 0.2)',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: 'rgba(255, 255, 255, 0.3)',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: 'primary.main',
+                      },
+                    },
+                    '& .MuiInputLabel-root': {
+                      color: 'text.secondary',
+                    },
+                    '& .MuiInputBase-input': {
+                      color: 'text.primary',
+                    }
+                  }}
+                />
+
+                <Button
+                  type="submit"
+                  fullWidth
+                  variant="contained"
+                  disabled={isLoading}
+                  startIcon={isLoading ? <CircularProgress size={20} color="inherit" /> : <Download />}
+                  sx={{
+                    py: { xs: 1.5, sm: 2 },
+                    fontSize: { xs: '1rem', sm: '1.1rem' },
+                    fontWeight: 600,
+                    background: 'linear-gradient(135deg, #667eea, #764ba2)',
+                    '&:hover': {
+                      background: 'linear-gradient(135deg, #5a6fd8, #6a4190)',
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 8px 25px rgba(102, 126, 234, 0.3)',
+                    },
+                    '&:disabled': {
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      transform: 'none',
+                      boxShadow: 'none'
+                    }
+                  }}
+                >
+                  {isLoading ? 'Configurando...' : 'Instalar no Stremio'}
+                </Button>
+              </Stack>
+            </Box>
+
+            {/* Instructions */}
+            <Paper
+              elevation={0}
+              sx={{
+                bgcolor: 'rgba(102, 126, 234, 0.1)',
+                border: '1px solid rgba(102, 126, 234, 0.2)',
+                borderRadius: 2,
+                p: 3
+              }}
+            >
+              <Typography 
+                variant="h6" 
+                color="primary.main"
+                sx={{ 
+                  mb: 2,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  fontSize: { xs: '1.1rem', sm: '1.2rem' }
+                }}
+              >
+                📋 Como usar:
+              </Typography>
+              
+              <Stack spacing={1} sx={{ mb: 2 }}>
+                <Typography variant="body2" color="text.secondary">
+                  1. Digite seu username e senha do YuStream
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  2. Clique em "Instalar no Stremio"
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  3. O Stremio abrirá automaticamente
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  4. Vá para "YuStream Live" para assistir
+                </Typography>
+              </Stack>
+
+              {isAuthenticated && (
+                <>
+                  <Divider sx={{ my: 2, borderColor: 'rgba(102, 126, 234, 0.2)' }} />
+                  <Box
+                    sx={{
+                      bgcolor: 'rgba(46, 213, 115, 0.1)',
+                      border: '1px solid rgba(46, 213, 115, 0.2)',
+                      borderRadius: 1,
+                      p: 2,
+                      textAlign: 'center'
+                    }}
+                  >
+                    <Typography variant="body2" color="success.main" sx={{ fontWeight: 500 }}>
+                      ✅ Seu username já foi preenchido automaticamente!
+                    </Typography>
+                  </Box>
+                </>
+              )}
+            </Paper>
+          </CardContent>
+        </Card>
+      </Container>
+    </Box>
   )
 }
 
