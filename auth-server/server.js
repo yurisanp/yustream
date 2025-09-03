@@ -499,7 +499,7 @@ app.post('/webhook/admission', (req, res) => {
         return res.json({
           allowed: true,
           new_url: url,
-          lifetime: 3600 * 6 // 6 horas em segundos
+          lifetime: 3600000 * 6 // 6 horas em segundos
         });
       });
     } else {
