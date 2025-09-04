@@ -62,7 +62,7 @@ const builder = new addonBuilder({
 	types: ["tv"],
 
 	// Recursos disponíveis
-	resources: ["catalog", "stream", "meta", "subtitles"],
+	resources: ["catalog", "stream", "meta"],
 
 	// Catálogos
 	catalogs: [
@@ -504,21 +504,12 @@ builder.defineMetaHandler(async (args, callback, req) => {
 						description: streamOnline
 							? "Stream ao vivo do YuStream - Transmissão em tempo real com qualidade adaptativa. Acompanhe nossa programação ao vivo com a melhor qualidade de streaming disponível."
 							: "Stream do YuStream está offline no momento. Volte mais tarde para acompanhar nossa programação ao vivo.",
-						genre: ["Live", "Streaming", "Entertainment"],
+						genres: ["Live", "Streaming", "Entertainment"],
 						releaseInfo: streamOnline ? "Ao Vivo" : "Offline",
-						imdbRating: streamOnline ? 9.5 : 0,
 						director: ["YuStream Team"],
-						cast: ["Transmissão Ao Vivo", "Streaming Team"],
 						runtime: streamOnline ? "Contínuo" : "N/A",
 						country: "Brasil",
 						language: "Português",
-						year: new Date().getFullYear(),
-						status: streamOnline ? "live" : "offline",
-						// Metadados de configuração
-						...(id === "yustream_config" && {
-							configurable: true,
-							configurationRequired: true,
-						}),
 					},
 				});
 			} else if (id === "yustream_config") {
@@ -554,29 +545,6 @@ builder.defineMetaHandler(async (args, callback, req) => {
 	} catch (error) {
 		console.error("❌ Erro no meta handler:", error);
 		return Promise.resolve({ meta: null });
-	}
-});
-
-// Handler de legendas
-builder.defineSubtitlesHandler(async (args, callback, req) => {
-	console.log("📝 Subtitles request:", args);
-
-	try {
-		const { type, id } = args;
-
-		// Para streams ao vivo, não temos legendas por enquanto
-		// Mas retornamos uma estrutura vazia para compatibilidade
-		if (id.startsWith("yustream_")) {
-			return Promise.resolve({
-				subtitles: [],
-			});
-		}
-
-		// Se não for um ID do YuStream, retornar vazio
-		return Promise.resolve({ subtitles: [] });
-	} catch (error) {
-		console.error("❌ Erro no subtitles handler:", error);
-		return Promise.resolve({ subtitles: [] });
 	}
 });
 
