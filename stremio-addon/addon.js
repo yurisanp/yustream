@@ -437,7 +437,7 @@ builder.defineMetaHandler(async (args, callback, req) => {
 
 	try {
 		const { type, id, config } = args;
-
+		const baseUrl = "https://yustream.yurisp.com.br";
 		// Tentar extrair credenciais da URL primeiro
 		const urlCredentials = extractCredentialsFromRequest(req);
 		let username, password;
@@ -456,6 +456,7 @@ builder.defineMetaHandler(async (args, callback, req) => {
 		// Verificar se é uma stream do YuStream
 		if (id.startsWith("yustream_")) {
 			let streamOnline = false;
+			let streamToken = null;
 			let user = null;
 
 			// Se temos credenciais, verificar autenticação e status da stream
@@ -468,7 +469,7 @@ builder.defineMetaHandler(async (args, callback, req) => {
 
 					if (user && (await user.comparePassword(password))) {
 						// Gerar token para verificação da stream
-						const streamToken = jwt.sign(
+						streamToken = jwt.sign(
 							{
 								userId: user._id,
 								username: user.username,
