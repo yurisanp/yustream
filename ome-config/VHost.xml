@@ -48,11 +48,6 @@
                             <Video>video_1080</Video>
                             <Audio>bypass_audio</Audio>
                         </Rendition>
-                        <Rendition>
-                            <Name>HD</Name>
-                            <Video>video_720</Video>
-                            <Audio>bypass_audio</Audio>
-                        </Rendition>
                     </Playlist>
                     <Encodes>
                         <!-- Configuração de áudio -->
