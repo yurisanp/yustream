@@ -515,31 +515,6 @@ builder.defineMetaHandler(async (args, callback, req) => {
 						language: "Português",
 						year: new Date().getFullYear(),
 						status: streamOnline ? "live" : "offline",
-						// Informações adicionais para streams ao vivo
-						...(streamOnline && {
-							live: true,
-							videos: [
-								{
-									id: "yustream_live_main",
-									title: "🔴 YuStream Live - Qualidade Adaptativa",
-									relased: "2025-09-03T05:00:00.000Z",
-									streams: [
-										{
-											title: "🔴 YuStream Live - Qualidade Adaptativa",
-											url: `${baseUrl}:8443/live/live/abr.m3u8?token=${streamToken}`,
-											description:
-												"Stream ao vivo em qualidade adaptativa (LLHLS) - Transmissão em tempo real com qualidade até 1080p",
-											behaviorHints: {
-												notWebReady: true,
-												bingeGroup: "yustream-live",
-												countryWhitelist: ["BR", "US", "CA"], // Países permitidos
-											},
-											subtitles: [],
-										},
-									],
-								},
-							],
-						}),
 						// Metadados de configuração
 						...(id === "yustream_config" && {
 							configurable: true,
