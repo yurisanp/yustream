@@ -381,22 +381,11 @@ builder.defineStreamHandler(async (args, callback, req) => {
 				description:
 					"Stream ao vivo em qualidade adaptativa (LLHLS) - Transmissão em tempo real com qualidade até 1080p",
 				behaviorHints: {
-					notWebReady: false,
+					notWebReady: true,
 					bingeGroup: "yustream-live",
 					countryWhitelist: ["BR", "US", "CA"], // Países permitidos
-					live: true,
-					vod: false,
 				},
-				subtitles: [], // Sem legendas por enquanto
-				// Informações adicionais da stream
-				quality: "Adaptativa",
-				protocol: "HLS",
-				format: "m3u8",
-				resolution: "Até 1080p",
-				bitrate: "Variável",
-				codec: "H.264",
-				audio: "AAC",
-				language: "pt-BR",
+				subtitles: [],
 			});
 		} else if (!streamOnline) {
 			streams.push({
@@ -541,22 +530,11 @@ builder.defineMetaHandler(async (args, callback, req) => {
 											description:
 												"Stream ao vivo em qualidade adaptativa (LLHLS) - Transmissão em tempo real com qualidade até 1080p",
 											behaviorHints: {
-												notWebReady: false,
+												notWebReady: true,
 												bingeGroup: "yustream-live",
 												countryWhitelist: ["BR", "US", "CA"], // Países permitidos
-												live: true,
-												vod: false,
 											},
-											subtitles: [], // Sem legendas por enquanto
-											// Informações adicionais da stream
-											quality: "Adaptativa",
-											protocol: "HLS",
-											format: "m3u8",
-											resolution: "Até 1080p",
-											bitrate: "Variável",
-											codec: "H.264",
-											audio: "AAC",
-											language: "pt-BR",
+											subtitles: [],
 										},
 									],
 								},
