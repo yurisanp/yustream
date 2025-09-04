@@ -376,7 +376,7 @@ builder.defineStreamHandler(async (args, callback, req) => {
 			const baseUrl = "https://yustream.yurisp.com.br";
 
 			streams.push({
-				url: `${baseUrl}:8443/live/live/abr.m3u8?token=${streamToken}`,
+				url: `${baseUrl}/live/live/abr.m3u8?token=${streamToken}`,
 				name: "Fonte",
 				title: "YuStream Live - Qualidade Adaptativa",
 				description:
