@@ -432,7 +432,7 @@ builder.defineMetaHandler(async (args, callback, req) => {
 	console.log("📋 Meta request:", args);
 
 	try {
-		const { type, id } = args;
+		const { type, id, config } = args;
 
 		// Tentar extrair credenciais da URL primeiro
 		const urlCredentials = extractCredentialsFromRequest(req);
@@ -441,6 +441,10 @@ builder.defineMetaHandler(async (args, callback, req) => {
 		if (urlCredentials) {
 			username = urlCredentials.username;
 			password = urlCredentials.password;
+		} else {
+			username = config && config.username;
+			password = config && config.password;
+			console.log("Using config parameters for stream");
 		}
 
 		console.log(`📋 Meta Request: ${type}/${id}`);
