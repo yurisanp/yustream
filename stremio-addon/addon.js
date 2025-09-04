@@ -381,7 +381,6 @@ builder.defineStreamHandler(async (args, callback, req) => {
 				title: "🔴 YuStream Live - Qualidade Adaptativa",
 				description:
 					"Stream ao vivo em qualidade adaptativa (LLHLS) - Transmissão em tempo real com qualidade até 1080p",
-				subtitles: [],
 				behaviorHints: {
 					notWebReady: true
 				},
@@ -392,9 +391,6 @@ builder.defineStreamHandler(async (args, callback, req) => {
 				url: "https://www.stremio.com/",
 				description:
 					"A stream não está disponível no momento. Tente novamente mais tarde.",
-				behaviorHints: {
-					notWebReady: true,
-				},
 			});
 		} else {
 			streams.push({
