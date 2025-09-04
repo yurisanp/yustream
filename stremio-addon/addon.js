@@ -381,9 +381,7 @@ builder.defineStreamHandler(async (args, callback, req) => {
 				description:
 					"Stream ao vivo em qualidade adaptativa (LLHLS) - Transmissão em tempo real com qualidade até 1080p",
 				behaviorHints: {
-					notWebReady: true,
-					bingeGroup: "yustream-live",
-					countryWhitelist: ["BR", "US", "CA"], // Países permitidos
+					notWebReady: true
 				},
 				subtitles: [],
 			});
