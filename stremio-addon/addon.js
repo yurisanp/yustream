@@ -305,7 +305,7 @@ builder.defineStreamHandler(async (args, callback, req) => {
 			return Promise.resolve({
 				streams: [
 					{
-						title: "⚠️ Configuração Necessária",
+						title: "Configuração Necessária",
 						url: "https://www.stremio.com/",
 						description:
 							"Configure suas credenciais do YuStream nos parâmetros do addon",
@@ -326,7 +326,7 @@ builder.defineStreamHandler(async (args, callback, req) => {
 				return Promise.resolve({
 					streams: [
 						{
-							title: "❌ Credenciais Inválidas",
+							title: "Credenciais Inválidas",
 							url: "https://www.stremio.com/",
 							description:
 								"Username ou senha incorretos. Verifique suas credenciais.",
@@ -378,7 +378,7 @@ builder.defineStreamHandler(async (args, callback, req) => {
 			streams.push({
 				url: `${baseUrl}:8443/live/live/abr.m3u8?token=${streamToken}`,
 				name: "Fonte",
-				title: "🔴 YuStream Live - Qualidade Adaptativa",
+				title: "YuStream Live - Qualidade Adaptativa",
 				description:
 					"Stream ao vivo em qualidade adaptativa (LLHLS) - Transmissão em tempo real com qualidade até 1080p",
 				behaviorHints: {
@@ -387,14 +387,14 @@ builder.defineStreamHandler(async (args, callback, req) => {
 			});
 		} else if (!streamOnline) {
 			streams.push({
-				title: "📴 Stream Offline",
+				title: "Stream Offline",
 				url: "https://www.stremio.com/",
 				description:
 					"A stream não está disponível no momento. Tente novamente mais tarde.",
 			});
 		} else {
 			streams.push({
-				title: "❓ Conteúdo Não Encontrado",
+				title: "Conteúdo Não Encontrado",
 				url: "https://www.stremio.com/",
 				description: "O conteúdo solicitado não foi encontrado.",
 			});
@@ -406,7 +406,7 @@ builder.defineStreamHandler(async (args, callback, req) => {
 		return Promise.resolve({
 			streams: [
 				{
-					title: "❌ Erro do Servidor",
+					title: "Erro do Servidor",
 					url: "https://www.stremio.com/",
 					description: "Erro interno do servidor. Tente novamente mais tarde.",
 				},
