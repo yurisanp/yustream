@@ -43,6 +43,16 @@
                             <Video>bypass_video</Video>
                             <Audio>bypass_audio</Audio>
                         </Rendition>
+                        <Rendition>
+                            <Name>FHD</Name>
+                            <Video>video_1080</Video>
+                            <Audio>bypass_audio</Audio>
+                        </Rendition>
+                        <Rendition>
+                            <Name>HD</Name>
+                            <Video>video_720</Video>
+                            <Audio>bypass_audio</Audio>
+                        </Rendition>
                     </Playlist>
                     <Encodes>
                         <!-- Configuração de áudio -->
@@ -53,6 +63,24 @@
                         <Video>
                             <Name>bypass_video</Name>
                             <Bypass>True</Bypass>
+                        </Video>
+                        <Video>
+                            <Name>video_1080</Name>
+                            <Codec>h264</Codec>
+                            <Bitrate>5024000</Bitrate>
+                            <Framerate>60</Framerate>
+                            <Width>1920</Width>
+                            <Height>1080</Height>
+                            <Preset>faster</Preset>
+                        </Video>
+                        <Video>
+                            <Name>video_720</Name>
+                            <Codec>h264</Codec>
+                            <Bitrate>2024000</Bitrate>
+                            <Framerate>30</Framerate>
+                            <Width>1280</Width>
+                            <Height>720</Height>
+                            <Preset>faster</Preset>
                         </Video>
                     </Encodes>
                 </OutputProfile>

@@ -63,7 +63,7 @@ const builder = new addonBuilder({
 	types: ["tv"],
 
 	// Recursos disponíveis
-	resources: ["catalog", "stream"],
+	resources: ["catalog", "stream", "meta", "subtitles"],
 
 	// Catálogos
 	catalogs: [
@@ -216,20 +216,31 @@ builder.defineCatalogHandler(async (args, callback, req) => {
 				poster: streamOnline
 					? "https://yustream.yurisp.com.br/stremio-assets/poster-live.svg"
 					: "https://yustream.yurisp.com.br/stremio-assets/poster-offline.svg",
-				background:
-					"https://yustream.yurisp.com.br/stremio-assets/background.svg",
+				background: "https://yustream.yurisp.com.br/stremio-assets/background.svg",
+				logo: "https://yustream.yurisp.com.br/stremio-assets/logo.svg",
 				description: streamOnline
-					? "Stream ao vivo do YuStream - Transmissão em tempo real"
-					: "Stream do YuStream está offline no momento",
-				genre: ["Live", "Streaming"],
+					? "Stream ao vivo do YuStream - Transmissão em tempo real com qualidade adaptativa. Acompanhe nossa programação ao vivo com a melhor qualidade de streaming disponível."
+					: "Stream do YuStream está offline no momento. Volte mais tarde para acompanhar nossa programação ao vivo.",
+				genre: ["Live", "Streaming", "Entertainment"],
 				releaseInfo: streamOnline ? "Ao Vivo" : "Offline",
 				imdbRating: streamOnline ? 9.5 : 0,
-				director: ["YuStream"],
-				cast: ["Transmissão Ao Vivo"],
+				director: ["YuStream Team"],
+				cast: ["Transmissão Ao Vivo", "Streaming Team"],
 				runtime: streamOnline ? "Contínuo" : "N/A",
 				country: "Brasil",
 				language: "Português",
 				year: new Date().getFullYear(),
+				status: streamOnline ? "live" : "offline",
+				// Informações adicionais para streams ao vivo
+				...(streamOnline && {
+					live: true,
+					streaming: {
+						quality: "Adaptativa (LLHLS)",
+						protocol: "HLS",
+						bitrate: "Variável",
+						resolution: "Até 1080p"
+					}
+				})
 			});
 		} else {
 			// Mostrar item de configuração se não autenticado
@@ -238,13 +249,19 @@ builder.defineCatalogHandler(async (args, callback, req) => {
 				type: "tv",
 				name: "⚙️ Configurar YuStream",
 				poster: "https://yustream.yurisp.com.br/stremio-assets/poster-config.svg",
-				background:
-					"https://yustream.yurisp.com.br/stremio-assets/background.svg",
-				description:
-					"Configure suas credenciais para acessar o YuStream. Use email e senha nos parâmetros do addon.",
-				genre: ["Configuração"],
+				background: "https://yustream.yurisp.com.br/stremio-assets/background.svg",
+				logo: "https://yustream.yurisp.com.br/stremio-assets/logo.svg",
+				description: "Configure suas credenciais para acessar o YuStream. Use seu username e senha nos parâmetros de configuração do addon para desbloquear o acesso às streams ao vivo.",
+				genre: ["Configuração", "Setup"],
 				releaseInfo: "Configuração Necessária",
 				year: new Date().getFullYear(),
+				configurable: true,
+				configurationRequired: true,
+				director: ["YuStream Team"],
+				cast: ["Sistema de Configuração"],
+				runtime: "N/A",
+				country: "Brasil",
+				language: "Português"
 			});
 		}
 
@@ -358,13 +375,24 @@ builder.defineStreamHandler(async (args, callback, req) => {
 			streams.push({
 				title: "🔴 YuStream Live - Qualidade Adaptativa",
 				url: `${baseUrl}:8443/live/live/abr.m3u8?token=${streamToken}`,
-				description: "Stream ao vivo em qualidade adaptativa (LLHLS)",
+				description: "Stream ao vivo em qualidade adaptativa (LLHLS) - Transmissão em tempo real com qualidade até 1080p",
 				behaviorHints: {
 					notWebReady: false,
 					bingeGroup: "yustream-live",
 					countryWhitelist: ["BR", "US", "CA"], // Países permitidos
+					live: true,
+					vod: false
 				},
 				subtitles: [], // Sem legendas por enquanto
+				// Informações adicionais da stream
+				quality: "Adaptativa",
+				protocol: "HLS",
+				format: "m3u8",
+				resolution: "Até 1080p",
+				bitrate: "Variável",
+				codec: "H.264",
+				audio: "AAC",
+				language: "pt-BR"
 			});
 		} else if (!streamOnline) {
 			streams.push({
@@ -396,6 +424,165 @@ builder.defineStreamHandler(async (args, callback, req) => {
 				},
 			],
 		});
+	}
+});
+
+// Handler de metadados
+builder.defineMetaHandler(async (args, callback, req) => {
+	console.log("📋 Meta request:", args);
+
+	try {
+		const { type, id } = args;
+
+		// Tentar extrair credenciais da URL primeiro
+		const urlCredentials = extractCredentialsFromRequest(req);
+		let username, password;
+
+		if (urlCredentials) {
+			username = urlCredentials.username;
+			password = urlCredentials.password;
+		}
+
+		console.log(`📋 Meta Request: ${type}/${id}`);
+
+		// Verificar se é uma stream do YuStream
+		if (id.startsWith("yustream_")) {
+			let streamOnline = false;
+			let user = null;
+
+			// Se temos credenciais, verificar autenticação e status da stream
+			if (username && password) {
+				try {
+					user = await User.findOne({
+						username: username.toLowerCase(),
+						isActive: true,
+					});
+
+					if (user && (await user.comparePassword(password))) {
+						// Gerar token para verificação da stream
+						const streamToken = jwt.sign(
+							{
+								userId: user._id,
+								username: user.username,
+								streamAccess: true,
+								stremio: true,
+							},
+							JWT_SECRET,
+							{ expiresIn: "6h" }
+						);
+
+						// Verificar se stream está online
+						try {
+							const streamCheckUrl = `${STREAM_CHECK_URL}?token=${streamToken}`;
+							const response = await axios.get(streamCheckUrl, {
+								timeout: 5000,
+								validateStatus: (status) => status < 500,
+							});
+							streamOnline = response.status === 200 && response.data.includes("#EXTM3U");
+						} catch (error) {
+							console.log("Stream offline:", error.message);
+						}
+					}
+				} catch (error) {
+					console.log("Erro na autenticação para meta:", error.message);
+				}
+			}
+
+			// Retornar metadados baseados no ID
+			if (id === "yustream_live_main") {
+				return Promise.resolve({
+					meta: {
+						id: "yustream_live_main",
+						type: "tv",
+						name: streamOnline ? "🔴 YuStream Live" : "📴 YuStream Live (Offline)",
+						poster: streamOnline
+							? "https://yustream.yurisp.com.br/stremio-assets/poster-live.svg"
+							: "https://yustream.yurisp.com.br/stremio-assets/poster-offline.svg",
+						background: "https://yustream.yurisp.com.br/stremio-assets/background.svg",
+						logo: "https://yustream.yurisp.com.br/stremio-assets/logo.svg",
+						description: streamOnline
+							? "Stream ao vivo do YuStream - Transmissão em tempo real com qualidade adaptativa. Acompanhe nossa programação ao vivo com a melhor qualidade de streaming disponível."
+							: "Stream do YuStream está offline no momento. Volte mais tarde para acompanhar nossa programação ao vivo.",
+						genre: ["Live", "Streaming", "Entertainment"],
+						releaseInfo: streamOnline ? "Ao Vivo" : "Offline",
+						imdbRating: streamOnline ? 9.5 : 0,
+						director: ["YuStream Team"],
+						cast: ["Transmissão Ao Vivo", "Streaming Team"],
+						runtime: streamOnline ? "Contínuo" : "N/A",
+						country: "Brasil",
+						language: "Português",
+						year: new Date().getFullYear(),
+						status: streamOnline ? "live" : "offline",
+						// Informações adicionais para streams ao vivo
+						...(streamOnline && {
+							live: true,
+							streaming: {
+								quality: "Adaptativa (LLHLS)",
+								protocol: "HLS",
+								bitrate: "Variável",
+								resolution: "Até 1080p"
+							}
+						}),
+						// Metadados de configuração
+						...(id === "yustream_config" && {
+							configurable: true,
+							configurationRequired: true
+						})
+					}
+				});
+			} else if (id === "yustream_config") {
+				return Promise.resolve({
+					meta: {
+						id: "yustream_config",
+						type: "tv",
+						name: "⚙️ Configurar YuStream",
+						poster: "https://yustream.yurisp.com.br/stremio-assets/poster-config.svg",
+						background: "https://yustream.yurisp.com.br/stremio-assets/background.svg",
+						logo: "https://yustream.yurisp.com.br/stremio-assets/logo.svg",
+						description: "Configure suas credenciais para acessar o YuStream. Use seu username e senha nos parâmetros de configuração do addon para desbloquear o acesso às streams ao vivo.",
+						genre: ["Configuração", "Setup"],
+						releaseInfo: "Configuração Necessária",
+						year: new Date().getFullYear(),
+						configurable: true,
+						configurationRequired: true,
+						director: ["YuStream Team"],
+						cast: ["Sistema de Configuração"],
+						runtime: "N/A",
+						country: "Brasil",
+						language: "Português"
+					}
+				});
+			}
+		}
+
+		// Se não for um ID do YuStream, retornar vazio
+		return Promise.resolve({ meta: null });
+	} catch (error) {
+		console.error("❌ Erro no meta handler:", error);
+		return Promise.resolve({ meta: null });
+	}
+});
+
+// Handler de legendas
+builder.defineSubtitlesHandler(async (args, callback, req) => {
+	console.log("📝 Subtitles request:", args);
+
+	try {
+		const { type, id } = args;
+
+		// Para streams ao vivo, não temos legendas por enquanto
+		// Mas retornamos uma estrutura vazia para compatibilidade
+		if (id.startsWith("yustream_")) {
+			return Promise.resolve({
+				subtitles: []
+			});
+		}
+
+		// Se não for um ID do YuStream, retornar vazio
+		return Promise.resolve({ subtitles: [] });
+	} catch (error) {
+		console.error("❌ Erro no subtitles handler:", error);
+		return Promise.resolve({ subtitles: [] });
 	}
 });
 
