@@ -56,8 +56,7 @@ const builder = new addonBuilder({
 	name: "YuStream Live",
 	description: "Assista streams ao vivo do YuStream diretamente no Stremio",
 	logo: "https://yustream.yurisp.com.br/stremio-assets/logo.svg",
-	background:
-		"https://yustream.yurisp.com.br/stremio-assets/background.svg",
+	background: "https://yustream.yurisp.com.br/stremio-assets/background.svg",
 
 	// Tipos de conteúdo suportados
 	types: ["tv"],
@@ -115,7 +114,7 @@ const extractCredentialsFromRequest = (req) => {
 				if (credentials.email && !credentials.username) {
 					console.log("Migrando de email para username...");
 					// Se tem email mas não tem username, usar email como username
-					credentials.username = credentials.email.split('@')[0];
+					credentials.username = credentials.email.split("@")[0];
 				}
 
 				return credentials;
@@ -197,7 +196,7 @@ builder.defineCatalogHandler(async (args, callback, req) => {
 			try {
 				const streamCheckUrl = `${STREAM_CHECK_URL}?token=${streamToken}`;
 				console.log("Checking stream with token:", streamCheckUrl);
-				
+
 				const response = await axios.get(streamCheckUrl, {
 					timeout: 5000,
 					validateStatus: (status) => status < 500,
@@ -216,7 +215,8 @@ builder.defineCatalogHandler(async (args, callback, req) => {
 				poster: streamOnline
 					? "https://yustream.yurisp.com.br/stremio-assets/poster-live.svg"
 					: "https://yustream.yurisp.com.br/stremio-assets/poster-offline.svg",
-				background: "https://yustream.yurisp.com.br/stremio-assets/background.svg",
+				background:
+					"https://yustream.yurisp.com.br/stremio-assets/background.svg",
 				logo: "https://yustream.yurisp.com.br/stremio-assets/logo.svg",
 				description: streamOnline
 					? "Stream ao vivo do YuStream - Transmissão em tempo real com qualidade adaptativa. Acompanhe nossa programação ao vivo com a melhor qualidade de streaming disponível."
@@ -238,9 +238,9 @@ builder.defineCatalogHandler(async (args, callback, req) => {
 						quality: "Adaptativa (LLHLS)",
 						protocol: "HLS",
 						bitrate: "Variável",
-						resolution: "Até 1080p"
-					}
-				})
+						resolution: "Até 1080p",
+					},
+				}),
 			});
 		} else {
 			// Mostrar item de configuração se não autenticado
@@ -248,10 +248,13 @@ builder.defineCatalogHandler(async (args, callback, req) => {
 				id: "yustream_config",
 				type: "tv",
 				name: "⚙️ Configurar YuStream",
-				poster: "https://yustream.yurisp.com.br/stremio-assets/poster-config.svg",
-				background: "https://yustream.yurisp.com.br/stremio-assets/background.svg",
+				poster:
+					"https://yustream.yurisp.com.br/stremio-assets/poster-config.svg",
+				background:
+					"https://yustream.yurisp.com.br/stremio-assets/background.svg",
 				logo: "https://yustream.yurisp.com.br/stremio-assets/logo.svg",
-				description: "Configure suas credenciais para acessar o YuStream. Use seu username e senha nos parâmetros de configuração do addon para desbloquear o acesso às streams ao vivo.",
+				description:
+					"Configure suas credenciais para acessar o YuStream. Use seu username e senha nos parâmetros de configuração do addon para desbloquear o acesso às streams ao vivo.",
 				genre: ["Configuração", "Setup"],
 				releaseInfo: "Configuração Necessária",
 				year: new Date().getFullYear(),
@@ -261,7 +264,7 @@ builder.defineCatalogHandler(async (args, callback, req) => {
 				cast: ["Sistema de Configuração"],
 				runtime: "N/A",
 				country: "Brasil",
-				language: "Português"
+				language: "Português",
 			});
 		}
 
@@ -355,7 +358,7 @@ builder.defineStreamHandler(async (args, callback, req) => {
 		try {
 			const streamCheckUrl = `${STREAM_CHECK_URL}?token=${streamToken}`;
 			console.log("Checking stream with token:", streamCheckUrl);
-			
+
 			const response = await axios.get(streamCheckUrl, {
 				timeout: 5000,
 				validateStatus: (status) => status < 500,
@@ -375,13 +378,14 @@ builder.defineStreamHandler(async (args, callback, req) => {
 			streams.push({
 				title: "🔴 YuStream Live - Qualidade Adaptativa",
 				url: `${baseUrl}:8443/live/live/abr.m3u8?token=${streamToken}`,
-				description: "Stream ao vivo em qualidade adaptativa (LLHLS) - Transmissão em tempo real com qualidade até 1080p",
+				description:
+					"Stream ao vivo em qualidade adaptativa (LLHLS) - Transmissão em tempo real com qualidade até 1080p",
 				behaviorHints: {
 					notWebReady: false,
 					bingeGroup: "yustream-live",
 					countryWhitelist: ["BR", "US", "CA"], // Países permitidos
 					live: true,
-					vod: false
+					vod: false,
 				},
 				subtitles: [], // Sem legendas por enquanto
 				// Informações adicionais da stream
@@ -392,7 +396,7 @@ builder.defineStreamHandler(async (args, callback, req) => {
 				bitrate: "Variável",
 				codec: "H.264",
 				audio: "AAC",
-				language: "pt-BR"
+				language: "pt-BR",
 			});
 		} else if (!streamOnline) {
 			streams.push({
@@ -482,7 +486,8 @@ builder.defineMetaHandler(async (args, callback, req) => {
 								timeout: 5000,
 								validateStatus: (status) => status < 500,
 							});
-							streamOnline = response.status === 200 && response.data.includes("#EXTM3U");
+							streamOnline =
+								response.status === 200 && response.data.includes("#EXTM3U");
 						} catch (error) {
 							console.log("Stream offline:", error.message);
 						}
@@ -498,11 +503,14 @@ builder.defineMetaHandler(async (args, callback, req) => {
 					meta: {
 						id: "yustream_live_main",
 						type: "tv",
-						name: streamOnline ? "🔴 YuStream Live" : "📴 YuStream Live (Offline)",
+						name: streamOnline
+							? "🔴 YuStream Live"
+							: "📴 YuStream Live (Offline)",
 						poster: streamOnline
 							? "https://yustream.yurisp.com.br/stremio-assets/poster-live.svg"
 							: "https://yustream.yurisp.com.br/stremio-assets/poster-offline.svg",
-						background: "https://yustream.yurisp.com.br/stremio-assets/background.svg",
+						background:
+							"https://yustream.yurisp.com.br/stremio-assets/background.svg",
 						logo: "https://yustream.yurisp.com.br/stremio-assets/logo.svg",
 						description: streamOnline
 							? "Stream ao vivo do YuStream - Transmissão em tempo real com qualidade adaptativa. Acompanhe nossa programação ao vivo com a melhor qualidade de streaming disponível."
@@ -520,19 +528,45 @@ builder.defineMetaHandler(async (args, callback, req) => {
 						// Informações adicionais para streams ao vivo
 						...(streamOnline && {
 							live: true,
-							streaming: {
-								quality: "Adaptativa (LLHLS)",
-								protocol: "HLS",
-								bitrate: "Variável",
-								resolution: "Até 1080p"
-							}
+							videos: [
+								{
+									id: "yustream_live_main",
+									title: "🔴 YuStream Live - Qualidade Adaptativa",
+									relased: "2025-09-03T05:00:00.000Z",
+									streams: [
+										{
+											title: "🔴 YuStream Live - Qualidade Adaptativa",
+											url: `${baseUrl}:8443/live/live/abr.m3u8?token=${streamToken}`,
+											description:
+												"Stream ao vivo em qualidade adaptativa (LLHLS) - Transmissão em tempo real com qualidade até 1080p",
+											behaviorHints: {
+												notWebReady: false,
+												bingeGroup: "yustream-live",
+												countryWhitelist: ["BR", "US", "CA"], // Países permitidos
+												live: true,
+												vod: false,
+											},
+											subtitles: [], // Sem legendas por enquanto
+											// Informações adicionais da stream
+											quality: "Adaptativa",
+											protocol: "HLS",
+											format: "m3u8",
+											resolution: "Até 1080p",
+											bitrate: "Variável",
+											codec: "H.264",
+											audio: "AAC",
+											language: "pt-BR",
+										},
+									],
+								},
+							],
 						}),
 						// Metadados de configuração
 						...(id === "yustream_config" && {
 							configurable: true,
-							configurationRequired: true
-						})
-					}
+							configurationRequired: true,
+						}),
+					},
 				});
 			} else if (id === "yustream_config") {
 				return Promise.resolve({
@@ -540,10 +574,13 @@ builder.defineMetaHandler(async (args, callback, req) => {
 						id: "yustream_config",
 						type: "tv",
 						name: "⚙️ Configurar YuStream",
-						poster: "https://yustream.yurisp.com.br/stremio-assets/poster-config.svg",
-						background: "https://yustream.yurisp.com.br/stremio-assets/background.svg",
+						poster:
+							"https://yustream.yurisp.com.br/stremio-assets/poster-config.svg",
+						background:
+							"https://yustream.yurisp.com.br/stremio-assets/background.svg",
 						logo: "https://yustream.yurisp.com.br/stremio-assets/logo.svg",
-						description: "Configure suas credenciais para acessar o YuStream. Use seu username e senha nos parâmetros de configuração do addon para desbloquear o acesso às streams ao vivo.",
+						description:
+							"Configure suas credenciais para acessar o YuStream. Use seu username e senha nos parâmetros de configuração do addon para desbloquear o acesso às streams ao vivo.",
 						genre: ["Configuração", "Setup"],
 						releaseInfo: "Configuração Necessária",
 						year: new Date().getFullYear(),
@@ -553,8 +590,8 @@ builder.defineMetaHandler(async (args, callback, req) => {
 						cast: ["Sistema de Configuração"],
 						runtime: "N/A",
 						country: "Brasil",
-						language: "Português"
-					}
+						language: "Português",
+					},
 				});
 			}
 		}
@@ -578,7 +615,7 @@ builder.defineSubtitlesHandler(async (args, callback, req) => {
 		// Mas retornamos uma estrutura vazia para compatibilidade
 		if (id.startsWith("yustream_")) {
 			return Promise.resolve({
-				subtitles: []
+				subtitles: [],
 			});
 		}
 
