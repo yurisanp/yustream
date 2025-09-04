@@ -73,15 +73,6 @@
                             <Height>1080</Height>
                             <Preset>faster</Preset>
                         </Video>
-                        <Video>
-                            <Name>video_720</Name>
-                            <Codec>h264</Codec>
-                            <Bitrate>2024000</Bitrate>
-                            <Framerate>30</Framerate>
-                            <Width>1280</Width>
-                            <Height>720</Height>
-                            <Preset>faster</Preset>
-                        </Video>
                     </Encodes>
                 </OutputProfile>
             </OutputProfiles>
