@@ -179,68 +179,20 @@ builder.defineCatalogHandler(async (args, callback, req) => {
 		let metas = [];
 
 		if (isAuthenticated) {
-			// Gerar token para verificação da stream
-			const streamToken = jwt.sign(
-				{
-					userId: user._id,
-					username: user.username,
-					streamAccess: true,
-					stremio: true,
-				},
-				JWT_SECRET,
-				{ expiresIn: "6h" }
-			);
-
-			// Verificar se stream está online com token
-			let streamOnline = false;
-			try {
-				const streamCheckUrl = `${STREAM_CHECK_URL}?token=${streamToken}`;
-				console.log("Checking stream with token:", streamCheckUrl);
-
-				const response = await axios.get(streamCheckUrl, {
-					timeout: 5000,
-					validateStatus: (status) => status < 500,
-				});
-				streamOnline =
-					response.status === 200 && response.data.includes("#EXTM3U");
-				console.log("Stream status:", streamOnline ? "ONLINE" : "OFFLINE");
-			} catch (error) {
-				console.log("Stream offline:", error.message);
-			}
 			// Stream principal
 			metas.push({
 				id: "yustream_live_main",
 				type: "tv",
-				name: streamOnline ? "🔴 YuStream Live" : "📴 YuStream Live (Offline)",
-				poster: streamOnline
-					? "https://yustream.yurisp.com.br/stremio-assets/poster-live.svg"
-					: "https://yustream.yurisp.com.br/stremio-assets/poster-offline.svg",
-				background:
-					"https://yustream.yurisp.com.br/stremio-assets/background.svg",
+				name: "YuStream Live",
+				poster: "https://yustream.yurisp.com.br/stremio-assets/poster-live.svg",
+				background: "https://yustream.yurisp.com.br/stremio-assets/background.svg",
 				logo: "https://yustream.yurisp.com.br/stremio-assets/logo.svg",
-				description: streamOnline
-					? "Stream ao vivo do YuStream - Transmissão em tempo real com qualidade adaptativa. Acompanhe nossa programação ao vivo com a melhor qualidade de streaming disponível."
-					: "Stream do YuStream está offline no momento. Volte mais tarde para acompanhar nossa programação ao vivo.",
-				genre: ["Live", "Streaming", "Entertainment"],
-				releaseInfo: streamOnline ? "Ao Vivo" : "Offline",
-				imdbRating: streamOnline ? 9.5 : 0,
+				description: "Stream ao vivo do YuStream - Acompanhe nossa programação ao vivo com a melhor qualidade de streaming disponível.",
+				genres: ["Live", "Streaming", "Entertainment"],
+				releaseInfo: "Ao Vivo",
 				director: ["YuStream Team"],
-				cast: ["Transmissão Ao Vivo", "Streaming Team"],
-				runtime: streamOnline ? "Contínuo" : "N/A",
 				country: "Brasil",
 				language: "Português",
-				year: new Date().getFullYear(),
-				status: streamOnline ? "live" : "offline",
-				// Informações adicionais para streams ao vivo
-				...(streamOnline && {
-					live: true,
-					streaming: {
-						quality: "Adaptativa (LLHLS)",
-						protocol: "HLS",
-						bitrate: "Variável",
-						resolution: "Até 1080p",
-					},
-				}),
 			});
 		} else {
 			// Mostrar item de configuração se não autenticado
@@ -376,27 +328,14 @@ builder.defineStreamHandler(async (args, callback, req) => {
 			const baseUrl = "https://yustream.yurisp.com.br";
 
 			streams.push({
-				url: `${baseUrl}/live/live/abr.m3u8?token=${streamToken}`,
+				url: `${baseUrl}:8443/live/live/abr.m3u8?token=${streamToken}`,
 				name: "Fonte",
 				title: "YuStream Live - Qualidade Adaptativa",
 				description:
 					"Stream ao vivo em qualidade adaptativa (LLHLS) - Transmissão em tempo real com qualidade até 1080p",
 				behaviorHints: {
-					notWebReady: true
+					notWebReady: true,
 				},
-			});
-		} else if (!streamOnline) {
-			streams.push({
-				title: "Stream Offline",
-				url: "https://www.stremio.com/",
-				description:
-					"A stream não está disponível no momento. Tente novamente mais tarde.",
-			});
-		} else {
-			streams.push({
-				title: "Conteúdo Não Encontrado",
-				url: "https://www.stremio.com/",
-				description: "O conteúdo solicitado não foi encontrado.",
 			});
 		}
 
@@ -404,13 +343,7 @@ builder.defineStreamHandler(async (args, callback, req) => {
 	} catch (error) {
 		console.error("❌ Erro no stream handler:", error);
 		return Promise.resolve({
-			streams: [
-				{
-					title: "Erro do Servidor",
-					url: "https://www.stremio.com/",
-					description: "Erro interno do servidor. Tente novamente mais tarde.",
-				},
-			],
+			streams: [],
 		});
 	}
 });
