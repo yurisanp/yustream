@@ -376,14 +376,15 @@ builder.defineStreamHandler(async (args, callback, req) => {
 			const baseUrl = "https://yustream.yurisp.com.br";
 
 			streams.push({
-				title: "🔴 YuStream Live - Qualidade Adaptativa",
 				url: `${baseUrl}:8443/live/live/abr.m3u8?token=${streamToken}`,
+				name: "Fonte",
+				title: "🔴 YuStream Live - Qualidade Adaptativa",
 				description:
 					"Stream ao vivo em qualidade adaptativa (LLHLS) - Transmissão em tempo real com qualidade até 1080p",
+				subtitles: [],
 				behaviorHints: {
 					notWebReady: true
 				},
-				subtitles: [],
 			});
 		} else if (!streamOnline) {
 			streams.push({
