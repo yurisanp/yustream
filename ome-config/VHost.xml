@@ -1,20 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- 
     Configuração do OvenMediaEngine para múltiplas entradas RTMP com adaptive bitrate
+    Usando Multiplex Channel conforme documentação oficial
     
     Como usar:
     1. Configure seu encoder para enviar streams RTMP para diferentes qualidades:
-       - rtmp://seu-servidor:1935/live/4k_input
+       - rtmp://seu-servidor:1935/live/fonte_input
        - rtmp://seu-servidor:1935/live/1080p_input  
        - rtmp://seu-servidor:1935/live/720p_input
-       - rtmp://seu-servidor:1935/live/480p_input
-       - rtmp://seu-servidor:1935/live/360p_input
     
     2. O OME irá processar cada entrada com bypass (sem re-encoding)
-    3. Criará uma playlist LLHLS com adaptive bitrate em:
-       - https://seu-servidor:3333/live/abr.m3u8
+    3. O Multiplex Channel combinará as streams em uma única stream ABR
+    4. Acesse a stream combinada em:
+       - https://seu-servidor:8080/live/abr_stream/abr.m3u8
     
-    4. Os clientes receberão automaticamente a melhor qualidade baseada na largura de banda
+    5. Os clientes receberão automaticamente a melhor qualidade baseada na largura de banda
 -->
 <VirtualHost>
     <Name>default</Name>
@@ -46,48 +46,21 @@
             <Name>live</Name>
             <Type>live</Type>
 
-            <!-- Perfis de saída com múltiplas qualidades -->
+            <!-- Perfis de saída para streams individuais -->
             <OutputProfiles>
-                <!-- Perfil ABR (Adaptive Bitrate) com múltiplas qualidades -->
+                <!-- Perfil para streams individuais com bypass -->
                 <OutputProfile>
-                    <Name>abr_stream</Name>
+                    <Name>bypass_stream</Name>
                     <OutputStreamName>${OriginStreamName}</OutputStreamName>
-                    <Playlist>
-                        <Name>for LLHLS</Name>
-                        <FileName>abr</FileName>
-                        <Rendition>
-                            <Name>Fonte</Name>
-                            <Video>fonte_video</Video>
-                            <Audio>bypass_audio</Audio>
-                        </Rendition>
-                        <Rendition>
-                            <Name>1080p</Name>
-                            <Video>1080p_video</Video>
-                            <Audio>bypass_audio</Audio>
-                        </Rendition>
-                        <Rendition>
-                            <Name>720p</Name>
-                            <Video>720p_video</Video>
-                            <Audio>bypass_audio</Audio>
-                        </Rendition>
-                    </Playlist>
                     <Encodes>
-                        <!-- Configuração de áudio -->
+                        <!-- Configuração de áudio com bypass -->
                         <Audio>
                             <Name>bypass_audio</Name>
                             <Bypass>True</Bypass>
                         </Audio>
-                        <!-- Configurações de vídeo para diferentes qualidades -->
+                        <!-- Configuração de vídeo com bypass -->
                         <Video>
-                            <Name>fonte_video</Name>
-                            <Bypass>True</Bypass>
-                        </Video>
-                        <Video>
-                            <Name>1080p_video</Name>
-                            <Bypass>True</Bypass>
-                        </Video>
-                        <Video>
-                            <Name>720p_video</Name>
+                            <Name>bypass_video</Name>
                             <Bypass>True</Bypass>
                         </Video>
                     </Encodes>
@@ -101,32 +74,11 @@
                     <Port>1935</Port>
                     <WorkerCount>1</WorkerCount>
                 </RTMP>
+                <!-- Multiplex Provider para combinar múltiplas streams -->
+                <Multiplex>
+                    <MuxFilesDir>mux_files</MuxFilesDir>
+                </Multiplex>
             </Providers>
-
-            <!-- Mapeamento de streams para diferentes qualidades -->
-            <StreamMaps>
-                <!-- Mapeamento para stream 4K -->
-                <StreamMap>
-                    <Name>fonte_stream</Name>
-                    <SourceStream>fonte_input</SourceStream>
-                    <OutputProfile>abr_stream</OutputProfile>
-                    <OutputStream>fonte_output</OutputStream>
-                </StreamMap>
-                <!-- Mapeamento para stream 1080p -->
-                <StreamMap>
-                    <Name>1080p_stream</Name>
-                    <SourceStream>1080p_input</SourceStream>
-                    <OutputProfile>abr_stream</OutputProfile>
-                    <OutputStream>1080p_output</OutputStream>
-                </StreamMap>
-                <!-- Mapeamento para stream 720p -->
-                <StreamMap>
-                    <Name>720p_stream</Name>
-                    <SourceStream>720p_input</SourceStream>
-                    <OutputProfile>abr_stream</OutputProfile>
-                    <OutputStream>720p_output</OutputStream>
-                </StreamMap>
-            </StreamMaps>
 
             <!-- Configurações de publicadores -->
             <Publishers>
