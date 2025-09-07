@@ -31,7 +31,7 @@
     </Host>
 
     <!-- Admission Webhooks para controle de acesso -->
-    <AdmissionWebhooks>
+    <!-- <AdmissionWebhooks>
         <ControlServerUrl>http://yustream-auth:3001/webhook/admission</ControlServerUrl>
         <SecretKey>yustream-webhook-secret-2024</SecretKey>
         <Timeout>3000</Timeout>
@@ -39,41 +39,15 @@
             <Providers>rtmp</Providers>
             <Publishers>llhls</Publishers>
         </Enables>
-    </AdmissionWebhooks>
+    </AdmissionWebhooks> -->
 
     <Applications>
         <Application>
             <Name>live</Name>
             <Type>live</Type>
 
-            <!-- Perfis de saída para streams individuais -->
-            <OutputProfiles>
-                <!-- Perfil para streams individuais com bypass -->
-                <OutputProfile>
-                    <Name>bypass_stream</Name>
-                    <OutputStreamName>${OriginStreamName}</OutputStreamName>
-                    <Encodes>
-                        <!-- Configuração de áudio com bypass -->
-                        <Audio>
-                            <Name>bypass_audio</Name>
-                            <Bypass>True</Bypass>
-                        </Audio>
-                        <!-- Configuração de vídeo com bypass -->
-                        <Video>
-                            <Name>bypass_video</Name>
-                            <Bypass>True</Bypass>
-                        </Video>
-                    </Encodes>
-                </OutputProfile>
-            </OutputProfiles>
-
             <!-- Configurações de provedores -->
             <Providers>
-                <RTMP>
-                    <BlockDuplicateStreamName>false</BlockDuplicateStreamName>
-                    <Port>1935</Port>
-                    <WorkerCount>1</WorkerCount>
-                </RTMP>
                 <!-- Multiplex Provider para combinar múltiplas streams -->
                 <Multiplex>
                     <MuxFilesDir>mux_files</MuxFilesDir>
@@ -91,14 +65,101 @@
                     <CrossDomains>
                         <Url>*</Url>
                     </CrossDomains>
-                    <!-- Configurações para adaptive bitrate -->
-                    <ChunkDuration>0.5</ChunkDuration>
-                    <SegmentDuration>4</SegmentDuration>
-                    <SegmentCount>10</SegmentCount>
-                    <PartHoldBack>7</PartHoldBack>
-                    <PartDuration>0.5</PartDuration>
                 </LLHLS>  
             </Publishers>
+        </Application>
+        <Application>
+            <Name>fonte</Name>
+            <Type>live</Type>
+
+            <!-- Perfis de saída com múltiplas qualidades -->
+            <OutputProfiles>
+                <!-- Perfil ABR (Adaptive Bitrate) com múltiplas qualidades -->
+                <OutputProfile>
+                    <Name>fonte</Name>
+                    <OutputStreamName>${OriginStreamName}</OutputStreamName>
+                    <Encodes>
+                        <!-- Configuração de áudio -->
+                        <Audio>
+                            <Name>bypass_audio</Name>
+                            <Bypass>True</Bypass>
+                        </Audio>
+                        <Video>
+                            <Name>bypass_video</Name>
+                            <Bypass>True</Bypass>
+                        </Video>
+                    </Encodes>
+                </OutputProfile>
+            </OutputProfiles>
+
+            <!-- Configurações de provedores -->
+            <Providers>
+                <RTMP>
+                    <BlockDuplicateStreamName>true</BlockDuplicateStreamName>
+                </RTMP>
+            </Providers>
+        </Application>
+        <Application>
+            <Name>1080</Name>
+            <Type>live</Type>
+
+            <!-- Perfis de saída com múltiplas qualidades -->
+            <OutputProfiles>
+                <!-- Perfil ABR (Adaptive Bitrate) com múltiplas qualidades -->
+                <OutputProfile>
+                    <Name>1080</Name>
+                    <OutputStreamName>${OriginStreamName}</OutputStreamName>
+                    <Encodes>
+                        <!-- Configuração de áudio -->
+                        <Audio>
+                            <Name>bypass_audio</Name>
+                            <Bypass>True</Bypass>
+                        </Audio>
+                        <Video>
+                            <Name>bypass_video</Name>
+                            <Bypass>True</Bypass>
+                        </Video>
+                    </Encodes>
+                </OutputProfile>
+            </OutputProfiles>
+
+            <!-- Configurações de provedores -->
+            <Providers>
+                <RTMP>
+                    <BlockDuplicateStreamName>true</BlockDuplicateStreamName>
+                </RTMP>
+            </Providers>
+        </Application>
+        <Application>
+            <Name>720</Name>
+            <Type>live</Type>
+
+            <!-- Perfis de saída com múltiplas qualidades -->
+            <OutputProfiles>
+                <!-- Perfil ABR (Adaptive Bitrate) com múltiplas qualidades -->
+                <OutputProfile>
+                    <Name>720</Name>
+                    <OutputStreamName>${OriginStreamName}</OutputStreamName>
+                    <Encodes>
+                        <!-- Configuração de áudio -->
+                        <Audio>
+                            <Name>bypass_audio</Name>
+                            <Bypass>True</Bypass>
+                        </Audio>
+                        <Video>
+                            <Name>bypass_video</Name>
+                            <Bypass>True</Bypass>
+                        </Video>
+                    </Encodes>
+                </OutputProfile>
+            </OutputProfiles>
+
+            <!-- Configurações de provedores -->
+            <Providers>
+                <RTMP>
+                    <BlockDuplicateStreamName>true</BlockDuplicateStreamName>
+                </RTMP>
+            </Providers>
         </Application>
     </Applications>
 </VirtualHost>

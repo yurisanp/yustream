@@ -8,7 +8,7 @@
         <!-- Stream de entrada 4K/Fonte -->
         <SourceStream>
             <Name>fonte</Name>
-            <Url>stream://default/live/fonte_input</Url>
+            <Url>stream://default/fonte/fonte</Url>
             <TrackMap>
                 <Track>
                     <SourceTrackName>bypass_video</SourceTrackName>
@@ -24,7 +24,7 @@
         <!-- Stream de entrada 1080p -->
         <SourceStream>
             <Name>1080p</Name>
-            <Url>stream://default/live/1080p_input</Url>
+            <Url>stream://default/1080/1080</Url>
             <TrackMap>
                 <Track>
                     <SourceTrackName>bypass_video</SourceTrackName>
@@ -40,7 +40,7 @@
         <!-- Stream de entrada 720p -->
         <SourceStream>
             <Name>720p</Name>
-            <Url>stream://default/live/720p_input</Url>
+            <Url>stream://default/720/720</Url>
             <TrackMap>
                 <Track>
                     <SourceTrackName>bypass_video</SourceTrackName>
