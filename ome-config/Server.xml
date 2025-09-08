@@ -15,9 +15,9 @@
                     <TLSPort>3334</TLSPort>
                 </Signalling>
                 <IceCandidates>
-                    <TcpRelay>*:3478</TcpRelay>
+                    <TcpRelay>163.176.146.172:3478</TcpRelay>
                     <TcpForce>false</TcpForce>
-                    <IceCandidate>*:10000-10009/udp</IceCandidate>
+                    <IceCandidate>163.176.146.172:10000-10009/udp</IceCandidate>
                 </IceCandidates>
             </WebRTC>
         </Providers>
@@ -34,8 +34,8 @@
                     <WorkerCount>1</WorkerCount>
                 </Signalling>
                 <IceCandidates>
-                    <TcpRelay>*:3478</TcpRelay>
-                    <IceCandidate>*:10000-10009/udp</IceCandidate>
+                    <TcpRelay>163.176.146.172:3478</TcpRelay>
+                    <IceCandidate>163.176.146.172:10000-10009/udp</IceCandidate>
                 </IceCandidates>
             </WebRTC>
         </Publishers>
