@@ -21,22 +21,6 @@
             </TrackMap>
         </SourceStream>
         
-        <!-- Stream de entrada 1080p -->
-        <SourceStream>
-            <Name>1080p</Name>
-            <Url>stream://default/1080/1080</Url>
-            <TrackMap>
-                <Track>
-                    <SourceTrackName>bypass_video</SourceTrackName>
-                    <NewTrackName>1080p_video</NewTrackName>
-                </Track>
-                <Track>
-                    <SourceTrackName>bypass_audio</SourceTrackName>
-                    <NewTrackName>1080p_audio</NewTrackName>
-                </Track>
-            </TrackMap>
-        </SourceStream>
-        
         <!-- Stream de entrada 720p -->
         <SourceStream>
             <Name>720p</Name>
@@ -63,11 +47,6 @@
                 <Name>Fonte</Name>
                 <Video>fonte_video</Video>
                 <Audio>fonte_audio</Audio>
-            </Rendition>
-            <Rendition>
-                <Name>1080p</Name>
-                <Video>1080p_video</Video>
-                <Audio>1080p_audio</Audio>
             </Rendition>
             <Rendition>
                 <Name>720p</Name>
