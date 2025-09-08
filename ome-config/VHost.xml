@@ -36,8 +36,7 @@
         <SecretKey>yustream-webhook-secret-2024</SecretKey>
         <Timeout>3000</Timeout>
         <Enables>
-            <Providers>rtmp</Providers>
-            <Publishers>llhls</Publishers>
+            <Publishers>llhls,webrtc</Publishers>
         </Enables>
     </AdmissionWebhooks>
 
@@ -49,11 +48,75 @@
             <!-- Configurações de provedores -->
             <Providers>
                 <!-- Multiplex Provider para combinar múltiplas streams -->
-                <Multiplex>
-                    <MuxFilesDir>mux_files</MuxFilesDir>
-                </Multiplex>
+                <WebRTC>
+                    <Timeout>30000</Timeout>
+                    <CrossDomains>
+                        <Url>*</Url>
+                    </CrossDomains>
+                </WebRTC>
             </Providers>
-
+            <OutputProfiles>
+                <OutputProfile>
+                    <Name>abr_stream</Name>
+                    <OutputStreamName>${OriginStreamName}</OutputStreamName>
+                    <Playlist>
+                        <Name>abr_webrtc</Name>
+                        <FileName>abr_webrtc</FileName>
+                        <Options>
+                            <WebRtcAutoAbr>true</WebRtcAutoAbr> 
+                        </Options>
+                        <Rendition>
+                            <Name>Bypass</Name>
+                            <Video>bypass_video</Video>
+                            <Audio>bypass_audio</Audio>
+                        </Rendition>
+                        <RenditionTemplate>
+                            <Name>hls_${Height}p_${Bitrate}_${Framerate}</Name>
+                            <VideoTemplate>
+                                <EncodingType>bypassed</EncodingType>
+                            </VideoTemplate>
+                            <AudioTemplate>
+                                <VariantName>bypass_audio</VariantName>
+                            </AudioTemplate>
+                        </RenditionTemplate>
+                    </Playlist>
+                    <Playlist>
+                        <Name>ABR WHIP</Name>
+                        <FileName>abr</FileName>
+                        <Rendition>
+                            <Name>Bypass</Name>
+                            <Video>bypass_video</Video>
+                            <Audio>aac_audio</Audio>
+                        </Rendition>
+                        <RenditionTemplate>
+                            <Name>hls_${Height}p_${Bitrate}_${Framerate}</Name>
+                            <VideoTemplate>
+                                <EncodingType>bypassed</EncodingType>
+                            </VideoTemplate>
+                            <AudioTemplate>
+                                <VariantName>aac_audio</VariantName>
+                            </AudioTemplate>
+                        </RenditionTemplate>
+                    </Playlist>
+                    <Encodes>
+                        <Audio>
+                            <Name>bypass_audio</Name>
+                            <Bypass>True</Bypass>
+                        </Audio>
+                        <Video>
+                            <Name>bypass_video</Name>
+                            <Bypass>True</Bypass>
+                        </Video>
+                        <Audio>
+                            <Name>aac_audio</Name>
+                            <Codec>aac</Codec>
+                            <Bitrate>128000</Bitrate>
+                            <Samplerate>48000</Samplerate>
+                            <Channel>2</Channel>
+                        </Audio>
+                    </Encodes>
+                </OutputProfile>
+            </OutputProfiles>
             <!-- Configurações de publicadores -->
             <Publishers>
                 <AppWorkerCount>1</AppWorkerCount>
@@ -65,39 +128,14 @@
                     <CrossDomains>
                         <Url>*</Url>
                     </CrossDomains>
-                </LLHLS>  
+                </LLHLS>
+                <WebRTC>
+                    <Timeout>30000</Timeout>
+                    <Rtx>false</Rtx>
+                    <Ulpfec>false</Ulpfec>
+                    <JitterBuffer>false</JitterBuffer>
+                </WebRTC> 
             </Publishers>
-        </Application>
-        <Application>
-            <Name>fonte</Name>
-            <Type>live</Type>
-
-            <!-- Perfis de saída com múltiplas qualidades -->
-            <OutputProfiles>
-                <!-- Perfil ABR (Adaptive Bitrate) com múltiplas qualidades -->
-                <OutputProfile>
-                    <Name>fonte</Name>
-                    <OutputStreamName>${OriginStreamName}</OutputStreamName>
-                    <Encodes>
-                        <!-- Configuração de áudio -->
-                        <Audio>
-                            <Name>bypass_audio</Name>
-                            <Bypass>True</Bypass>
-                        </Audio>
-                        <Video>
-                            <Name>bypass_video</Name>
-                            <Bypass>True</Bypass>
-                        </Video>
-                    </Encodes>
-                </OutputProfile>
-            </OutputProfiles>
-
-            <!-- Configurações de provedores -->
-            <Providers>
-                <RTMP>
-                    <BlockDuplicateStreamName>true</BlockDuplicateStreamName>
-                </RTMP>
-            </Providers>
         </Application>
     </Applications>
 </VirtualHost>

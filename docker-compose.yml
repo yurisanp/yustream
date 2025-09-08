@@ -6,16 +6,18 @@ services:
     container_name: ovenmediaengine
     restart: unless-stopped
     ports:
-      # RTMP port for OBS streaming
-      - "1935:1935"
+      # WebRTC port for OBS streaming
+      - "3333:3333"
+      # WebRTC(SSL) port for OBS streaming
+      - "3334:3334"
+      # TCP Relay server
+      - "3478:3478"
       # HLS/DASH HTTP port
       - "8080:8080"
       # HLS/DASH HTTPS port
       - "8443:8443"
       # WebRTC UDP ports for ICE
-      - "10000-10005:10000-10005/udp"
-      # RTMP over WebSocket
-      - "9999:9999"
+      - "10000-10009:10000-10009/udp"
     volumes:
       - ./ome-config:/opt/ovenmediaengine/bin/origin_conf
       - ./ome-logs:/var/log/ovenmediaengine
