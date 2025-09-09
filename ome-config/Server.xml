@@ -6,9 +6,18 @@
     <PrivacyProtection>false</PrivacyProtection>
     <StunServer>stun.l.google.com:19302</StunServer>
     
+    <Modules>
+        <ERTMP>
+            <Enable>true</Enable>
+        </ERTMP>
+    </Modules>
     <!-- Configurações de porta -->
     <Bind>
         <Providers>
+            <RTMP>
+                <Port>1935</Port>
+                <WorkerCount>1</WorkerCount>
+            </RTMP>
             <WebRTC>
                 <Signalling>
                     <Port>3333</Port>
