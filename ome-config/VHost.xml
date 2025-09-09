@@ -50,8 +50,6 @@
                 <!-- Multiplex Provider para combinar múltiplas streams -->
                 <RTMP>
                     <BlockDuplicateStreamName>true</BlockDuplicateStreamName>
-                    <Port>1935</Port>
-                    <WorkerCount>1</WorkerCount>
                 </RTMP>
                 <WebRTC>
                     <Timeout>30000</Timeout>
