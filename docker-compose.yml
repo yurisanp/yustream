@@ -6,6 +6,8 @@ services:
     container_name: ovenmediaengine
     restart: unless-stopped
     ports:
+      # RTMP port for OBS streaming
+      - "1935:1935"
       # WebRTC port for OBS streaming
       - "3333:3333"
       # WebRTC(SSL) port for OBS streaming
