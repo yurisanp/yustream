@@ -12,9 +12,8 @@ require("dotenv").config();
 // Configurações
 const JWT_SECRET =
 	process.env.JWT_SECRET || "yustream-jwt-secret-change-in-production-2024";
-const STREAM_CHECK_URL =
-	process.env.STREAM_CHECK_URL ||
-	"http://ovenmediaengine:8080/live/live/abr.m3u8";
+const AUTH_SERVER_URL =
+	process.env.AUTH_SERVER_URL || "http://yustream-auth:3001";
 const MONGODB_URI =
 	process.env.MONGODB_URI ||
 	"mongodb://yustream:yustream123@mongodb:27017/yustream?authSource=admin";
@@ -48,6 +47,60 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
 };
 
 const User = mongoose.model("User", userSchema);
+
+// Função para verificar status da stream via auth-server
+const checkStreamStatus = async (authToken) => {
+	try {
+		console.log("🔍 Verificando status da stream via auth-server...");
+		
+		const response = await axios.get(`${AUTH_SERVER_URL}/stream/status`, {
+			timeout: 5000,
+			headers: {
+				'Authorization': `Bearer ${authToken}`,
+				'Accept': 'application/json',
+				'Content-Type': 'application/json',
+			},
+		});
+
+		if (response.status === 200 && response.data) {
+			const data = response.data;
+			console.log("📊 Status da stream:", data);
+			
+			// Verificar se há stream LLHLS online
+			const isLLHLSOnline = data.online === true && data.hasLLHLS === true;
+			
+			return {
+				online: isLLHLSOnline,
+				hasLLHLS: data.hasLLHLS || false,
+				hasWebRTC: data.hasWebRTC || false,
+				totalActiveStreams: data.totalActiveStreams || 0,
+				streamDetails: data.streamDetails || null,
+				method: data.method || 'api_rest'
+			};
+		} else {
+			console.log("❌ Resposta inválida da API auth-server:", response.status);
+			return {
+				online: false,
+				hasLLHLS: false,
+				hasWebRTC: false,
+				totalActiveStreams: 0,
+				streamDetails: null,
+				method: 'api_error'
+			};
+		}
+	} catch (error) {
+		console.error("❌ Erro ao verificar status da stream via auth-server:", error.message);
+		return {
+			online: false,
+			hasLLHLS: false,
+			hasWebRTC: false,
+			totalActiveStreams: 0,
+			streamDetails: null,
+			method: 'api_error',
+			error: error.message
+		};
+	}
+};
 
 // Configuração do addon
 const builder = new addonBuilder({
@@ -305,22 +358,13 @@ builder.defineStreamHandler(async (args, callback, req) => {
 			{ expiresIn: "6h" }
 		);
 
-		// Verificar se stream está online com token
-		let streamOnline = false;
-		try {
-			const streamCheckUrl = `${STREAM_CHECK_URL}?token=${streamToken}`;
-			console.log("Checking stream with token:", streamCheckUrl);
-
-			const response = await axios.get(streamCheckUrl, {
-				timeout: 5000,
-				validateStatus: (status) => status < 500,
-			});
-			streamOnline =
-				response.status === 200 && response.data.includes("#EXTM3U");
-			console.log("Stream status:", streamOnline ? "ONLINE" : "OFFLINE");
-		} catch (error) {
-			console.log("Stream offline:", error.message);
-		}
+		// Verificar se stream está online via auth-server
+		const streamStatus = await checkStreamStatus(streamToken);
+		const streamOnline = streamStatus.online;
+		
+		console.log("Stream status:", streamOnline ? "ONLINE" : "OFFLINE");
+		console.log("LLHLS disponível:", streamStatus.hasLLHLS ? "SIM" : "NÃO");
+		console.log("WebRTC disponível:", streamStatus.hasWebRTC ? "SIM" : "NÃO");
 
 		const streams = [];
 		if (streamOnline && id === "yustream_live_main") {
@@ -397,18 +441,12 @@ builder.defineMetaHandler(async (args, callback, req) => {
 							{ expiresIn: "6h" }
 						);
 
-						// Verificar se stream está online
-						try {
-							const streamCheckUrl = `${STREAM_CHECK_URL}?token=${streamToken}`;
-							const response = await axios.get(streamCheckUrl, {
-								timeout: 5000,
-								validateStatus: (status) => status < 500,
-							});
-							streamOnline =
-								response.status === 200 && response.data.includes("#EXTM3U");
-						} catch (error) {
-							console.log("Stream offline:", error.message);
-						}
+						// Verificar se stream está online via auth-server
+						const streamStatus = await checkStreamStatus(streamToken);
+						streamOnline = streamStatus.online;
+						
+						console.log("Meta - Stream status:", streamOnline ? "ONLINE" : "OFFLINE");
+						console.log("Meta - LLHLS disponível:", streamStatus.hasLLHLS ? "SIM" : "NÃO");
 					}
 				} catch (error) {
 					console.log("Erro na autenticação para meta:", error.message);

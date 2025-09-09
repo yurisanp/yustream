@@ -74,7 +74,7 @@
                                 <EncodingType>bypassed</EncodingType>
                             </VideoTemplate>
                             <AudioTemplate>
-                                <VariantName>opus_audio</VariantName>
+                                <VariantName>bypass_audio</VariantName>
                             </AudioTemplate>
                         </RenditionTemplate>
                     </Playlist>
@@ -87,7 +87,7 @@
                                 <EncodingType>bypassed</EncodingType>
                             </VideoTemplate>
                             <AudioTemplate>
-                                <VariantName>bypass_audio</VariantName>
+                                <VariantName>aac_audio</VariantName>
                             </AudioTemplate>
                         </RenditionTemplate>
                     </Playlist>
@@ -101,8 +101,8 @@
                             <Bypass>True</Bypass>
                         </Video>
                         <Audio>
-                            <Name>opus_audio</Name>
-                            <Codec>opus</Codec>
+                            <Name>aac_audio</Name>
+                            <Codec>aac</Codec>
                             <Bitrate>160000</Bitrate>
                             <Samplerate>48000</Samplerate>
                             <Channel>2</Channel>

@@ -40,7 +40,8 @@ export const useStreamPlayer = ({
   const streamStatus = useStreamStatus({
     checkInterval: 30000, // Intervalo para caso seja habilitado
     onStatusChange: onStreamOnlineChange,
-    enablePeriodicCheck: false // Desabilitar verificação periódica por padrão
+    enablePeriodicCheck: false, // Desabilitar verificação periódica por padrão
+    authToken: currentToken || undefined // Passar o token atual para autenticação
   });
 
   const getPlayerConfig = useCallback((streamToken: string | null) => {
@@ -298,7 +299,12 @@ export const useStreamPlayer = ({
       isOnline: streamStatus.isOnline,
       isLoading: streamStatus.isLoading,
       error: streamStatus.error,
-      lastChecked: streamStatus.lastChecked
+      lastChecked: streamStatus.lastChecked,
+      hasWebRTC: streamStatus.hasWebRTC,
+      hasLLHLS: streamStatus.hasLLHLS,
+      totalActiveStreams: streamStatus.totalActiveStreams,
+      streamDetails: streamStatus.streamDetails,
+      method: streamStatus.method
     }
   };
 };

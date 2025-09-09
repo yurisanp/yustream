@@ -13,6 +13,11 @@
     </Modules>
     <!-- Configurações de porta -->
     <Bind>
+        <Managers>
+			<API>
+				<Port>8081</Port>
+			</API>
+		</Managers>
         <Providers>
             <RTMP>
                 <Port>1935</Port>
@@ -24,9 +29,9 @@
                     <TLSPort>3334</TLSPort>
                 </Signalling>
                 <IceCandidates>
-                    <TcpRelay>163.176.146.172:3478</TcpRelay>
+                    <TcpRelay>127.0.0.1:3478</TcpRelay>
                     <TcpForce>false</TcpForce>
-                    <IceCandidate>163.176.146.172:10000-10009/udp</IceCandidate>
+                    <IceCandidate>127.0.0.1:10000-10009/udp</IceCandidate>
                 </IceCandidates>
             </WebRTC>
         </Providers>
@@ -43,12 +48,21 @@
                     <WorkerCount>1</WorkerCount>
                 </Signalling>
                 <IceCandidates>
-                    <TcpRelay>163.176.146.172:3478</TcpRelay>
-                    <IceCandidate>163.176.146.172:10000-10009/udp</IceCandidate>
+                    <TcpRelay>127.0.0.1:3478</TcpRelay>
+                    <IceCandidate>127.0.0.1:10000-10009/udp</IceCandidate>
                 </IceCandidates>
             </WebRTC>
         </Publishers>
     </Bind>
+
+    <Managers>
+		<API>
+			<AccessToken>maketears</AccessToken>
+			<CrossDomains>
+				<Url>*</Url>
+			</CrossDomains>
+		</API>
+	</Managers>
 
     <VirtualHosts>
         <VirtualHost include="VHost.xml" />

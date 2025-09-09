@@ -5,19 +5,26 @@ interface StreamStatusResult {
   isLoading: boolean;
   error: string | null;
   lastChecked: Date | null;
+  hasWebRTC?: boolean;
+  hasLLHLS?: boolean;
+  totalActiveStreams?: number;
+  streamDetails?: Record<string, unknown>;
+  method?: string;
 }
 
 interface UseStreamStatusOptions {
   checkInterval?: number; // Intervalo em ms para verificação automática
   onStatusChange?: (isOnline: boolean) => void;
   enablePeriodicCheck?: boolean; // Se deve fazer verificação periódica
+  authToken?: string; // Token de autenticação para acessar o auth-server
 }
 
 export const useStreamStatus = (options: UseStreamStatusOptions = {}) => {
   const {
     checkInterval = 30000, // 30 segundos por padrão
     onStatusChange,
-    enablePeriodicCheck = false // Por padrão, não fazer verificação periódica
+    enablePeriodicCheck = false, // Por padrão, não fazer verificação periódica
+    authToken
   } = options;
 
   const [status, setStatus] = useState<StreamStatusResult>({
@@ -30,19 +37,13 @@ export const useStreamStatus = (options: UseStreamStatusOptions = {}) => {
   const intervalRef = useRef<number | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  const getStreamCheckUrl = useCallback((token?: string) => {
-    const hostname = window.location.hostname;
-    const isSecure = window.location.protocol === 'https:';
-    const httpProtocol = isSecure ? 'https:' : 'http:';
-    const httpPort = isSecure ? '8443' : '8080';
-    const tokenParam = token ? `?token=${token}` : '';
-    
-    return `${httpProtocol}//${hostname}:${httpPort}/live/live/abr.m3u8${tokenParam}`;
+  const getAuthServerUrl = useCallback(() => { 
+    return `/api/stream/status`;
   }, []);
 
   const checkStreamStatus = useCallback(async (token?: string): Promise<boolean> => {
     try {
-      console.log('🔍 [useStreamStatus] Iniciando verificação de stream...');
+      console.log('🔍 [useStreamStatus] Iniciando verificação de stream via auth-server...');
       setStatus(prev => ({ ...prev, isLoading: true, error: null }));
 
       // Cancelar requisição anterior se existir
@@ -53,40 +54,57 @@ export const useStreamStatus = (options: UseStreamStatusOptions = {}) => {
       // Criar novo AbortController
       abortControllerRef.current = new AbortController();
 
-      const streamCheckUrl = getStreamCheckUrl(token);
-      console.log('🌐 [useStreamStatus] URL de verificação:', streamCheckUrl);
+      const authServerUrl = getAuthServerUrl();
+      const authTokenToUse = token || authToken;
+      
+      if (!authTokenToUse) {
+        throw new Error('Token de autenticação necessário para verificar status da stream');
+      }
 
-      const response = await fetch(streamCheckUrl, {
+      console.log('🌐 [useStreamStatus] URL do auth-server:', authServerUrl);
+
+      const response = await fetch(authServerUrl, {
         method: 'GET',
         signal: abortControllerRef.current.signal,
         headers: {
-          'Accept': 'application/vnd.apple.mpegurl, application/x-mpegURL, */*',
+          'Authorization': `Bearer ${authTokenToUse}`,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
         },
       });
 
-      // Verificar se a resposta é válida e contém dados de stream
-      const isOnline = response.ok && response.status === 200;
       console.log('📡 [useStreamStatus] Resposta HTTP:', response.status, response.statusText);
-      
-      if (isOnline) {
-        // Verificar se o conteúdo contém dados de stream válidos   
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('📊 [useStreamStatus] Dados recebidos:', data);
+
+        const isOnline = data.online === true;
+        
         setStatus(prev => ({
           ...prev,
           isOnline: isOnline,
           isLoading: false,
           error: null,
-          lastChecked: new Date()
+          lastChecked: new Date(),
+          hasWebRTC: data.hasWebRTC,
+          hasLLHLS: data.hasLLHLS,
+          totalActiveStreams: data.totalActiveStreams,
+          streamDetails: data.streamDetails,
+          method: data.method
         }));
 
         onStatusChange?.(isOnline);
         return isOnline;
       } else {
-        console.log('❌ [useStreamStatus] Resposta não OK:', response.status);
+        const errorData = await response.json().catch(() => ({ message: 'Erro desconhecido' }));
+        console.log('❌ [useStreamStatus] Erro na resposta:', response.status, errorData);
+        
         setStatus(prev => ({
           ...prev,
           isOnline: false,
           isLoading: false,
-          error: `HTTP ${response.status}: ${response.statusText}`,
+          error: errorData.message || `HTTP ${response.status}: ${response.statusText}`,
           lastChecked: new Date()
         }));
 
@@ -100,7 +118,7 @@ export const useStreamStatus = (options: UseStreamStatusOptions = {}) => {
       }
 
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.log('Stream offline:', errorMessage);
+      console.log('❌ [useStreamStatus] Erro na verificação:', errorMessage);
 
       setStatus(prev => ({
         ...prev,
@@ -113,7 +131,7 @@ export const useStreamStatus = (options: UseStreamStatusOptions = {}) => {
       onStatusChange?.(false);
       return false;
     }
-  }, [getStreamCheckUrl, onStatusChange, status.isOnline]);
+  }, [getAuthServerUrl, onStatusChange, status.isOnline, authToken]);
 
   const startPeriodicCheck = useCallback((token?: string) => {
     // Limpar intervalo anterior se existir

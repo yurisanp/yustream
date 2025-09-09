@@ -59,6 +59,13 @@ services:
       - STREAM_CHECK_URL=http://ovenmediaengine:8080/live/live/abr.m3u8
       - MONGODB_URI=mongodb://yustream:yustream123@mongodb:27017/yustream?authSource=admin
       - WEBHOOK_SECRET=yustream-webhook-secret-2024
+      # Configurações do OvenMediaEngine API
+      - OME_HOSTNAME=ovenmediaengine
+      - OME_API_PORT=8081
+      - OME_VHOST=default
+      - OME_APP=live
+      - OME_STREAM=live
+      - OME_ACCESS_TOKEN=maketears
     volumes:
       - ./auth-server:/app
       - /app/node_modules
@@ -75,7 +82,7 @@ services:
       - NODE_ENV=development
       - STREMIO_PORT=7000
       - JWT_SECRET=yustream-jwt-secret-change-in-production-2024
-      - STREAM_CHECK_URL=http://ovenmediaengine:8080/live/live/abr.m3u8
+      - AUTH_SERVER_URL=http://yustream-auth:3001
       - MONGODB_URI=mongodb://yustream:yustream123@mongodb:27017/yustream?authSource=admin
     volumes:
       - ./stremio-addon:/app
