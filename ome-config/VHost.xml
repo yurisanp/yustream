@@ -71,12 +71,12 @@
                             <WebRtcAutoAbr>true</WebRtcAutoAbr> 
                         </Options>
                         <RenditionTemplate>
-                            <Name>hls_${Height}p_${Bitrate}_${Framerate}</Name>
+                            <Name>${Height}P ${Bitrate}kbps ${Framerate} FPS</Name>
                             <VideoTemplate>
                                 <EncodingType>bypassed</EncodingType>
                             </VideoTemplate>
                             <AudioTemplate>
-                                <VariantName>bypass_audio</VariantName>
+                                <VariantName>opus_audio</VariantName>
                             </AudioTemplate>
                         </RenditionTemplate>
                     </Playlist>
@@ -84,12 +84,12 @@
                         <Name>ABR WHIP</Name>
                         <FileName>abr</FileName>
                         <RenditionTemplate>
-                            <Name>hls_${Height}p_${Bitrate}_${Framerate}</Name>
+                            <Name>${Height}P ${Bitrate}kbps ${Framerate} FPS</Name>
                             <VideoTemplate>
                                 <EncodingType>bypassed</EncodingType>
                             </VideoTemplate>
                             <AudioTemplate>
-                                <VariantName>aac_audio</VariantName>
+                                <VariantName>bypass_audio</VariantName>
                             </AudioTemplate>
                         </RenditionTemplate>
                     </Playlist>
@@ -103,9 +103,9 @@
                             <Bypass>True</Bypass>
                         </Video>
                         <Audio>
-                            <Name>aac_audio</Name>
-                            <Codec>aac</Codec>
-                            <Bitrate>128000</Bitrate>
+                            <Name>opus_audio</Name>
+                            <Codec>opus</Codec>
+                            <Bitrate>160000</Bitrate>
                             <Samplerate>48000</Samplerate>
                             <Channel>2</Channel>
                         </Audio>
