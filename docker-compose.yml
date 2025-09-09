@@ -42,8 +42,6 @@ services:
     volumes:
       - ./mongodb_data:/data/db
       - ./mongo-init:/docker-entrypoint-initdb.d
-    ports:
-      - "27017:27017"
     networks:
       - streaming-network
 
