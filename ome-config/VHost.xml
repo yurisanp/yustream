@@ -65,11 +65,6 @@
                         <Options>
                             <WebRtcAutoAbr>true</WebRtcAutoAbr> 
                         </Options>
-                        <Rendition>
-                            <Name>Bypass</Name>
-                            <Video>bypass_video</Video>
-                            <Audio>bypass_audio</Audio>
-                        </Rendition>
                         <RenditionTemplate>
                             <Name>hls_${Height}p_${Bitrate}_${Framerate}</Name>
                             <VideoTemplate>
@@ -83,11 +78,6 @@
                     <Playlist>
                         <Name>ABR WHIP</Name>
                         <FileName>abr</FileName>
-                        <Rendition>
-                            <Name>Bypass</Name>
-                            <Video>bypass_video</Video>
-                            <Audio>aac_audio</Audio>
-                        </Rendition>
                         <RenditionTemplate>
                             <Name>hls_${Height}p_${Bitrate}_${Framerate}</Name>
                             <VideoTemplate>

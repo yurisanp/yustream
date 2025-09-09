@@ -46,8 +46,10 @@ export const useStreamPlayer = ({
   const getPlayerConfig = useCallback((streamToken: string | null) => {
     const hostname = window.location.hostname;
     const isSecure = window.location.protocol === 'https:';
-    const httpProtocol = isSecure ? 'https:' : 'http:';
-    const httpPort = isSecure ? '8443' : '8080';
+		const wsProtocol = isSecure ? 'wss:' : 'ws:';
+		const httpProtocol = isSecure ? 'https:' : 'http:';
+		const wsPort = isSecure ? '3334' : '3333';
+		const httpPort = isSecure ? '8443' : '8080';
     const tokenParam = streamToken ? `?token=${streamToken}` : '';
     
     return {
@@ -61,12 +63,24 @@ export const useStreamPlayer = ({
       playsinline: true,
       sources: [
         {
+					label: "WebRTC",
+					type: "webrtc" as const,
+					file: `${wsProtocol}//${hostname}:${wsPort}/live/${STREAM_ID}/abr_webrtc${tokenParam}&transport=tcp`,
+					lowLatency: true,
+				},
+        {
           label: 'LLHLS',
           type: 'llhls' as const,
           file: `${httpProtocol}//${hostname}:${httpPort}/live/${STREAM_ID}/abr.m3u8${tokenParam}`,
           lowLatency: true,
         },
       ],
+      webrtcConfig: {
+				iceServers: [
+					{ urls: "stun:stun.l.google.com:19302" },
+					{ urls: "stun:stun1.l.google.com:19302" },
+				],
+			},
       hlsConfig: {
         lowLatencyMode: true,
         backBufferLength: 90,
