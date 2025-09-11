@@ -55,12 +55,12 @@
 
             <!-- Configurações de publicadores -->
             <Publishers>
-                <AppWorkerCount>1</AppWorkerCount>
-                <StreamWorkerCount>8</StreamWorkerCount>
+                <AppWorkerCount>2</AppWorkerCount>
+                <StreamWorkerCount>2</StreamWorkerCount>
                 <LLHLS>
-                    <SegmentDuration>4</SegmentDuration>
+                    <ChunkDuration>0.2</ChunkDuration>
+                    <SegmentDuration>6</SegmentDuration>
                     <SegmentCount>10</SegmentCount>
-                    <PartHoldBack>7</PartHoldBack>
                     <CrossDomains>
                         <Url>*</Url>
                     </CrossDomains>
@@ -76,37 +76,6 @@
                 <!-- Perfil ABR (Adaptive Bitrate) com múltiplas qualidades -->
                 <OutputProfile>
                     <Name>fonte</Name>
-                    <OutputStreamName>${OriginStreamName}</OutputStreamName>
-                    <Encodes>
-                        <!-- Configuração de áudio -->
-                        <Audio>
-                            <Name>bypass_audio</Name>
-                            <Bypass>True</Bypass>
-                        </Audio>
-                        <Video>
-                            <Name>bypass_video</Name>
-                            <Bypass>True</Bypass>
-                        </Video>
-                    </Encodes>
-                </OutputProfile>
-            </OutputProfiles>
-
-            <!-- Configurações de provedores -->
-            <Providers>
-                <RTMP>
-                    <BlockDuplicateStreamName>true</BlockDuplicateStreamName>
-                </RTMP>
-            </Providers>
-        </Application>
-        <Application>
-            <Name>1080</Name>
-            <Type>live</Type>
-
-            <!-- Perfis de saída com múltiplas qualidades -->
-            <OutputProfiles>
-                <!-- Perfil ABR (Adaptive Bitrate) com múltiplas qualidades -->
-                <OutputProfile>
-                    <Name>1080</Name>
                     <OutputStreamName>${OriginStreamName}</OutputStreamName>
                     <Encodes>
                         <!-- Configuração de áudio -->
