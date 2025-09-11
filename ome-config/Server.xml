@@ -23,19 +23,6 @@
                 <Port>1935</Port>
                 <WorkerCount>2</WorkerCount>
             </RTMP>
-            <WebRTC>
-                <Signalling>
-                    <Port>3333</Port>
-                    <TLSPort>3334</TLSPort>
-                    <WorkerCount>2</WorkerCount>
-                </Signalling>
-                <IceCandidates>
-                    <TcpRelay>163.176.146.172:3478</TcpRelay>
-                    <TcpForce>false</TcpForce>
-                    <IceCandidate>163.176.146.172:10000-10009/udp</IceCandidate>
-                    <TcpRelayWorkerCount>2</TcpRelayWorkerCount>
-                </IceCandidates>
-            </WebRTC>
         </Providers>
         <Publishers>
             <LLHLS>
