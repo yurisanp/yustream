@@ -122,7 +122,7 @@
             <!-- Configurações de publicadores -->
             <Publishers>
                 <AppWorkerCount>1</AppWorkerCount>
-                <StreamWorkerCount>1</StreamWorkerCount>               
+                <StreamWorkerCount>12</StreamWorkerCount>               
                 <LLHLS>
                     <SegmentDuration>4</SegmentDuration>
                     <SegmentCount>10</SegmentCount>
@@ -135,7 +135,7 @@
                     <Timeout>30000</Timeout>
                     <Rtx>false</Rtx>
                     <Ulpfec>false</Ulpfec>
-                    <JitterBuffer>false</JitterBuffer>
+                    <JitterBuffer>true</JitterBuffer>
                 </WebRTC> 
             </Publishers>
         </Application>
