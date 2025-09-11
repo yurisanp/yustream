@@ -3,7 +3,7 @@
     <Name>YustreamOME</Name>
     <Type>origin</Type>
     <IP>*</IP>
-    <PrivacyProtection>false</PrivacyProtection>
+    <PrivacyProtection>true</PrivacyProtection>
     <StunServer>stun.l.google.com:19302</StunServer>
     
     <Modules>
@@ -30,18 +30,6 @@
                 <TLSPort>8443</TLSPort>
                 <WorkerCount>2</WorkerCount>
             </LLHLS>
-            <WebRTC>
-                <Signalling>
-                    <Port>3333</Port>
-                    <TLSPort>3334</TLSPort>
-                    <WorkerCount>2</WorkerCount>
-                </Signalling>
-                <IceCandidates>
-                    <TcpRelay>163.176.146.172:3478</TcpRelay>
-                    <IceCandidate>163.176.146.172:10000-10009/udp</IceCandidate>
-                    <TcpRelayWorkerCount>2</TcpRelayWorkerCount>
-                </IceCandidates>
-            </WebRTC>
         </Publishers>
     </Bind>
 
