@@ -135,7 +135,7 @@
                     <Timeout>30000</Timeout>
                     <Rtx>false</Rtx>
                     <Ulpfec>false</Ulpfec>
-                    <JitterBuffer>true</JitterBuffer>
+                    <JitterBuffer>false</JitterBuffer>
                 </WebRTC> 
             </Publishers>
         </Application>
