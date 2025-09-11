@@ -56,7 +56,7 @@
             <!-- Configurações de publicadores -->
             <Publishers>
                 <AppWorkerCount>1</AppWorkerCount>
-                <StreamWorkerCount>4</StreamWorkerCount>               
+                <StreamWorkerCount>4</StreamWorkerCount>
                 <LLHLS>
                     <SegmentDuration>4</SegmentDuration>
                     <SegmentCount>10</SegmentCount>
@@ -64,7 +64,7 @@
                     <CrossDomains>
                         <Url>*</Url>
                     </CrossDomains>
-                </LLHLS>  
+                </LLHLS>
             </Publishers>
         </Application>
         <Application>
@@ -76,6 +76,68 @@
                 <!-- Perfil ABR (Adaptive Bitrate) com múltiplas qualidades -->
                 <OutputProfile>
                     <Name>fonte</Name>
+                    <OutputStreamName>${OriginStreamName}</OutputStreamName>
+                    <Encodes>
+                        <!-- Configuração de áudio -->
+                        <Audio>
+                            <Name>bypass_audio</Name>
+                            <Bypass>True</Bypass>
+                        </Audio>
+                        <Video>
+                            <Name>bypass_video</Name>
+                            <Bypass>True</Bypass>
+                        </Video>
+                    </Encodes>
+                </OutputProfile>
+            </OutputProfiles>
+
+            <!-- Configurações de provedores -->
+            <Providers>
+                <RTMP>
+                    <BlockDuplicateStreamName>true</BlockDuplicateStreamName>
+                </RTMP>
+            </Providers>
+        </Application>
+        <Application>
+            <Name>1080</Name>
+            <Type>live</Type>
+
+            <!-- Perfis de saída com múltiplas qualidades -->
+            <OutputProfiles>
+                <!-- Perfil ABR (Adaptive Bitrate) com múltiplas qualidades -->
+                <OutputProfile>
+                    <Name>1080</Name>
+                    <OutputStreamName>${OriginStreamName}</OutputStreamName>
+                    <Encodes>
+                        <!-- Configuração de áudio -->
+                        <Audio>
+                            <Name>bypass_audio</Name>
+                            <Bypass>True</Bypass>
+                        </Audio>
+                        <Video>
+                            <Name>bypass_video</Name>
+                            <Bypass>True</Bypass>
+                        </Video>
+                    </Encodes>
+                </OutputProfile>
+            </OutputProfiles>
+
+            <!-- Configurações de provedores -->
+            <Providers>
+                <RTMP>
+                    <BlockDuplicateStreamName>true</BlockDuplicateStreamName>
+                </RTMP>
+            </Providers>
+        </Application>
+        <Application>
+            <Name>720</Name>
+            <Type>live</Type>
+
+            <!-- Perfis de saída com múltiplas qualidades -->
+            <OutputProfiles>
+                <!-- Perfil ABR (Adaptive Bitrate) com múltiplas qualidades -->
+                <OutputProfile>
+                    <Name>720</Name>
                     <OutputStreamName>${OriginStreamName}</OutputStreamName>
                     <Encodes>
                         <!-- Configuração de áudio -->

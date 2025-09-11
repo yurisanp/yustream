@@ -20,6 +20,20 @@
                 </Track>
             </TrackMap>
         </SourceStream>
+        <SourceStream>
+            <Name>720</Name>
+            <Url>stream://default/720/720</Url>
+            <TrackMap>
+                <Track>
+                    <SourceTrackName>bypass_video</SourceTrackName>
+                    <NewTrackName>720_video</NewTrackName>
+                </Track>
+                <Track>
+                    <SourceTrackName>bypass_audio</SourceTrackName>
+                    <NewTrackName>720_audio</NewTrackName>
+                </Track>
+            </TrackMap>
+        </SourceStream>
     </SourceStreams>
     
     <Playlists>
@@ -31,6 +45,11 @@
                 <Name>Fonte</Name>
                 <Video>fonte_video</Video>
                 <Audio>fonte_audio</Audio>
+            </Rendition>
+            <Rendition>
+                <Name>720p</Name>
+                <Video>720_video</Video>
+                <Audio>720_audio</Audio>
             </Rendition>
         </Playlist>
     </Playlists>

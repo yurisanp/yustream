@@ -15,7 +15,7 @@ const initUsers = require("./scripts/initUsers");
 const app = express();
 const PORT = process.env.PORT || 3001;
 const JWT_SECRET =
-	process.env.JWT_SECRET || "yustream-secret-key-change-in-production"
+	process.env.JWT_SECRET || "yustream-secret-key-change-in-production";
 
 // Middleware de segurança
 app.use(
@@ -146,7 +146,7 @@ app.get("/stream/status", authenticateToken, async (req, res) => {
 	const streamName = process.env.OME_STREAM || "live";
 	try {
 		// URL da API REST do OvenMediaEngine para verificar streams ativas
-		const omeApiUrl = `http://${hostname}:${omeApiPort}/v1/vhosts/${vhostName}/apps/${appName}/streams/${streamName}`;
+		const omeApiUrl = `http://${hostname}:${omeApiPort}/v1/vhosts/${vhostName}/apps/${appName}/multiplexChannels/${streamName}`;
 
 		console.log(`🔍 Verificando status da stream via API OME: ${omeApiUrl}`);
 
@@ -166,50 +166,28 @@ app.get("/stream/status", authenticateToken, async (req, res) => {
 			response.status === 200 &&
 			response.data &&
 			response.data.response &&
-			response.data.response.outputs &&
-			Array.isArray(response.data.response.outputs)
+			response.data.response.state &&
+			response.data.response.state === "Playing"
 		) {
-			console.log(response.data, response.status === 200 &&
-        response.data &&
-        response.data.response &&
-        response.data.response.outputs &&
-        Array.isArray(response.data.response.outputs));
-
-			const targetPlaylist = response.data.response.outputs.find(
-				(output) => output.name === streamName
-			);
-			let hasWebRTC = 0;
-			let hasLLHLS = 0;
-
-			if (targetPlaylist && targetPlaylist.playlists && Array.isArray(targetPlaylist.playlists)) {
-				for (const playlist of targetPlaylist.playlists) {
-					if (playlist.fileName == "abr") {
-						hasLLHLS = 1;
-					}
-					if (playlist.fileName == "abr_webrtc") {
-						hasWebRTC = 1;
-					}
-				}
-			}
-
-			let activeStreams = hasWebRTC + hasLLHLS;
-
 			res.json({
-				online: activeStreams > 0 ? true : false,
-				status: activeStreams > 0 ? "online" : "offline",
+				online: true,
+				status: "online",
 				streamName: streamName,
-				hasWebRTC: hasWebRTC > 0 ? true : false,
-				hasLLHLS: hasLLHLS > 0 ? true : false,
-				totalActiveStreams: activeStreams,
-				streamDetails: targetPlaylist || null,
+				hasWebRTC: false,
+				hasLLHLS: true,
+				totalActiveStreams: 1,
+				streamDetails: response.data.response || null,
 				timestamp: new Date().toISOString(),
 			});
 		} else {
-			console.log("❌ Resposta inválida da API OME:", response.status);
 			res.json({
 				online: false,
 				status: "offline",
-				error: "Resposta inválida da API do OvenMediaEngine",
+				streamName: streamName,
+				hasWebRTC: false,
+				hasLLHLS: false,
+				totalActiveStreams: 0,
+				streamDetails: null,
 				timestamp: new Date().toISOString(),
 			});
 		}
