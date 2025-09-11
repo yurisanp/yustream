@@ -21,14 +21,14 @@
         <Providers>
             <RTMP>
                 <Port>1935</Port>
-                <WorkerCount>2</WorkerCount>
+                <WorkerCount>4</WorkerCount>
             </RTMP>
         </Providers>
         <Publishers>
             <LLHLS>
                 <Port>8080</Port>
                 <TLSPort>8443</TLSPort>
-                <WorkerCount>2</WorkerCount>
+                <WorkerCount>4</WorkerCount>
             </LLHLS>
         </Publishers>
     </Bind>

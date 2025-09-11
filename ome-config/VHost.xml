@@ -56,7 +56,7 @@
             <!-- Configurações de publicadores -->
             <Publishers>
                 <AppWorkerCount>1</AppWorkerCount>
-                <StreamWorkerCount>4</StreamWorkerCount>
+                <StreamWorkerCount>8</StreamWorkerCount>
                 <LLHLS>
                     <SegmentDuration>4</SegmentDuration>
                     <SegmentCount>10</SegmentCount>
