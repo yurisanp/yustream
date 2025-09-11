@@ -62,28 +62,20 @@
                         <Options>
                             <WebRtcAutoAbr>true</WebRtcAutoAbr> 
                         </Options>
-                        <RenditionTemplate>
-                            <Name>${Height}P ${Bitrate}kbps ${Framerate} FPS</Name>
-                            <VideoTemplate>
-                                <EncodingType>bypassed</EncodingType>
-                            </VideoTemplate>
-                            <AudioTemplate>
-                                <VariantName>opus_audio</VariantName>
-                            </AudioTemplate>
-                        </RenditionTemplate>
+                        <Rendition>
+                            <Name>Fonte</Name>
+                            <Video>bypass_video</Video>
+                            <Audio>opus_audio</Audio>
+                        </Rendition>
                     </Playlist>
                     <Playlist>
                         <Name>ABR WHIP</Name>
                         <FileName>abr</FileName>
-                        <RenditionTemplate>
-                            <Name>${Height}P ${Bitrate}kbps ${Framerate} FPS</Name>
-                            <VideoTemplate>
-                                <EncodingType>bypassed</EncodingType>
-                            </VideoTemplate>
-                            <AudioTemplate>
-                                <VariantName>aac_audio</VariantName>
-                            </AudioTemplate>
-                        </RenditionTemplate>
+                        <Rendition>
+                            <Name>Fonte</Name>
+                            <Video>bypass_video</Video>
+                            <Audio>aac_audio</Audio>
+                        </Rendition>
                     </Playlist>
                     <Encodes>
                         <Video>
