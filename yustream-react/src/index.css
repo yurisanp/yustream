@@ -30,12 +30,6 @@ body {
   min-height: 100vh;
 }
 
-/* Otimizações de performance */
-.oven-player-container {
-  width: 100% !important;
-  height: 100% !important;
-}
-
 /* Animações suaves para transições */
 * {
   transition: opacity 0.2s ease-in-out;

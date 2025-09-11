@@ -5,6 +5,7 @@ import OvenStreamPlayer from './components/OvenStreamPlayer'
 import Toast from './components/Toast'
 import Login from './components/Login'
 import StremioConfig from './components/StremioConfig'
+import AdminScreen from './components/AdminScreen'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 
 export interface ToastMessage {
@@ -14,15 +15,17 @@ export interface ToastMessage {
 }
 
 const AppContent = memo(() => {
-  const { isAuthenticated, isLoading, login } = useAuth()
+  const { isAuthenticated, isLoading, login, user } = useAuth()
   const [toasts, setToasts] = useState<ToastMessage[]>([])
-  const [currentPage, setCurrentPage] = useState<'main' | 'stremio-config'>('main')
+  const [currentPage, setCurrentPage] = useState<'main' | 'stremio-config' | 'admin'>('main')
 
-  // Detectar se é rota do Stremio
+  // Detectar rota atual
   useEffect(() => {
     const path = window.location.pathname
     if (path === '/configure') {
       setCurrentPage('stremio-config')
+    } else if (path === '/admin') {
+      setCurrentPage('admin')
     } else {
       setCurrentPage('main')
     }
@@ -48,6 +51,16 @@ const AppContent = memo(() => {
   const handleBackToMain = useCallback(() => {
     setCurrentPage('main')
     window.history.pushState({}, '', '/')
+  }, [])
+
+  const handleNavigateToStremio = useCallback(() => {
+    setCurrentPage('stremio-config')
+    window.history.pushState({}, '', '/configure')
+  }, [])
+
+  const handleNavigateToAdmin = useCallback(() => {
+    setCurrentPage('admin')
+    window.history.pushState({}, '', '/admin')
   }, [])
 
   // Mostrar loading durante verificação de autenticação
@@ -102,12 +115,55 @@ const AppContent = memo(() => {
     )
   }
 
+  // Renderizar página de Admin (requer autenticação)
+  if (currentPage === 'admin') {
+    if (!isAuthenticated) {
+      return (
+        <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
+          <Login onLogin={login} showToast={showToast} />
+          {toasts.map(toast => (
+            <Toast
+              key={toast.id}
+              message={toast.message}
+              type={toast.type}
+              onClose={() => removeToast(toast.id)}
+            />
+          ))}
+        </Box>
+      )
+    }
+
+    return (
+      <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
+        <AdminScreen 
+          showToast={showToast} 
+          onBack={handleBackToMain}
+          user={user}
+        />
+        
+        {/* Toast Container */}
+        {toasts.map(toast => (
+          <Toast
+            key={toast.id}
+            message={toast.message}
+            type={toast.type}
+            onClose={() => removeToast(toast.id)}
+          />
+        ))}
+      </Box>
+    )
+  }
+
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
       {!isAuthenticated ? (
         <Login onLogin={login} showToast={showToast} />
       ) : (
-        <OvenStreamPlayer showToast={showToast} />
+        <OvenStreamPlayer 
+          showToast={showToast} 
+          onNavigateToStremio={handleNavigateToStremio}
+          onNavigateToAdmin={handleNavigateToAdmin}
+        />
       )}
 
       {/* Toast Container */}
