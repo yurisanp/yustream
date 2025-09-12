@@ -30,6 +30,11 @@
                 <TLSPort>8443</TLSPort>
                 <WorkerCount>2</WorkerCount>
             </LLHLS>
+            <HLS>
+                <Port>8080</Port>
+                <TLSPort>8443</TLSPort>
+                <WorkerCount>2</WorkerCount>
+            </HLS>
         </Publishers>
     </Bind>
 

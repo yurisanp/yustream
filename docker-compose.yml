@@ -8,9 +8,9 @@ services:
     ports:
       # RTMP port for OBS streaming
       - "1935:1935"
-      # HLS/DASH HTTP port
+      # LLHLS/DASH HTTP port
       - "8080:8080"
-      # HLS/DASH HTTPS port
+      # LLHLS/DASH HTTPS port
       - "8443:8443"
     volumes:
       - ./ome-config:/opt/ovenmediaengine/bin/origin_conf

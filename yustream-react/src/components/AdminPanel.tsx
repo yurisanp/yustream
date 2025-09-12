@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { Users, Plus, Edit, Trash2, Search, UserCheck, UserX, Shield, Eye, EyeOff } from 'lucide-react'
+import { Users, Plus, Edit, Trash2, Search, UserCheck, UserX, Shield, Eye, EyeOff, Video } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
+import ABRControl from './ABRControl'
 import './AdminPanel.css'
 
 interface User {
@@ -32,6 +33,7 @@ interface AdminPanelProps {
 
 const AdminPanel = ({ showToast, onClose }: AdminPanelProps) => {
   const { token } = useAuth()
+  const [activeTab, setActiveTab] = useState<'users' | 'abr'>('users')
   const [users, setUsers] = useState<User[]>([])
   const [stats, setStats] = useState<UserStats | null>(null)
   const [loading, setLoading] = useState(true)
@@ -241,60 +243,89 @@ const AdminPanel = ({ showToast, onClose }: AdminPanelProps) => {
     <div className="admin-panel">
       <div className="admin-header">
         <div className="header-left">
-          <h1><Users size={24} /> Gerenciamento de Usuários</h1>
+          <h1>
+            {activeTab === 'users' ? (
+              <><Users size={24} /> Gerenciamento de Usuários</>
+            ) : (
+              <><Video size={24} /> Controle ABR</>
+            )}
+          </h1>
         </div>
         <div className="header-right">
-          <button className="btn-create" onClick={() => setShowCreateModal(true)}>
-            <Plus size={16} />
-            Novo Usuário
-          </button>
+          {activeTab === 'users' && (
+            <button className="btn-create" onClick={() => setShowCreateModal(true)}>
+              <Plus size={16} />
+              Novo Usuário
+            </button>
+          )}
           <button className="btn-close" onClick={onClose}>
             ✕
           </button>
         </div>
       </div>
 
-      {/* Estatísticas */}
-      {stats && (
-        <div className="stats-grid">
-          <div className="stat-card">
-            <div className="stat-icon users">
-              <Users size={24} />
+      {/* Tabs */}
+      <div className="admin-tabs">
+        <button 
+          className={`tab-button ${activeTab === 'users' ? 'active' : ''}`}
+          onClick={() => setActiveTab('users')}
+        >
+          <Users size={16} />
+          Usuários
+        </button>
+        <button 
+          className={`tab-button ${activeTab === 'abr' ? 'active' : ''}`}
+          onClick={() => setActiveTab('abr')}
+        >
+          <Video size={16} />
+          Controle ABR
+        </button>
+      </div>
+
+      {/* Conteúdo da aba ativa */}
+      {activeTab === 'users' ? (
+        <>
+          {/* Estatísticas */}
+          {stats && (
+            <div className="stats-grid">
+              <div className="stat-card">
+                <div className="stat-icon users">
+                  <Users size={24} />
+                </div>
+                <div className="stat-content">
+                  <h3>{stats.total}</h3>
+                  <p>Total de Usuários</p>
+                </div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-icon active">
+                  <UserCheck size={24} />
+                </div>
+                <div className="stat-content">
+                  <h3>{stats.active}</h3>
+                  <p>Usuários Ativos</p>
+                </div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-icon admins">
+                  <Shield size={24} />
+                </div>
+                <div className="stat-content">
+                  <h3>{stats.byRole.admin}</h3>
+                  <p>Administradores</p>
+                </div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-icon inactive">
+                  <UserX size={24} />
+                </div>
+                <div className="stat-content">
+                  <h3>{stats.inactive}</h3>
+                  <p>Usuários Inativos</p>
+                </div>
+              </div>
             </div>
-            <div className="stat-content">
-              <h3>{stats.total}</h3>
-              <p>Total de Usuários</p>
-            </div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon active">
-              <UserCheck size={24} />
-            </div>
-            <div className="stat-content">
-              <h3>{stats.active}</h3>
-              <p>Usuários Ativos</p>
-            </div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon admins">
-              <Shield size={24} />
-            </div>
-            <div className="stat-content">
-              <h3>{stats.byRole.admin}</h3>
-              <p>Administradores</p>
-            </div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon inactive">
-              <UserX size={24} />
-            </div>
-            <div className="stat-content">
-              <h3>{stats.inactive}</h3>
-              <p>Usuários Inativos</p>
-            </div>
-          </div>
-        </div>
-      )}
+          )}
 
       {/* Filtros */}
       <div className="filters">
@@ -537,6 +568,10 @@ const AdminPanel = ({ showToast, onClose }: AdminPanelProps) => {
             </form>
           </div>
         </div>
+      )}
+        </>
+      ) : (
+        <ABRControl showToast={showToast} />
       )}
     </div>
   )

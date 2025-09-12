@@ -62,9 +62,15 @@ export const useStreamPlayer = ({
       playsinline: true,
       sources: [
         {
-          label: 'LLHLS',
+          label: 'Baixa latência',
           type: 'llhls' as const,
           file: `${httpProtocol}//${hostname}:${httpPort}/live/${STREAM_ID}/abr.m3u8${tokenParam}`,
+          lowLatency: true,
+        },
+        {
+          label: 'Padrão',
+          type: 'llhls' as const,
+          file: `${httpProtocol}//${hostname}:${httpPort}/live/${STREAM_ID}/ts:abr.m3u8${tokenParam}`,
           lowLatency: true,
         },
       ],

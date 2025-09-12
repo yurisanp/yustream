@@ -503,6 +503,293 @@ app.get("/admin/stats", authenticateToken, requireAdmin, async (req, res) => {
 	}
 });
 
+// ROTAS DE CONTROLE ABR VIA OVENMEDIAENGINE API
+
+// Configurações do OvenMediaEngine
+const getOMEConfig = () => ({
+	hostname: process.env.OME_HOSTNAME || "ovenmediaengine",
+	apiPort: process.env.OME_API_PORT || "8081",
+	vhostName: process.env.OME_VHOST || "default",
+	appName: process.env.OME_APP || "live",
+	accessToken: process.env.OME_ACCESS_TOKEN || "maketears"
+});
+
+// Helper para fazer requisições para OME
+const makeOMERequest = async (endpoint, method = 'GET', data = null) => {
+	const config = getOMEConfig();
+	const authHeader = Buffer.from(config.accessToken).toString('base64');
+	
+	const url = `http://${config.hostname}:${config.apiPort}${endpoint}`;
+	
+	const options = {
+		method,
+		headers: {
+			'Accept': 'application/json',
+			'Content-Type': 'application/json',
+			'Authorization': `Basic ${authHeader}`,
+		},
+		timeout: 10000
+	};
+	
+	if (data) {
+		options.data = data;
+	}
+	
+	try {
+		const response = await axios(url, options);
+		return response.data;
+	} catch (error) {
+		console.error(`Erro na requisição OME ${method} ${endpoint}:`, error.message);
+		throw error;
+	}
+};
+
+// GET /api/abr/config - Obter configuração atual do ABR
+app.get("/abr/config", authenticateToken, requireAdmin, async (req, res) => {
+	try {
+		const config = getOMEConfig();
+		const channelName = "live"; // Nome do canal multiplex
+		
+		// Tentar obter informações do canal multiplex
+		try {
+			const channelInfo = await makeOMERequest(
+				`/v1/vhosts/${config.vhostName}/apps/${config.appName}/multiplexChannels/${channelName}`
+			);
+			
+			// Converter resposta do OME para formato do frontend
+			const qualities = [
+				{ name: 'Fonte', enabled: false, videoTrack: 'fonte_video', audioTrack: 'fonte_audio', url: 'stream://default/fonte/fonte' },
+				{ name: '1440', enabled: false, videoTrack: '1440_video', audioTrack: '1440_audio', url: 'stream://default/1440/1440' },
+				{ name: '1080', enabled: false, videoTrack: '1080_video', audioTrack: '1080_audio', url: 'stream://default/1080/1080' },
+				{ name: '720', enabled: false, videoTrack: '720_video', audioTrack: '720_audio', url: 'stream://default/720/720' },
+				{ name: '360', enabled: false, videoTrack: '360_video', audioTrack: '360_audio', url: 'stream://default/360/360' }
+			];
+			
+			// Verificar quais qualidades estão ativas baseado nos sourceStreams
+			if (channelInfo.response && channelInfo.response.sourceStreams) {
+				channelInfo.response.sourceStreams.forEach(stream => {
+					const qualityName = stream.name.charAt(0).toUpperCase() + stream.name.slice(1);
+					const quality = qualities.find(q => q.name === qualityName);
+					if (quality) {
+						quality.enabled = true;
+					}
+				});
+			}
+			
+			const abrConfig = {
+				qualities,
+				playlistName: channelInfo.response?.playlists?.[0]?.name || 'LLHLS ABR',
+				fileName: channelInfo.response?.playlists?.[0]?.fileName || 'abr'
+			};
+			
+			res.json(abrConfig);
+		} catch (error) {
+			// Se canal não existe, retornar configuração padrão
+			if (error.response?.status === 404) {
+				const defaultConfig = {
+					qualities: [
+						{ name: 'Fonte', enabled: true, videoTrack: 'fonte_video', audioTrack: 'fonte_audio', url: 'stream://default/fonte/fonte' },
+						{ name: '1440', enabled: false, videoTrack: '1440_video', audioTrack: '1440_audio', url: 'stream://default/1440/1440' },
+						{ name: '1080', enabled: false, videoTrack: '1080_video', audioTrack: '1080_audio', url: 'stream://default/1080/1080' },
+						{ name: '720', enabled: true, videoTrack: '720_video', audioTrack: '720_audio', url: 'stream://default/720/720' },
+						{ name: '360', enabled: false, videoTrack: '360_video', audioTrack: '360_audio', url: 'stream://default/360/360' }
+					],
+					playlistName: 'LLHLS ABR',
+					fileName: 'abr'
+				};
+				res.json(defaultConfig);
+			} else {
+				throw error;
+			}
+		}
+	} catch (error) {
+		console.error('Erro ao carregar configuração ABR:', error);
+		res.status(500).json({ message: 'Erro ao carregar configuração ABR' });
+	}
+});
+
+// PUT /api/abr/config - Atualizar configuração completa do ABR
+app.put("/abr/config", authenticateToken, requireAdmin, async (req, res) => {
+	try {
+		const { qualities, playlistName, fileName } = req.body;
+		const config = getOMEConfig();
+		const channelName = "live";
+		
+		// Converter para formato OME
+		const enabledQualities = qualities.filter(q => q.enabled);
+		
+		const omeConfig = {
+			outputStream: {
+				name: channelName
+			},
+			sourceStreams: enabledQualities.map(quality => ({
+				name: quality.name.toLowerCase(),
+				url: quality.url,
+				trackMap: [
+					{
+						sourceTrackName: "bypass_video",
+						newTrackName: quality.videoTrack,
+					},
+					{
+						sourceTrackName: "bypass_audio",
+						newTrackName: quality.audioTrack,
+					}
+				]
+			})),
+			playlists: [
+				{
+					name: playlistName,
+					fileName: fileName,
+					options: {
+						webrtcAutoAbr: true,
+						hlsChunklistPathDepth: 0,
+						enableTsPackaging: true
+					},
+					renditions: enabledQualities.map(quality => ({
+						name: quality.name,
+						video: quality.videoTrack,
+						audio: quality.audioTrack
+					}))
+				}
+			]
+		};
+		
+		// Primeiro tentar deletar canal existente se houver
+		try {
+			await makeOMERequest(
+				`/v1/vhosts/${config.vhostName}/apps/${config.appName}/multiplexChannels/${channelName}`,
+				'DELETE'
+			);
+		} catch (error) {
+			// Ignorar erro se canal não existir
+		}
+		
+		// Criar novo canal
+		await makeOMERequest(
+			`/v1/vhosts/${config.vhostName}/apps/${config.appName}/multiplexChannels`,
+			'POST',
+			omeConfig
+		);
+		
+		res.json({ message: 'Configuração ABR atualizada com sucesso' });
+	} catch (error) {
+		console.error('Erro ao atualizar configuração ABR:', error);
+		res.status(500).json({ message: 'Erro ao atualizar configuração ABR' });
+	}
+});
+
+// PATCH /api/abr/quality/:qualityName - Ativar/desativar uma qualidade específica
+app.patch("/abr/quality/:qualityName", authenticateToken, requireAdmin, async (req, res) => {
+	try {
+		const { qualityName } = req.params;
+		const { enabled } = req.body;
+		const config = getOMEConfig();
+		const channelName = "live";
+		
+		// Obter configuração atual
+		let currentConfig;
+		try {
+			const channelInfo = await makeOMERequest(
+				`/v1/vhosts/${config.vhostName}/apps/${config.appName}/multiplexChannels/${channelName}`
+			);
+			currentConfig = channelInfo.response;
+		} catch (error) {
+			// Se canal não existe, usar configuração padrão
+			currentConfig = {
+				playlists: [{ name: 'LLHLS ABR', fileName: 'abr' }],
+				sourceStreams: []
+			};
+		}
+		
+		// Atualizar configuração
+		const qualities = [
+			{ name: 'Fonte', enabled: false, videoTrack: 'fonte_video', audioTrack: 'fonte_audio', url: 'stream://default/fonte/fonte' },
+			{ name: '1440', enabled: false, videoTrack: '1440_video', audioTrack: '1440_audio', url: 'stream://default/1440/1440' },
+			{ name: '1080', enabled: false, videoTrack: '1080_video', audioTrack: '1080_audio', url: 'stream://default/1080/1080' },
+			{ name: '720', enabled: false, videoTrack: '720_video', audioTrack: '720_audio', url: 'stream://default/720/720' },
+			{ name: '360', enabled: false, videoTrack: '360_video', audioTrack: '360_audio', url: 'stream://default/360/360' }
+		];
+		
+		// Mapear qualidades ativas atuais
+		if (currentConfig.sourceStreams) {
+			currentConfig.sourceStreams.forEach(stream => {
+				const qualityName = stream.name.charAt(0).toUpperCase() + stream.name.slice(1);
+				const quality = qualities.find(q => q.name === qualityName);
+				if (quality) {
+					quality.enabled = true;
+				}
+			});
+		}
+		
+		// Atualizar qualidade específica
+		const targetQuality = qualities.find(q => q.name === qualityName);
+		if (targetQuality) {
+			targetQuality.enabled = enabled;
+		}
+		
+		// Recriar canal com nova configuração
+		const enabledQualities = qualities.filter(q => q.enabled);
+		
+		const omeConfig = {
+			outputStream: {
+				name: channelName
+			},
+			sourceStreams: enabledQualities.map(quality => ({
+				name: quality.name.toLowerCase(),
+				url: quality.url,
+				trackMap: [
+					{
+						sourceTrackName: "bypass_video",
+						newTrackName: quality.videoTrack,
+					},
+					{
+						sourceTrackName: "bypass_audio",
+						newTrackName: quality.audioTrack,
+					}
+				]
+			})),
+			playlists: [
+				{
+					name: currentConfig.playlists?.[0]?.name || 'LLHLS ABR',
+					fileName: currentConfig.playlists?.[0]?.fileName || 'abr',
+					options: {
+						webrtcAutoAbr: true,
+						hlsChunklistPathDepth: 0,
+						enableTsPackaging: true
+					},
+					renditions: enabledQualities.map(quality => ({
+						name: quality.name,
+						video: quality.videoTrack,
+						audio: quality.audioTrack
+					}))
+				}
+			]
+		};
+		
+		// Deletar canal existente
+		try {
+			await makeOMERequest(
+				`/v1/vhosts/${config.vhostName}/apps/${config.appName}/multiplexChannels/${channelName}`,
+				'DELETE'
+			);
+		} catch (error) {
+			// Ignorar erro se canal não existir
+		}
+		
+		// Criar novo canal
+		await makeOMERequest(
+			`/v1/vhosts/${config.vhostName}/apps/${config.appName}/multiplexChannels`,
+			'POST',
+			omeConfig
+		);
+		
+		res.json({ message: `Qualidade ${qualityName} ${enabled ? 'ativada' : 'desativada'} com sucesso` });
+	} catch (error) {
+		console.error('Erro ao alterar qualidade:', error);
+		res.status(500).json({ message: 'Erro ao alterar qualidade' });
+	}
+});
+
 // WEBHOOK ENDPOINTS PARA OVENMEDIAENGINE
 
 // Webhook de admissão para OvenMediaEngine
