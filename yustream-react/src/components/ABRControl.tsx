@@ -56,7 +56,7 @@ const ABRControl: React.FC<ABRControlProps> = ({ showToast }) => {
 
   useEffect(() => {
     loadConfig()
-  });
+  }, []);
 
   const handleQualityToggle = async (qualityName: string, enabled: boolean) => {
     if (!config) return
