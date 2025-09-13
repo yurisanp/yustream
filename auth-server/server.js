@@ -249,7 +249,7 @@ app.get("/stream/qualities", authenticateToken, async (req, res) => {
 		const availableQualities = [
 			{
 				name: "Fonte",
-				application: "fonte",
+				application: "live",
 				streamName: "fonte",
 				displayName: "Fonte Original",
 				description: "Qualidade original da fonte",
@@ -258,7 +258,7 @@ app.get("/stream/qualities", authenticateToken, async (req, res) => {
 			},
 			{
 				name: "1440p",
-				application: "1440",
+				application: "live",
 				streamName: "1440",
 				displayName: "1440p Ultra HD",
 				description: "Qualidade Ultra HD 1440p",
@@ -267,7 +267,7 @@ app.get("/stream/qualities", authenticateToken, async (req, res) => {
 			},
 			{
 				name: "1080p",
-				application: "1080",
+				application: "live",
 				streamName: "1080",
 				displayName: "1080p Full HD",
 				description: "Qualidade Full HD 1080p",
@@ -276,7 +276,7 @@ app.get("/stream/qualities", authenticateToken, async (req, res) => {
 			},
 			{
 				name: "720p",
-				application: "720",
+				application: "live",
 				streamName: "720",
 				displayName: "720p HD",
 				description: "Qualidade HD 720p",
@@ -285,7 +285,7 @@ app.get("/stream/qualities", authenticateToken, async (req, res) => {
 			},
 			{
 				name: "360p",
-				application: "360",
+				application: "live",
 				streamName: "360",
 				displayName: "360p SD",
 				description: "Qualidade SD 360p",
