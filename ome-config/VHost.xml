@@ -113,6 +113,25 @@
                     <BlockDuplicateStreamName>true</BlockDuplicateStreamName>
                 </RTMP>
             </Providers>
+            <Publishers>
+                <AppWorkerCount>2</AppWorkerCount>
+                <StreamWorkerCount>2</StreamWorkerCount>
+                <LLHLS>
+                    <ChunkDuration>0.2</ChunkDuration>
+                    <SegmentDuration>6</SegmentDuration>
+                    <SegmentCount>10</SegmentCount>
+                    <CrossDomains>
+                        <Url>*</Url>
+                    </CrossDomains>
+                </LLHLS>
+                <HLS>
+                    <SegmentCount>5</SegmentCount>
+                    <SegmentDuration>6</SegmentDuration>
+                    <CrossDomains>
+                        <Url>*</Url>
+                    </CrossDomains>
+                </HLS>
+            </Publishers>
         </Application>
         <Application>
             <Name>1440</Name>
@@ -153,6 +172,25 @@
                     <BlockDuplicateStreamName>true</BlockDuplicateStreamName>
                 </RTMP>
             </Providers>
+            <Publishers>
+                <AppWorkerCount>2</AppWorkerCount>
+                <StreamWorkerCount>2</StreamWorkerCount>
+                <LLHLS>
+                    <ChunkDuration>0.2</ChunkDuration>
+                    <SegmentDuration>6</SegmentDuration>
+                    <SegmentCount>10</SegmentCount>
+                    <CrossDomains>
+                        <Url>*</Url>
+                    </CrossDomains>
+                </LLHLS>
+                <HLS>
+                    <SegmentCount>5</SegmentCount>
+                    <SegmentDuration>6</SegmentDuration>
+                    <CrossDomains>
+                        <Url>*</Url>
+                    </CrossDomains>
+                </HLS>
+            </Publishers>
         </Application>
         <Application>
             <Name>1080</Name>
@@ -193,6 +231,25 @@
                     <BlockDuplicateStreamName>true</BlockDuplicateStreamName>
                 </RTMP>
             </Providers>
+            <Publishers>
+                <AppWorkerCount>2</AppWorkerCount>
+                <StreamWorkerCount>2</StreamWorkerCount>
+                <LLHLS>
+                    <ChunkDuration>0.2</ChunkDuration>
+                    <SegmentDuration>6</SegmentDuration>
+                    <SegmentCount>10</SegmentCount>
+                    <CrossDomains>
+                        <Url>*</Url>
+                    </CrossDomains>
+                </LLHLS>
+                <HLS>
+                    <SegmentCount>5</SegmentCount>
+                    <SegmentDuration>6</SegmentDuration>
+                    <CrossDomains>
+                        <Url>*</Url>
+                    </CrossDomains>
+                </HLS>
+            </Publishers>
         </Application>
         <Application>
             <Name>720</Name>
@@ -233,6 +290,25 @@
                     <BlockDuplicateStreamName>true</BlockDuplicateStreamName>
                 </RTMP>
             </Providers>
+            <Publishers>
+                <AppWorkerCount>2</AppWorkerCount>
+                <StreamWorkerCount>2</StreamWorkerCount>
+                <LLHLS>
+                    <ChunkDuration>0.2</ChunkDuration>
+                    <SegmentDuration>6</SegmentDuration>
+                    <SegmentCount>10</SegmentCount>
+                    <CrossDomains>
+                        <Url>*</Url>
+                    </CrossDomains>
+                </LLHLS>
+                <HLS>
+                    <SegmentCount>5</SegmentCount>
+                    <SegmentDuration>6</SegmentDuration>
+                    <CrossDomains>
+                        <Url>*</Url>
+                    </CrossDomains>
+                </HLS>
+            </Publishers>
         </Application>
         <Application>
             <Name>360</Name>
@@ -273,6 +349,25 @@
                     <BlockDuplicateStreamName>true</BlockDuplicateStreamName>
                 </RTMP>
             </Providers>
+            <Publishers>
+                <AppWorkerCount>2</AppWorkerCount>
+                <StreamWorkerCount>2</StreamWorkerCount>
+                <LLHLS>
+                    <ChunkDuration>0.2</ChunkDuration>
+                    <SegmentDuration>6</SegmentDuration>
+                    <SegmentCount>10</SegmentCount>
+                    <CrossDomains>
+                        <Url>*</Url>
+                    </CrossDomains>
+                </LLHLS>
+                <HLS>
+                    <SegmentCount>5</SegmentCount>
+                    <SegmentDuration>6</SegmentDuration>
+                    <CrossDomains>
+                        <Url>*</Url>
+                    </CrossDomains>
+                </HLS>
+            </Publishers>
         </Application>
     </Applications>
 </VirtualHost>
