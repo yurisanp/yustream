@@ -149,12 +149,11 @@ app.get("/stream/status", authenticateToken, async (req, res) => {
 
 		if (
 			response.status === 200 &&
-			response.data &&
-			response.data.response &&
-			response.data.response.state &&
-			response.data.response.state === "Playing"
+			response.response &&
+			response.response.state &&
+			response.response.state === "Playing"
 		) {
-			console.log(JSON.stringify(response.data, null, 4));
+			console.log(JSON.stringify(response, null, 4));
 			res.json({
 				online: true,
 				status: "online",
@@ -162,7 +161,7 @@ app.get("/stream/status", authenticateToken, async (req, res) => {
 				hasWebRTC: false,
 				hasLLHLS: true,
 				totalActiveStreams: 1,
-				streamDetails: response.data.response || null,
+				streamDetails: response.response || null,
 				timestamp: new Date().toISOString(),
 			});
 		} else {
@@ -237,15 +236,14 @@ app.get("/stream/qualities", authenticateToken, async (req, res) => {
 
 		console.log(response);
 		if (
-			response.status === 200 &&
-			response.data &&
-			response.data.response &&
-			response.data.response.state &&
-			response.data.response.state === "Playing" &&
-			response.data.response.sourceStreams
+			response.statusCode === 200 &&
+			response.response &&
+			response.response.state &&
+			response.response.state === "Playing" &&
+			response.response.sourceStreams
 		) {
 			let arrayStream = [];
-			for (const sourceStream of response.data.response.sourceStreams) {
+			for (const sourceStream of response.response.sourceStreams) {
 				arrayStream.push(sourceStream.name);
 			}
 
