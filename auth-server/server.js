@@ -139,28 +139,13 @@ app.get("/auth/verify", authenticateToken, (req, res) => {
 
 // Rota para verificar status da stream usando API REST do OvenMediaEngine
 app.get("/stream/status", authenticateToken, async (req, res) => {
-	const hostname = process.env.OME_HOSTNAME || "ovenmediaengine";
-	const omeApiPort = process.env.OME_API_PORT || "8081";
 	const vhostName = process.env.OME_VHOST || "default";
 	const appName = process.env.OME_APP || "live";
 	const streamName = process.env.OME_STREAM || "live";
 	try {
 		// URL da API REST do OvenMediaEngine para verificar streams ativas
-		const omeApiUrl = `http://${hostname}:${omeApiPort}/v1/vhosts/${vhostName}/apps/${appName}/multiplexChannels/${streamName}`;
-
-		console.log(`🔍 Verificando status da stream via API OME: ${omeApiUrl}`);
-
-		// Fazer requisição para a API REST do OvenMediaEngine com autenticação
-		const omeAccessToken = process.env.OME_ACCESS_TOKEN || "maketears";
-		const authHeader = Buffer.from(omeAccessToken).toString("base64");
-
-		const response = await axios.get(omeApiUrl, {
-			timeout: 5000,
-			headers: {
-				Accept: "application/json",
-				Authorization: `Basic ${authHeader}`,
-			},
-		});
+		const streamUrl = `/v1/vhosts/${vhostName}/apps/${appName}/multiplexChannels/${streamName}`;
+		const response = await makeOMERequest(streamUrl);
 
 		if (
 			response.status === 200 &&
@@ -242,114 +227,138 @@ app.get("/stream/token", authenticateToken, (req, res) => {
 // Rota para listar qualidades disponíveis
 app.get("/stream/qualities", authenticateToken, async (req, res) => {
 	try {
-		const config = getOMEConfig();
-		const vhostName = config.vhostName;
-		const appName = config.appName;
-		
-		// Definir as qualidades baseadas no VHost.xml
-		const availableQualities = [
-			{
-				name: "Fonte",
-				application: "fonte",
-				streamName: "fonte",
-				displayName: "Fonte Original",
-				description: "Qualidade original da fonte",
-				priority: 1,
-				url: `stream://${vhostName}/${appName}/fonte`
-			},
-			{
-				name: "1440p",
-				application: "1440",
-				streamName: "1440",
-				displayName: "1440p Ultra HD",
-				description: "Qualidade Ultra HD 1440p",
-				priority: 2,
-				url: `stream://${vhostName}/${appName}/1440`
-			},
-			{
-				name: "1080p",
-				application: "1080",
-				streamName: "1080",
-				displayName: "1080p Full HD",
-				description: "Qualidade Full HD 1080p",
-				priority: 3,
-				url: `stream://${vhostName}/${appName}/1080`
-			},
-			{
-				name: "720p",
-				application: "720",
-				streamName: "720",
-				displayName: "720p HD",
-				description: "Qualidade HD 720p",
-				priority: 4,
-				url: `stream://${vhostName}/${appName}/720`
-			},
-			{
-				name: "360p",
-				application: "360",
-				streamName: "360",
-				displayName: "360p SD",
-				description: "Qualidade SD 360p",
-				priority: 5,
-				url: `stream://${vhostName}/${appName}/360`
-			}
-		];
+		const vhostName = process.env.OME_VHOST || "default";
+		const appName = process.env.OME_APP || "live";
+		const streamName = process.env.OME_STREAM || "live";
 
-		// Verificar quais qualidades estão ativas
-		const activeQualities = [];
-		
-		for (const quality of availableQualities) {
-			try {
-				// Verificar se a stream está ativa na aplicação específica
-				const streamUrl = `/v1/vhosts/${vhostName}/apps/${quality.application}/streams/${quality.streamName}`;
-				const response = await makeOMERequest(streamUrl);
-				
-				if (response.response && response.response.state === "Playing") {
-					activeQualities.push({
-						...quality,
-						active: true,
-						state: response.response.state,
-						uptime: response.response.uptime || 0,
-						totalConnections: response.response.totalConnections || 0
-					});
-				} else {
+		// URL da API REST do OvenMediaEngine para verificar streams ativas
+		const streamUrl = `/v1/vhosts/${vhostName}/apps/${appName}/multiplexChannels/${streamName}`;
+		const response = await makeOMERequest(streamUrl);
+
+		if (
+			response.status === 200 &&
+			response.data &&
+			response.data.response &&
+			response.data.response.state &&
+			response.data.response.state === "Playing" &&
+			response.data.response.sourceStreams
+		) {
+			let arrayStream = [];
+			for (const sourceStream of response.data.response.sourceStreams) {
+				arrayStream.push(sourceStream.name);
+			}
+
+			const availableQualities = [
+				{
+					name: "Fonte",
+					application: "fonte",
+					streamName: "fonte",
+					displayName: "Fonte Original",
+					description: "Qualidade original da fonte",
+					priority: 1,
+					url: `stream://${vhostName}/${appName}/fonte`,
+				},
+				{
+					name: "1440p",
+					application: "1440",
+					streamName: "1440",
+					displayName: "1440p Ultra HD",
+					description: "Qualidade Ultra HD 1440p",
+					priority: 2,
+					url: `stream://${vhostName}/${appName}/1440`,
+				},
+				{
+					name: "1080p",
+					application: "1080",
+					streamName: "1080",
+					displayName: "1080p Full HD",
+					description: "Qualidade Full HD 1080p",
+					priority: 3,
+					url: `stream://${vhostName}/${appName}/1080`,
+				},
+				{
+					name: "720p",
+					application: "720",
+					streamName: "720",
+					displayName: "720p HD",
+					description: "Qualidade HD 720p",
+					priority: 4,
+					url: `stream://${vhostName}/${appName}/720`,
+				},
+				{
+					name: "360p",
+					application: "360",
+					streamName: "360",
+					displayName: "360p SD",
+					description: "Qualidade SD 360p",
+					priority: 5,
+					url: `stream://${vhostName}/${appName}/360`,
+				},
+			];
+
+			// Verificar quais qualidades estão ativas
+			const activeQualities = [];
+
+			for (const quality of availableQualities) {
+				try {
+					if (arrayStream.includes(quality.streamName)) {
+						activeQualities.push({
+							...quality,
+							active: true,
+							state: "Playing",
+							uptime: 0,
+							totalConnections: 0,
+						});
+					} else {
+						activeQualities.push({
+							...quality,
+							active: false,
+							state: "Stopped",
+						});
+					}
+				} catch (error) {
+					// Se não conseguir acessar a stream, considerá-la inativa
 					activeQualities.push({
 						...quality,
 						active: false,
-						state: response.response?.state || "Stopped"
+						state: "Not Found",
+						error: error.message,
 					});
 				}
-			} catch (error) {
-				// Se não conseguir acessar a stream, considerá-la inativa
-				activeQualities.push({
-					...quality,
-					active: false,
-					state: "Not Found",
-					error: error.message
-				});
 			}
+
+			// Ordenar por prioridade (menor número = maior prioridade)
+			activeQualities.sort((a, b) => a.priority - b.priority);
+
+			res.json({
+				qualities: activeQualities,
+				abr: {
+					active: false,
+					url: null,
+					description: "Stream adaptativa com múltiplas qualidades",
+				},
+				timestamp: new Date().toISOString(),
+				totalQualities: availableQualities.length,
+				activeQualities: activeQualities.filter((q) => q.active).length,
+			});
+		} else {
+			res.json({
+				qualities: [],
+				abr: {
+					active: false,
+					url: null,
+					description: "",
+				},
+				timestamp: new Date().toISOString(),
+				totalQualities: 0,
+				activeQualities: 0,
+			});
 		}
-
-		// Ordenar por prioridade (menor número = maior prioridade)
-		activeQualities.sort((a, b) => a.priority - b.priority);
-
-		res.json({
-			qualities: activeQualities,
-			abr: {
-				active: false,
-				url: null,
-				description: "Stream adaptativa com múltiplas qualidades"
-			},
-			timestamp: new Date().toISOString(),
-			totalQualities: availableQualities.length,
-			activeQualities: activeQualities.filter(q => q.active).length
-		});
-
 	} catch (error) {
-		console.error('Erro ao listar qualidades:', error);
-		res.status(500).json({ 
-			message: 'Erro ao obter qualidades disponíveis',
-			error: error.message 
+		console.error("Erro ao listar qualidades:", error);
+		res.status(500).json({
+			message: "Erro ao obter qualidades disponíveis",
+			error: error.message,
 		});
 	}
 });
@@ -627,35 +636,38 @@ const getOMEConfig = () => ({
 	apiPort: process.env.OME_API_PORT || "8081",
 	vhostName: process.env.OME_VHOST || "default",
 	appName: process.env.OME_APP || "live",
-	accessToken: process.env.OME_ACCESS_TOKEN || "maketears"
+	accessToken: process.env.OME_ACCESS_TOKEN || "maketears",
 });
 
 // Helper para fazer requisições para OME
-const makeOMERequest = async (endpoint, method = 'GET', data = null) => {
+const makeOMERequest = async (endpoint, method = "GET", data = null) => {
 	const config = getOMEConfig();
-	const authHeader = Buffer.from(config.accessToken).toString('base64');
-	
+	const authHeader = Buffer.from(config.accessToken).toString("base64");
+
 	const url = `http://${config.hostname}:${config.apiPort}${endpoint}`;
-	
+
 	const options = {
 		method,
 		headers: {
-			'Accept': 'application/json',
-			'Content-Type': 'application/json',
-			'Authorization': `Basic ${authHeader}`,
+			Accept: "application/json",
+			"Content-Type": "application/json",
+			Authorization: `Basic ${authHeader}`,
 		},
-		timeout: 10000
+		timeout: 10000,
 	};
-	
+
 	if (data) {
 		options.data = data;
 	}
-	
+
 	try {
 		const response = await axios(url, options);
 		return response.data;
 	} catch (error) {
-		console.error(`Erro na requisição OME ${method} ${endpoint}:`, error.message);
+		console.error(
+			`Erro na requisição OME ${method} ${endpoint}:`,
+			error.message
+		);
 		throw error;
 	}
 };
@@ -665,53 +677,114 @@ app.get("/abr/config", authenticateToken, requireAdmin, async (req, res) => {
 	try {
 		const config = getOMEConfig();
 		const channelName = "live"; // Nome do canal multiplex
-		
+
 		// Tentar obter informações do canal multiplex
 		try {
 			const channelInfo = await makeOMERequest(
 				`/v1/vhosts/${config.vhostName}/apps/${config.appName}/multiplexChannels/${channelName}`
 			);
-			
+
 			// Converter resposta do OME para formato do frontend
 			const qualities = [
-				{ name: 'Fonte', enabled: false, videoTrack: 'fonte_video', audioTrack: 'fonte_audio', url: 'stream://default/fonte/fonte' },
-				{ name: '1440', enabled: false, videoTrack: '1440_video', audioTrack: '1440_audio', url: 'stream://default/1440/1440' },
-				{ name: '1080', enabled: false, videoTrack: '1080_video', audioTrack: '1080_audio', url: 'stream://default/1080/1080' },
-				{ name: '720', enabled: false, videoTrack: '720_video', audioTrack: '720_audio', url: 'stream://default/720/720' },
-				{ name: '360', enabled: false, videoTrack: '360_video', audioTrack: '360_audio', url: 'stream://default/360/360' }
+				{
+					name: "Fonte",
+					enabled: false,
+					videoTrack: "fonte_video",
+					audioTrack: "fonte_audio",
+					url: "stream://default/fonte/fonte",
+				},
+				{
+					name: "1440",
+					enabled: false,
+					videoTrack: "1440_video",
+					audioTrack: "1440_audio",
+					url: "stream://default/1440/1440",
+				},
+				{
+					name: "1080",
+					enabled: false,
+					videoTrack: "1080_video",
+					audioTrack: "1080_audio",
+					url: "stream://default/1080/1080",
+				},
+				{
+					name: "720",
+					enabled: false,
+					videoTrack: "720_video",
+					audioTrack: "720_audio",
+					url: "stream://default/720/720",
+				},
+				{
+					name: "360",
+					enabled: false,
+					videoTrack: "360_video",
+					audioTrack: "360_audio",
+					url: "stream://default/360/360",
+				},
 			];
-			
+
 			// Verificar quais qualidades estão ativas baseado nos sourceStreams
 			if (channelInfo.response && channelInfo.response.sourceStreams) {
-				channelInfo.response.sourceStreams.forEach(stream => {
-					const qualityName = stream.name.charAt(0).toUpperCase() + stream.name.slice(1);
-					const quality = qualities.find(q => q.name === qualityName);
+				channelInfo.response.sourceStreams.forEach((stream) => {
+					const qualityName =
+						stream.name.charAt(0).toUpperCase() + stream.name.slice(1);
+					const quality = qualities.find((q) => q.name === qualityName);
 					if (quality) {
 						quality.enabled = true;
 					}
 				});
 			}
-			
+
 			const abrConfig = {
 				qualities,
-				playlistName: channelInfo.response?.playlists?.[0]?.name || 'LLHLS ABR',
-				fileName: channelInfo.response?.playlists?.[0]?.fileName || 'abr'
+				playlistName: channelInfo.response?.playlists?.[0]?.name || "LLHLS ABR",
+				fileName: channelInfo.response?.playlists?.[0]?.fileName || "abr",
 			};
-			
+
 			res.json(abrConfig);
 		} catch (error) {
 			// Se canal não existe, retornar configuração padrão
 			if (error.response?.status === 404) {
 				const defaultConfig = {
 					qualities: [
-						{ name: 'Fonte', enabled: true, videoTrack: 'fonte_video', audioTrack: 'fonte_audio', url: 'stream://default/fonte/fonte' },
-						{ name: '1440', enabled: false, videoTrack: '1440_video', audioTrack: '1440_audio', url: 'stream://default/1440/1440' },
-						{ name: '1080', enabled: false, videoTrack: '1080_video', audioTrack: '1080_audio', url: 'stream://default/1080/1080' },
-						{ name: '720', enabled: true, videoTrack: '720_video', audioTrack: '720_audio', url: 'stream://default/720/720' },
-						{ name: '360', enabled: false, videoTrack: '360_video', audioTrack: '360_audio', url: 'stream://default/360/360' }
+						{
+							name: "Fonte",
+							enabled: true,
+							videoTrack: "fonte_video",
+							audioTrack: "fonte_audio",
+							url: "stream://default/fonte/fonte",
+						},
+						{
+							name: "1440",
+							enabled: false,
+							videoTrack: "1440_video",
+							audioTrack: "1440_audio",
+							url: "stream://default/1440/1440",
+						},
+						{
+							name: "1080",
+							enabled: false,
+							videoTrack: "1080_video",
+							audioTrack: "1080_audio",
+							url: "stream://default/1080/1080",
+						},
+						{
+							name: "720",
+							enabled: true,
+							videoTrack: "720_video",
+							audioTrack: "720_audio",
+							url: "stream://default/720/720",
+						},
+						{
+							name: "360",
+							enabled: false,
+							videoTrack: "360_video",
+							audioTrack: "360_audio",
+							url: "stream://default/360/360",
+						},
 					],
-					playlistName: 'LLHLS ABR',
-					fileName: 'abr'
+					playlistName: "LLHLS ABR",
+					fileName: "abr",
 				};
 				res.json(defaultConfig);
 			} else {
@@ -719,8 +792,8 @@ app.get("/abr/config", authenticateToken, requireAdmin, async (req, res) => {
 			}
 		}
 	} catch (error) {
-		console.error('Erro ao carregar configuração ABR:', error);
-		res.status(500).json({ message: 'Erro ao carregar configuração ABR' });
+		console.error("Erro ao carregar configuração ABR:", error);
+		res.status(500).json({ message: "Erro ao carregar configuração ABR" });
 	}
 });
 
@@ -730,15 +803,15 @@ app.put("/abr/config", authenticateToken, requireAdmin, async (req, res) => {
 		const { qualities, playlistName, fileName } = req.body;
 		const config = getOMEConfig();
 		const channelName = "live";
-		
+
 		// Converter para formato OME
-		const enabledQualities = qualities.filter(q => q.enabled);
-		
+		const enabledQualities = qualities.filter((q) => q.enabled);
+
 		const omeConfig = {
 			outputStream: {
-				name: channelName
+				name: channelName,
 			},
-			sourceStreams: enabledQualities.map(quality => ({
+			sourceStreams: enabledQualities.map((quality) => ({
 				name: quality.name.toLowerCase(),
 				url: quality.url,
 				trackMap: [
@@ -749,8 +822,8 @@ app.put("/abr/config", authenticateToken, requireAdmin, async (req, res) => {
 					{
 						sourceTrackName: "bypass_audio",
 						newTrackName: quality.audioTrack,
-					}
-				]
+					},
+				],
 			})),
 			playlists: [
 				{
@@ -759,152 +832,192 @@ app.put("/abr/config", authenticateToken, requireAdmin, async (req, res) => {
 					options: {
 						webrtcAutoAbr: true,
 						hlsChunklistPathDepth: 0,
-						enableTsPackaging: true
+						enableTsPackaging: true,
 					},
-					renditions: enabledQualities.map(quality => ({
+					renditions: enabledQualities.map((quality) => ({
 						name: quality.name,
 						video: quality.videoTrack,
-						audio: quality.audioTrack
-					}))
-				}
-			]
+						audio: quality.audioTrack,
+					})),
+				},
+			],
 		};
-		
+
 		// Primeiro tentar deletar canal existente se houver
 		try {
 			await makeOMERequest(
 				`/v1/vhosts/${config.vhostName}/apps/${config.appName}/multiplexChannels/${channelName}`,
-				'DELETE'
+				"DELETE"
 			);
 		} catch (error) {
 			// Ignorar erro se canal não existir
 		}
-		
+
 		// Criar novo canal
 		await makeOMERequest(
 			`/v1/vhosts/${config.vhostName}/apps/${config.appName}/multiplexChannels`,
-			'POST',
+			"POST",
 			omeConfig
 		);
-		
-		res.json({ message: 'Configuração ABR atualizada com sucesso' });
+
+		res.json({ message: "Configuração ABR atualizada com sucesso" });
 	} catch (error) {
-		console.error('Erro ao atualizar configuração ABR:', error);
-		res.status(500).json({ message: 'Erro ao atualizar configuração ABR' });
+		console.error("Erro ao atualizar configuração ABR:", error);
+		res.status(500).json({ message: "Erro ao atualizar configuração ABR" });
 	}
 });
 
 // PATCH /api/abr/quality/:qualityName - Ativar/desativar uma qualidade específica
-app.patch("/abr/quality/:qualityName", authenticateToken, requireAdmin, async (req, res) => {
-	try {
-		const { qualityName } = req.params;
-		const { enabled } = req.body;
-		const config = getOMEConfig();
-		const channelName = "live";
-		
-		// Obter configuração atual
-		let currentConfig;
+app.patch(
+	"/abr/quality/:qualityName",
+	authenticateToken,
+	requireAdmin,
+	async (req, res) => {
 		try {
-			const channelInfo = await makeOMERequest(
-				`/v1/vhosts/${config.vhostName}/apps/${config.appName}/multiplexChannels/${channelName}`
-			);
-			currentConfig = channelInfo.response;
-		} catch (error) {
-			// Se canal não existe, usar configuração padrão
-			currentConfig = {
-				playlists: [{ name: 'LLHLS ABR', fileName: 'abr' }],
-				sourceStreams: []
-			};
-		}
-		
-		// Atualizar configuração
-		const qualities = [
-			{ name: 'Fonte', enabled: false, videoTrack: 'fonte_video', audioTrack: 'fonte_audio', url: 'stream://default/fonte/fonte' },
-			{ name: '1440', enabled: false, videoTrack: '1440_video', audioTrack: '1440_audio', url: 'stream://default/1440/1440' },
-			{ name: '1080', enabled: false, videoTrack: '1080_video', audioTrack: '1080_audio', url: 'stream://default/1080/1080' },
-			{ name: '720', enabled: false, videoTrack: '720_video', audioTrack: '720_audio', url: 'stream://default/720/720' },
-			{ name: '360', enabled: false, videoTrack: '360_video', audioTrack: '360_audio', url: 'stream://default/360/360' }
-		];
-		
-		// Mapear qualidades ativas atuais
-		if (currentConfig.sourceStreams) {
-			currentConfig.sourceStreams.forEach(stream => {
-				const qualityName = stream.name.charAt(0).toUpperCase() + stream.name.slice(1);
-				const quality = qualities.find(q => q.name === qualityName);
-				if (quality) {
-					quality.enabled = true;
-				}
-			});
-		}
-		
-		// Atualizar qualidade específica
-		const targetQuality = qualities.find(q => q.name === qualityName);
-		if (targetQuality) {
-			targetQuality.enabled = enabled;
-		}
-		
-		// Recriar canal com nova configuração
-		const enabledQualities = qualities.filter(q => q.enabled);
-		
-		const omeConfig = {
-			outputStream: {
-				name: channelName
-			},
-			sourceStreams: enabledQualities.map(quality => ({
-				name: quality.name.toLowerCase(),
-				url: quality.url,
-				trackMap: [
-					{
-						sourceTrackName: "bypass_video",
-						newTrackName: quality.videoTrack,
-					},
-					{
-						sourceTrackName: "bypass_audio",
-						newTrackName: quality.audioTrack,
-					}
-				]
-			})),
-			playlists: [
+			const { qualityName } = req.params;
+			const { enabled } = req.body;
+			const config = getOMEConfig();
+			const channelName = "live";
+
+			// Obter configuração atual
+			let currentConfig;
+			try {
+				const channelInfo = await makeOMERequest(
+					`/v1/vhosts/${config.vhostName}/apps/${config.appName}/multiplexChannels/${channelName}`
+				);
+				currentConfig = channelInfo.response;
+			} catch (error) {
+				// Se canal não existe, usar configuração padrão
+				currentConfig = {
+					playlists: [{ name: "LLHLS ABR", fileName: "abr" }],
+					sourceStreams: [],
+				};
+			}
+
+			// Atualizar configuração
+			const qualities = [
 				{
-					name: currentConfig.playlists?.[0]?.name || 'LLHLS ABR',
-					fileName: currentConfig.playlists?.[0]?.fileName || 'abr',
-					options: {
-						webrtcAutoAbr: true,
-						hlsChunklistPathDepth: 0,
-						enableTsPackaging: true
+					name: "Fonte",
+					enabled: false,
+					videoTrack: "fonte_video",
+					audioTrack: "fonte_audio",
+					url: "stream://default/fonte/fonte",
+				},
+				{
+					name: "1440",
+					enabled: false,
+					videoTrack: "1440_video",
+					audioTrack: "1440_audio",
+					url: "stream://default/1440/1440",
+				},
+				{
+					name: "1080",
+					enabled: false,
+					videoTrack: "1080_video",
+					audioTrack: "1080_audio",
+					url: "stream://default/1080/1080",
+				},
+				{
+					name: "720",
+					enabled: false,
+					videoTrack: "720_video",
+					audioTrack: "720_audio",
+					url: "stream://default/720/720",
+				},
+				{
+					name: "360",
+					enabled: false,
+					videoTrack: "360_video",
+					audioTrack: "360_audio",
+					url: "stream://default/360/360",
+				},
+			];
+
+			// Mapear qualidades ativas atuais
+			if (currentConfig.sourceStreams) {
+				currentConfig.sourceStreams.forEach((stream) => {
+					const qualityName =
+						stream.name.charAt(0).toUpperCase() + stream.name.slice(1);
+					const quality = qualities.find((q) => q.name === qualityName);
+					if (quality) {
+						quality.enabled = true;
+					}
+				});
+			}
+
+			// Atualizar qualidade específica
+			const targetQuality = qualities.find((q) => q.name === qualityName);
+			if (targetQuality) {
+				targetQuality.enabled = enabled;
+			}
+
+			// Recriar canal com nova configuração
+			const enabledQualities = qualities.filter((q) => q.enabled);
+
+			const omeConfig = {
+				outputStream: {
+					name: channelName,
+				},
+				sourceStreams: enabledQualities.map((quality) => ({
+					name: quality.name.toLowerCase(),
+					url: quality.url,
+					trackMap: [
+						{
+							sourceTrackName: "bypass_video",
+							newTrackName: quality.videoTrack,
+						},
+						{
+							sourceTrackName: "bypass_audio",
+							newTrackName: quality.audioTrack,
+						},
+					],
+				})),
+				playlists: [
+					{
+						name: currentConfig.playlists?.[0]?.name || "LLHLS ABR",
+						fileName: currentConfig.playlists?.[0]?.fileName || "abr",
+						options: {
+							webrtcAutoAbr: true,
+							hlsChunklistPathDepth: 0,
+							enableTsPackaging: true,
+						},
+						renditions: enabledQualities.map((quality) => ({
+							name: quality.name,
+							video: quality.videoTrack,
+							audio: quality.audioTrack,
+						})),
 					},
-					renditions: enabledQualities.map(quality => ({
-						name: quality.name,
-						video: quality.videoTrack,
-						audio: quality.audioTrack
-					}))
-				}
-			]
-		};
-		
-		// Deletar canal existente
-		try {
+				],
+			};
+
+			// Deletar canal existente
+			try {
+				await makeOMERequest(
+					`/v1/vhosts/${config.vhostName}/apps/${config.appName}/multiplexChannels/${channelName}`,
+					"DELETE"
+				);
+			} catch (error) {
+				// Ignorar erro se canal não existir
+			}
+
+			// Criar novo canal
 			await makeOMERequest(
-				`/v1/vhosts/${config.vhostName}/apps/${config.appName}/multiplexChannels/${channelName}`,
-				'DELETE'
+				`/v1/vhosts/${config.vhostName}/apps/${config.appName}/multiplexChannels`,
+				"POST",
+				omeConfig
 			);
+
+			res.json({
+				message: `Qualidade ${qualityName} ${
+					enabled ? "ativada" : "desativada"
+				} com sucesso`,
+			});
 		} catch (error) {
-			// Ignorar erro se canal não existir
+			console.error("Erro ao alterar qualidade:", error);
+			res.status(500).json({ message: "Erro ao alterar qualidade" });
 		}
-		
-		// Criar novo canal
-		await makeOMERequest(
-			`/v1/vhosts/${config.vhostName}/apps/${config.appName}/multiplexChannels`,
-			'POST',
-			omeConfig
-		);
-		
-		res.json({ message: `Qualidade ${qualityName} ${enabled ? 'ativada' : 'desativada'} com sucesso` });
-	} catch (error) {
-		console.error('Erro ao alterar qualidade:', error);
-		res.status(500).json({ message: 'Erro ao alterar qualidade' });
 	}
-});
+);
 
 // WEBHOOK ENDPOINTS PARA OVENMEDIAENGINE
 
