@@ -148,7 +148,7 @@ app.get("/stream/status", authenticateToken, async (req, res) => {
 		const response = await makeOMERequest(streamUrl);
 
 		if (
-			response.status === 200 &&
+			response.statusCode === 200 &&
 			response.response &&
 			response.response.state &&
 			response.response.state === "Playing"
@@ -255,7 +255,7 @@ app.get("/stream/qualities", authenticateToken, async (req, res) => {
 					displayName: "Fonte Original",
 					description: "Qualidade original da fonte",
 					priority: 1,
-					url: `stream://${vhostName}/${appName}/fonte`,
+					url: `https://yustream.yurisp.com.br:8443/fonte/fonte/fonte.m3u8`,
 				},
 				{
 					name: "1440p",
@@ -264,7 +264,7 @@ app.get("/stream/qualities", authenticateToken, async (req, res) => {
 					displayName: "1440p Ultra HD",
 					description: "Qualidade Ultra HD 1440p",
 					priority: 2,
-					url: `stream://${vhostName}/${appName}/1440`,
+					url: `https://yustream.yurisp.com.br:8443/1440/1440/1440.m3u8`,
 				},
 				{
 					name: "1080p",
@@ -273,7 +273,7 @@ app.get("/stream/qualities", authenticateToken, async (req, res) => {
 					displayName: "1080p Full HD",
 					description: "Qualidade Full HD 1080p",
 					priority: 3,
-					url: `stream://${vhostName}/${appName}/1080`,
+					url: `https://yustream.yurisp.com.br:8443/1080/1080/1080.m3u8`,
 				},
 				{
 					name: "720p",
@@ -282,7 +282,7 @@ app.get("/stream/qualities", authenticateToken, async (req, res) => {
 					displayName: "720p HD",
 					description: "Qualidade HD 720p",
 					priority: 4,
-					url: `stream://${vhostName}/${appName}/720`,
+					url: `https://yustream.yurisp.com.br:8443/720/720/720.m3u8`,
 				},
 				{
 					name: "360p",
@@ -291,7 +291,7 @@ app.get("/stream/qualities", authenticateToken, async (req, res) => {
 					displayName: "360p SD",
 					description: "Qualidade SD 360p",
 					priority: 5,
-					url: `stream://${vhostName}/${appName}/360`,
+					url: `https://yustream.yurisp.com.br:8443/360/360/360.m3u8`,
 				},
 			];
 
