@@ -235,6 +235,7 @@ app.get("/stream/qualities", authenticateToken, async (req, res) => {
 		const streamUrl = `/v1/vhosts/${vhostName}/apps/${appName}/multiplexChannels/${streamName}`;
 		const response = await makeOMERequest(streamUrl);
 
+		console.log(response);
 		if (
 			response.status === 200 &&
 			response.data &&
