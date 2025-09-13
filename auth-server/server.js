@@ -169,6 +169,7 @@ app.get("/stream/status", authenticateToken, async (req, res) => {
 			response.data.response.state &&
 			response.data.response.state === "Playing"
 		) {
+			console.log(JSON.stringify(response.data, null, 4));
 			res.json({
 				online: true,
 				status: "online",
