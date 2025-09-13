@@ -238,6 +238,137 @@ app.get("/stream/token", authenticateToken, (req, res) => {
 	});
 });
 
+// Rota para listar qualidades disponíveis
+app.get("/stream/qualities", authenticateToken, async (req, res) => {
+	try {
+		const config = getOMEConfig();
+		const vhostName = config.vhostName;
+		const appName = config.appName;
+		
+		// Definir as qualidades baseadas no VHost.xml
+		const availableQualities = [
+			{
+				name: "Fonte",
+				application: "fonte",
+				streamName: "fonte",
+				displayName: "Fonte Original",
+				description: "Qualidade original da fonte",
+				priority: 1,
+				url: `stream://${vhostName}/${appName}/fonte`
+			},
+			{
+				name: "1440p",
+				application: "1440",
+				streamName: "1440",
+				displayName: "1440p Ultra HD",
+				description: "Qualidade Ultra HD 1440p",
+				priority: 2,
+				url: `stream://${vhostName}/${appName}/1440`
+			},
+			{
+				name: "1080p",
+				application: "1080",
+				streamName: "1080",
+				displayName: "1080p Full HD",
+				description: "Qualidade Full HD 1080p",
+				priority: 3,
+				url: `stream://${vhostName}/${appName}/1080`
+			},
+			{
+				name: "720p",
+				application: "720",
+				streamName: "720",
+				displayName: "720p HD",
+				description: "Qualidade HD 720p",
+				priority: 4,
+				url: `stream://${vhostName}/${appName}/720`
+			},
+			{
+				name: "360p",
+				application: "360",
+				streamName: "360",
+				displayName: "360p SD",
+				description: "Qualidade SD 360p",
+				priority: 5,
+				url: `stream://${vhostName}/${appName}/360`
+			}
+		];
+
+		// Verificar quais qualidades estão ativas
+		const activeQualities = [];
+		
+		for (const quality of availableQualities) {
+			try {
+				// Verificar se a stream está ativa na aplicação específica
+				const streamUrl = `/v1/vhosts/${vhostName}/apps/${quality.application}/streams/${quality.streamName}`;
+				const response = await makeOMERequest(streamUrl);
+				
+				if (response.response && response.response.state === "Playing") {
+					activeQualities.push({
+						...quality,
+						active: true,
+						state: response.response.state,
+						uptime: response.response.uptime || 0,
+						totalConnections: response.response.totalConnections || 0
+					});
+				} else {
+					activeQualities.push({
+						...quality,
+						active: false,
+						state: response.response?.state || "Stopped"
+					});
+				}
+			} catch (error) {
+				// Se não conseguir acessar a stream, considerá-la inativa
+				activeQualities.push({
+					...quality,
+					active: false,
+					state: "Not Found",
+					error: error.message
+				});
+			}
+		}
+
+		// Ordenar por prioridade (menor número = maior prioridade)
+		activeQualities.sort((a, b) => a.priority - b.priority);
+
+		// Verificar se há stream ABR ativa
+		let abrActive = false;
+		let abrStreamUrl = null;
+		
+		try {
+			const abrUrl = `/v1/vhosts/${vhostName}/apps/${appName}/multiplexChannels/live`;
+			const abrResponse = await makeOMERequest(abrUrl);
+			
+			if (abrResponse.response && abrResponse.response.state === "Playing") {
+				abrActive = true;
+				abrStreamUrl = `https://yustream.yurisp.com.br:8443/live/live/abr.m3u8`;
+			}
+		} catch (error) {
+			console.log("ABR stream não encontrada ou inativa");
+		}
+
+		res.json({
+			qualities: activeQualities,
+			abr: {
+				active: abrActive,
+				url: abrStreamUrl,
+				description: "Stream adaptativa com múltiplas qualidades"
+			},
+			timestamp: new Date().toISOString(),
+			totalQualities: availableQualities.length,
+			activeQualities: activeQualities.filter(q => q.active).length
+		});
+
+	} catch (error) {
+		console.error('Erro ao listar qualidades:', error);
+		res.status(500).json({ 
+			message: 'Erro ao obter qualidades disponíveis',
+			error: error.message 
+		});
+	}
+});
+
 // Middleware para verificar se é admin
 const requireAdmin = (req, res, next) => {
 	if (req.user.role !== "admin") {

@@ -102,6 +102,53 @@ const checkStreamStatus = async (authToken) => {
 	}
 };
 
+// Função para obter qualidades disponíveis via auth-server
+const getAvailableQualities = async (authToken) => {
+	try {
+		console.log("🎯 Obtendo qualidades disponíveis via auth-server...");
+		
+		const response = await axios.get(`${AUTH_SERVER_URL}/stream/qualities`, {
+			timeout: 5000,
+			headers: {
+				'Authorization': `Bearer ${authToken}`,
+				'Accept': 'application/json',
+				'Content-Type': 'application/json',
+			},
+		});
+
+		if (response.status === 200 && response.data) {
+			const data = response.data;
+			console.log("📊 Qualidades disponíveis:", data);
+			
+			return {
+				qualities: data.qualities || [],
+				abr: data.abr || { active: false, url: null },
+				totalQualities: data.totalQualities || 0,
+				activeQualities: data.activeQualities || 0,
+				timestamp: data.timestamp
+			};
+		} else {
+			console.log("❌ Resposta inválida da API de qualidades:", response.status);
+			return {
+				qualities: [],
+				abr: { active: false, url: null },
+				totalQualities: 0,
+				activeQualities: 0,
+				error: 'api_error'
+			};
+		}
+	} catch (error) {
+		console.error("❌ Erro ao obter qualidades via auth-server:", error.message);
+		return {
+			qualities: [],
+			abr: { active: false, url: null },
+			totalQualities: 0,
+			activeQualities: 0,
+			error: error.message
+		};
+	}
+};
+
 // Configuração do addon
 const builder = new addonBuilder({
 	id: "org.yustream.live",
@@ -358,29 +405,53 @@ builder.defineStreamHandler(async (args, callback, req) => {
 			{ expiresIn: "6h" }
 		);
 
-		// Verificar se stream está online via auth-server
-		const streamStatus = await checkStreamStatus(streamToken);
-		const streamOnline = streamStatus.online;
+		// Obter qualidades disponíveis via auth-server
+		const qualitiesData = await getAvailableQualities(streamToken);
+		const activeQualities = qualitiesData.qualities.filter(q => q.active);
 		
-		console.log("Stream status:", streamOnline ? "ONLINE" : "OFFLINE");
-		console.log("LLHLS disponível:", streamStatus.hasLLHLS ? "SIM" : "NÃO");
-		console.log("WebRTC disponível:", streamStatus.hasWebRTC ? "SIM" : "NÃO");
+		console.log("Qualidades disponíveis:", activeQualities.length);
+		console.log("ABR ativo:", qualitiesData.abr.active ? "SIM" : "NÃO");
 
 		const streams = [];
-		if (streamOnline && id === "yustream_live_main") {
-			// Usar localhost pois será acessado via Nginx
+		if (id === "yustream_live_main") {
 			const baseUrl = "https://yustream.yurisp.com.br";
-
-			streams.push({
-				url: `${baseUrl}:8443/live/live/abr.m3u8?token=${streamToken}`,
-				name: "Fonte",
-				title: "YuStream Live - Qualidade Adaptativa",
-				description:
-					"Stream ao vivo em qualidade adaptativa (LLHLS) - Transmissão em tempo real com qualidade até 1080p",
-				behaviorHints: {
-					notWebReady: true,
-				},
-			});
+			
+			// Se ABR estiver ativo, adicionar como primeira opção
+			if (qualitiesData.abr.active && qualitiesData.abr.url) {
+				streams.push({
+					url: `${qualitiesData.abr.url}?token=${streamToken}`,
+					name: "Adaptativa",
+					title: "YuStream Live - Qualidade Adaptativa",
+					description: "Stream ao vivo em qualidade adaptativa (ABR) - Seleciona automaticamente a melhor qualidade baseada na conexão",
+					behaviorHints: {
+						notWebReady: true,
+					},
+				});
+			}
+			
+			// Adicionar qualidades individuais ativas
+			for (const quality of activeQualities) {
+				const qualityUrl = `${baseUrl}:8443/${quality.application}/${quality.streamName}/${quality.streamName}.m3u8?token=${streamToken}`;
+				
+				streams.push({
+					url: qualityUrl,
+					name: quality.displayName,
+					title: `YuStream Live - ${quality.displayName}`,
+					description: `Stream ao vivo em ${quality.displayName} - ${quality.description}`,
+					behaviorHints: {
+						notWebReady: true,
+					},
+				});
+			}
+			
+			// Se não há streams ativas, mostrar mensagem
+			if (streams.length === 0) {
+				streams.push({
+					title: "Stream Offline",
+					url: "https://www.stremio.com/",
+					description: "Nenhuma stream está ativa no momento. Tente novamente mais tarde.",
+				});
+			}
 		}
 
 		return Promise.resolve({ streams });
@@ -441,12 +512,14 @@ builder.defineMetaHandler(async (args, callback, req) => {
 							{ expiresIn: "6h" }
 						);
 
-						// Verificar se stream está online via auth-server
-						const streamStatus = await checkStreamStatus(streamToken);
-						streamOnline = streamStatus.online;
+						// Obter informações sobre qualidades disponíveis
+						const qualitiesData = await getAvailableQualities(streamToken);
+						const activeQualities = qualitiesData.qualities.filter(q => q.active);
+						streamOnline = activeQualities.length > 0 || qualitiesData.abr.active;
 						
 						console.log("Meta - Stream status:", streamOnline ? "ONLINE" : "OFFLINE");
-						console.log("Meta - LLHLS disponível:", streamStatus.hasLLHLS ? "SIM" : "NÃO");
+						console.log("Meta - Qualidades ativas:", activeQualities.length);
+						console.log("Meta - ABR ativo:", qualitiesData.abr.active ? "SIM" : "NÃO");
 					}
 				} catch (error) {
 					console.log("Erro na autenticação para meta:", error.message);
