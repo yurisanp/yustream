@@ -249,7 +249,7 @@ app.get("/stream/qualities", authenticateToken, async (req, res) => {
 		const availableQualities = [
 			{
 				name: "Fonte",
-				application: "live",
+				application: "fonte",
 				streamName: "fonte",
 				displayName: "Fonte Original",
 				description: "Qualidade original da fonte",
@@ -258,7 +258,7 @@ app.get("/stream/qualities", authenticateToken, async (req, res) => {
 			},
 			{
 				name: "1440p",
-				application: "live",
+				application: "1440",
 				streamName: "1440",
 				displayName: "1440p Ultra HD",
 				description: "Qualidade Ultra HD 1440p",
@@ -267,7 +267,7 @@ app.get("/stream/qualities", authenticateToken, async (req, res) => {
 			},
 			{
 				name: "1080p",
-				application: "live",
+				application: "1080",
 				streamName: "1080",
 				displayName: "1080p Full HD",
 				description: "Qualidade Full HD 1080p",
@@ -276,7 +276,7 @@ app.get("/stream/qualities", authenticateToken, async (req, res) => {
 			},
 			{
 				name: "720p",
-				application: "live",
+				application: "720",
 				streamName: "720",
 				displayName: "720p HD",
 				description: "Qualidade HD 720p",
@@ -285,7 +285,7 @@ app.get("/stream/qualities", authenticateToken, async (req, res) => {
 			},
 			{
 				name: "360p",
-				application: "live",
+				application: "360",
 				streamName: "360",
 				displayName: "360p SD",
 				description: "Qualidade SD 360p",
@@ -332,27 +332,11 @@ app.get("/stream/qualities", authenticateToken, async (req, res) => {
 		// Ordenar por prioridade (menor número = maior prioridade)
 		activeQualities.sort((a, b) => a.priority - b.priority);
 
-		// Verificar se há stream ABR ativa
-		let abrActive = false;
-		let abrStreamUrl = null;
-		
-		try {
-			const abrUrl = `/v1/vhosts/${vhostName}/apps/${appName}/multiplexChannels/live`;
-			const abrResponse = await makeOMERequest(abrUrl);
-			
-			if (abrResponse.response && abrResponse.response.state === "Playing") {
-				abrActive = true;
-				abrStreamUrl = `https://yustream.yurisp.com.br:8443/live/live/abr.m3u8`;
-			}
-		} catch (error) {
-			console.log("ABR stream não encontrada ou inativa");
-		}
-
 		res.json({
 			qualities: activeQualities,
 			abr: {
-				active: abrActive,
-				url: abrStreamUrl,
+				active: false,
+				url: null,
 				description: "Stream adaptativa com múltiplas qualidades"
 			},
 			timestamp: new Date().toISOString(),
