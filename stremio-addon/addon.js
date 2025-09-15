@@ -360,16 +360,6 @@ builder.defineStreamHandler(async (args, callback, req) => {
 		if (id === "yustream_live_main") {
 			const baseUrl = "https://yustream.yurisp.com.br";
 			
-			// Se ABR estiver ativo, adicionar como primeira opção
-			if (qualitiesData.abr.active && qualitiesData.abr.url) {
-				streams.push({
-					url: `${qualitiesData.abr.url}?token=${streamToken}`,
-					name: "Adaptativa",
-					title: "YuStream Live - Qualidade Adaptativa",
-					description: "Stream ao vivo em qualidade adaptativa (ABR) - Seleciona automaticamente a melhor qualidade baseada na conexão",
-				});
-			}
-			
 			// Adicionar qualidades individuais ativas
 			for (const quality of activeQualities) {
 				const qualityUrl = `${baseUrl}:8443/${quality.application}/${quality.streamName}/${quality.streamName}.m3u8?token=${streamToken}`;
@@ -377,7 +367,6 @@ builder.defineStreamHandler(async (args, callback, req) => {
 				streams.push({
 					url: qualityUrl,
 					name: quality.displayName,
-					title: `YuStream Live - ${quality.displayName}`,
 					description: `Stream ao vivo em ${quality.displayName} - ${quality.description}`,
 				});
 			}
