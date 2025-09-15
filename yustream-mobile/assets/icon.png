@@ -1,0 +1,9 @@
+# icon.png
+# Tamanho: 1024x1024
+# Live: true
+# 
+# Este arquivo é um placeholder.
+# Para produção, converta o SVG correspondente para PNG usando:
+# - Inkscape: inkscape --export-png=icon.png --export-width=1024 --export-height=1024 icon.svg
+# - Online: https://convertio.co/svg-png/
+# - Node.js: sharp, svg2png, etc.

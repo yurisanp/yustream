@@ -1,0 +1,25 @@
+
+<svg width="300" height="450" viewBox="0 0 300 450" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="textGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f0f0f0;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background circle -->
+  <circle cx="150" cy="225" r="140" fill="url(#logoGradient)" stroke="#ffffff" stroke-width="2"/>
+  
+  <!-- Play button icon -->
+  <polygon points="120,135 120,315 210,225" fill="url(#textGradient)" stroke="#667eea" stroke-width="1"/>
+  
+  
+  <!-- Live indicator -->
+  <circle cx="240" cy="90" r="24" fill="#ff4757"/>
+  <text x="240" y="99" font-family="Arial, sans-serif" font-size="15" font-weight="bold" text-anchor="middle" fill="#ffffff">LIVE</text>
+  
+</svg>
