@@ -48,60 +48,6 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
 
 const User = mongoose.model("User", userSchema);
 
-// Função para verificar status da stream via auth-server
-const checkStreamStatus = async (authToken) => {
-	try {
-		console.log("🔍 Verificando status da stream via auth-server...");
-		
-		const response = await axios.get(`${AUTH_SERVER_URL}/stream/status`, {
-			timeout: 5000,
-			headers: {
-				'Authorization': `Bearer ${authToken}`,
-				'Accept': 'application/json',
-				'Content-Type': 'application/json',
-			},
-		});
-
-		if (response.status === 200 && response.data) {
-			const data = response.data;
-			console.log("📊 Status da stream:", data);
-			
-			// Verificar se há stream LLHLS online
-			const isLLHLSOnline = data.online === true && data.hasLLHLS === true;
-			
-			return {
-				online: isLLHLSOnline,
-				hasLLHLS: data.hasLLHLS || false,
-				hasWebRTC: data.hasWebRTC || false,
-				totalActiveStreams: data.totalActiveStreams || 0,
-				streamDetails: data.streamDetails || null,
-				method: data.method || 'api_rest'
-			};
-		} else {
-			console.log("❌ Resposta inválida da API auth-server:", response.status);
-			return {
-				online: false,
-				hasLLHLS: false,
-				hasWebRTC: false,
-				totalActiveStreams: 0,
-				streamDetails: null,
-				method: 'api_error'
-			};
-		}
-	} catch (error) {
-		console.error("❌ Erro ao verificar status da stream via auth-server:", error.message);
-		return {
-			online: false,
-			hasLLHLS: false,
-			hasWebRTC: false,
-			totalActiveStreams: 0,
-			streamDetails: null,
-			method: 'api_error',
-			error: error.message
-		};
-	}
-};
-
 // Função para obter qualidades disponíveis via auth-server
 const getAvailableQualities = async (authToken) => {
 	try {
@@ -290,7 +236,6 @@ builder.defineCatalogHandler(async (args, callback, req) => {
 				description: "Stream ao vivo do YuStream - Acompanhe nossa programação ao vivo com a melhor qualidade de streaming disponível.",
 				genres: ["Live", "Streaming", "Entertainment"],
 				releaseInfo: "Ao Vivo",
-				director: ["YuStream Team"],
 				country: "Brasil",
 				language: "Português",
 			});
@@ -312,7 +257,6 @@ builder.defineCatalogHandler(async (args, callback, req) => {
 				year: new Date().getFullYear(),
 				configurable: true,
 				configurationRequired: true,
-				director: ["YuStream Team"],
 				cast: ["Sistema de Configuração"],
 				runtime: "N/A",
 				country: "Brasil",
@@ -546,7 +490,6 @@ builder.defineMetaHandler(async (args, callback, req) => {
 							: "Stream do YuStream está offline no momento. Volte mais tarde para acompanhar nossa programação ao vivo.",
 						genres: ["Live", "Streaming", "Entertainment"],
 						releaseInfo: streamOnline ? "Ao Vivo" : "Offline",
-						director: ["YuStream Team"],
 						runtime: streamOnline ? "Contínuo" : "N/A",
 						country: "Brasil",
 						language: "Português",
@@ -570,7 +513,6 @@ builder.defineMetaHandler(async (args, callback, req) => {
 						year: new Date().getFullYear(),
 						configurable: true,
 						configurationRequired: true,
-						director: ["YuStream Team"],
 						cast: ["Sistema de Configuração"],
 						runtime: "N/A",
 						country: "Brasil",
