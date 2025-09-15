@@ -367,9 +367,6 @@ builder.defineStreamHandler(async (args, callback, req) => {
 					name: "Adaptativa",
 					title: "YuStream Live - Qualidade Adaptativa",
 					description: "Stream ao vivo em qualidade adaptativa (ABR) - Seleciona automaticamente a melhor qualidade baseada na conexão",
-					behaviorHints: {
-						notWebReady: true,
-					},
 				});
 			}
 			
@@ -382,9 +379,6 @@ builder.defineStreamHandler(async (args, callback, req) => {
 					name: quality.displayName,
 					title: `YuStream Live - ${quality.displayName}`,
 					description: `Stream ao vivo em ${quality.displayName} - ${quality.description}`,
-					behaviorHints: {
-						notWebReady: true,
-					},
 				});
 			}
 			
