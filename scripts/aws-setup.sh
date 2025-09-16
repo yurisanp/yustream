@@ -111,7 +111,7 @@ fi
 # Instalar dependências adicionais
 log "🔧 Instalando dependências adicionais..."
 if command -v yum &> /dev/null; then
-    sudo yum install -y git htop curl wget unzip tar gzip python3 python3-pip
+    sudo yum install -y --skip-broken git htop curl wget unzip tar gzip python3 python3-pip
 elif command -v dnf &> /dev/null; then
     sudo dnf install -y git htop curl wget unzip tar gzip python3 python3-pip
 fi
