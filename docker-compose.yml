@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   ovenmediaengine:
     image: airensoft/ovenmediaengine:latest
@@ -55,6 +53,8 @@ services:
       - mongodb
     networks:
       - streaming-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   stremio-addon:
     build: ./stremio-addon
