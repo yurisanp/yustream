@@ -82,6 +82,16 @@ services:
     networks:
       - streaming-network
 
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: yustream-portainer
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    networks:
+      - streaming-network
+
   nginx:
     image: nginx:alpine
     container_name: nginx-proxy
@@ -99,9 +109,13 @@ services:
       - ovenmediaengine
       - yustream-auth
       - stremio-addon
+      - portainer
     networks:
       - streaming-network
 
 networks:
   streaming-network:
     driver: bridge
+
+volumes:
+  portainer_data:

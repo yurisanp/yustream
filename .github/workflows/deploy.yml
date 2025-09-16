@@ -1,0 +1,78 @@
+name: Deploy to AWS
+
+on:
+  push:
+    branches: [ main, production ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to AWS EC2
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 2  # Necessário para comparar mudanças
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: |
+          auth-server/package-lock.json
+          stremio-addon/package-lock.json
+          yustream-react/package-lock.json
+
+    - name: Build React App
+      run: |
+        cd yustream-react
+        npm ci
+        npm run build
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
+
+    - name: Deploy to EC2
+      env:
+        PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+        HOSTNAME: ${{ secrets.EC2_HOST }}
+        USER_NAME: ${{ secrets.EC2_USER }}
+        PROJECT_PATH: ${{ secrets.EC2_PROJECT_PATH }}
+      run: |
+        # Salvar chave SSH
+        echo "$PRIVATE_KEY" > private_key && chmod 600 private_key
+        
+        # Criar arquivo com mudanças detectadas
+        git diff --name-only HEAD~1 HEAD > changed_files.txt
+        
+        # Fazer upload dos arquivos necessários
+        scp -o StrictHostKeyChecking=no -i private_key -r \
+          yustream-react/dist \
+          auth-server \
+          stremio-addon \
+          docker-compose.yml \
+          docker-compose.production.yml \
+          nginx \
+          scripts/deploy.sh \
+          changed_files.txt \
+          ${USER_NAME}@${HOSTNAME}:${PROJECT_PATH}/
+        
+        # Executar script de deploy no servidor (Amazon Linux/CentOS)
+        ssh -o StrictHostKeyChecking=no -i private_key ${USER_NAME}@${HOSTNAME} \
+          "cd ${PROJECT_PATH} && chmod +x scripts/deploy.sh && sudo yum install -y dos2unix && dos2unix scripts/deploy.sh && ./scripts/deploy.sh"
+
+    - name: Notify deployment status
+      if: always()
+      run: |
+        if [ ${{ job.status }} == 'success' ]; then
+          echo "✅ Deploy realizado com sucesso!"
+        else
+          echo "❌ Deploy falhou!"
+        fi
