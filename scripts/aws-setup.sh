@@ -47,10 +47,8 @@ log "Sistema detectado: $OS $VER"
 log "📦 Atualizando sistema..."
 if command -v yum &> /dev/null; then
     sudo yum update -y
-    sudo yum install -y epel-release
 elif command -v dnf &> /dev/null; then
     sudo dnf update -y
-    sudo dnf install -y epel-release
 else
     error "Gerenciador de pacotes não suportado"
     exit 1
