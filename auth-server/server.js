@@ -631,7 +631,7 @@ app.get("/admin/stats", authenticateToken, requireAdmin, async (req, res) => {
 
 // Configurações do OvenMediaEngine
 const getOMEConfig = () => ({
-	hostname: process.env.OME_HOSTNAME || "ovenmediaengine",
+	hostname: process.env.OME_HOSTNAME || "host.docker.internal",
 	apiPort: process.env.OME_API_PORT || "8081",
 	vhostName: process.env.OME_VHOST || "default",
 	appName: process.env.OME_APP || "live",

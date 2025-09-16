@@ -5,13 +5,6 @@ services:
     image: airensoft/ovenmediaengine:latest
     container_name: ovenmediaengine
     restart: unless-stopped
-    ports:
-      # RTMP port for OBS streaming
-      - "1935:1935"
-      # LLHLS/DASH HTTP port
-      - "8080:8080"
-      # LLHLS/DASH HTTPS port
-      - "8443:8443"
     volumes:
       - ./ome-config:/opt/ovenmediaengine/bin/origin_conf
       - ./ome-logs:/var/log/ovenmediaengine
@@ -20,8 +13,7 @@ services:
       - /etc/letsencrypt/live/yustream.yurisp.com.br/chain.pem:/opt/ovenmediaengine/bin/ssl_conf/chain.pem
     environment:
       - OME_HOST_IP=0.0.0.0
-    networks:
-      - streaming-network
+    network_mode: host
 
   mongodb:
     image: mongo:7
@@ -46,11 +38,11 @@ services:
       - PORT=3001
       - JWT_SECRET=yustream-jwt-secret-change-in-production-2024
       - CORS_ORIGIN=*
-      - STREAM_CHECK_URL=http://ovenmediaengine:8080/live/live/abr.m3u8
+      - STREAM_CHECK_URL=http://host.docker.internal:8080/live/live/abr.m3u8
       - MONGODB_URI=mongodb://yustream:yustream123@mongodb:27017/yustream?authSource=admin
       - WEBHOOK_SECRET=yustream-webhook-secret-2024
       # Configurações do OvenMediaEngine API
-      - OME_HOSTNAME=ovenmediaengine
+      - OME_HOSTNAME=host.docker.internal
       - OME_API_PORT=8081
       - OME_VHOST=default
       - OME_APP=live
