@@ -36,9 +36,9 @@ chmod 644 "$OME_SSL_DIR/chain.pem"
 
 # Atualizar configuração do OME
 echo "⚙️ Atualizando configuração do OME..."
-sed -i "s|/opt/ovenmediaengine/bin/origin_conf/cert.pem|/opt/ovenmediaengine/bin/origin_conf/ssl/cert.pem|g" ome-config/Server.xml
-sed -i "s|/opt/ovenmediaengine/bin/origin_conf/key.pem|/opt/ovenmediaengine/bin/origin_conf/ssl/key.pem|g" ome-config/Server.xml
-sed -i "s|/opt/ovenmediaengine/bin/origin_conf/chain.pem|/opt/ovenmediaengine/bin/origin_conf/ssl/chain.pem|g" ome-config/Server.xml
+sed -i "s|/opt/ovenmediaengine/bin/ssl_conf/cert.pem|/opt/ovenmediaengine/bin/ssl_conf/ssl/cert.pem|g" ome-config/Server.xml
+sed -i "s|/opt/ovenmediaengine/bin/ssl_conf/key.pem|/opt/ovenmediaengine/bin/ssl_conf/ssl/key.pem|g" ome-config/Server.xml
+sed -i "s|/opt/ovenmediaengine/bin/ssl_conf/chain.pem|/opt/ovenmediaengine/bin/ssl_conf/ssl/chain.pem|g" ome-config/Server.xml
 
 # Reiniciar OME
 echo "🔄 Reiniciando OvenMediaEngine..."

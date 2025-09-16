@@ -24,9 +24,9 @@
             <Name>*</Name>
         </Names>
         <TLS>
-            <CertPath>/opt/ovenmediaengine/bin/origin_conf/cert.pem</CertPath>
-            <KeyPath>/opt/ovenmediaengine/bin/origin_conf/privkey.pem</KeyPath>
-            <ChainCertPath>/opt/ovenmediaengine/bin/origin_conf/chain.pem</ChainCertPath>
+            <CertPath>/opt/ovenmediaengine/bin/ssl_conf/cert.pem</CertPath>
+            <KeyPath>/opt/ovenmediaengine/bin/ssl_conf/privkey.pem</KeyPath>
+            <ChainCertPath>/opt/ovenmediaengine/bin/ssl_conf/chain.pem</ChainCertPath>
         </TLS>
     </Host>
 
