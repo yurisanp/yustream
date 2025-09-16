@@ -31,6 +31,8 @@ services:
     build: ./auth-server
     container_name: yustream-auth
     restart: unless-stopped
+    ports:
+      - "3001:3001"
     environment:
       - NODE_ENV=production
       - PORT=3001

@@ -32,7 +32,7 @@
 
     <!-- Admission Webhooks para controle de acesso -->
     <AdmissionWebhooks>
-        <ControlServerUrl>http://yustream-auth:3001/webhook/admission</ControlServerUrl>
+        <ControlServerUrl>http://127.0.0.1:3001/webhook/admission</ControlServerUrl>
         <SecretKey>yustream-webhook-secret-2024</SecretKey>
         <Timeout>3000</Timeout>
         <Enables>
