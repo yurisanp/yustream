@@ -142,14 +142,96 @@ const addLog = (message) => {
   logger.info(message)
 }
 
-// Função para testar se VNC está disponível
+// Função para testar se VNC está disponível com handshake real
 const testVNCConnection = () => {
   return new Promise((resolve) => {
     const socket = new net.Socket()
+    let handshakeComplete = false
+    let dataReceived = false
     
-    socket.setTimeout(5000) // 5 segundos timeout
+    socket.setTimeout(8000) // 8 segundos timeout
     
     socket.connect(VNC_CONFIG.port, VNC_CONFIG.host, () => {
+      addLog(`Testando conexão VNC em ${VNC_CONFIG.host}:${VNC_CONFIG.port}`)
+    })
+    
+    socket.on('data', (data) => {
+      try {
+        dataReceived = true
+        
+        if (!handshakeComplete) {
+          // Verificar se recebemos o ProtocolVersion do VNC
+          const response = data.toString('ascii')
+          addLog(`Resposta VNC recebida: ${response.trim().replace(/\n/g, '\\n')}`)
+          
+          // Verificar diferentes formatos de resposta VNC
+          if (response.includes('RFB ') || response.match(/RFB \d{3}\.\d{3}/)) {
+            handshakeComplete = true
+            socket.destroy()
+            addLog('Handshake VNC bem-sucedido - servidor VNC detectado')
+            resolve(true)
+          } else if (data.length >= 4) {
+            // Alguns servidores VNC podem enviar dados binários primeiro
+            const hex = data.toString('hex').substring(0, 24)
+            addLog(`Dados VNC em hex: ${hex}`)
+            
+            // Se recebemos dados mas não é protocolo VNC padrão, ainda pode ser VNC
+            if (data.length >= 8) {
+              handshakeComplete = true
+              socket.destroy()
+              addLog('Possível servidor VNC detectado (formato não padrão)')
+              resolve(true)
+            }
+          }
+        }
+      } catch (error) {
+        addLog(`Erro ao processar resposta VNC: ${error.message}`)
+        socket.destroy()
+        resolve(false)
+      }
+    })
+    
+    socket.on('connect', () => {
+      // Após conectar, aguardar dados por um tempo
+      setTimeout(() => {
+        if (!dataReceived && !handshakeComplete) {
+          addLog('Nenhum dado recebido do servidor VNC - pode estar inativo')
+          socket.destroy()
+          resolve(false)
+        }
+      }, 3000)
+    })
+    
+    socket.on('error', (error) => {
+      addLog(`Erro na conexão VNC: ${error.code} - ${error.message}`)
+      socket.destroy()
+      resolve(false)
+    })
+    
+    socket.on('timeout', () => {
+      addLog('Timeout na conexão VNC - servidor não respondeu')
+      socket.destroy()
+      resolve(false)
+    })
+    
+    socket.on('close', () => {
+      if (!handshakeComplete && !dataReceived) {
+        addLog('Conexão VNC fechada sem dados recebidos')
+        resolve(false)
+      }
+    })
+  })
+}
+
+// Função alternativa para testar VNC via porta básica (fallback)
+const testVNCPortOnly = () => {
+  return new Promise((resolve) => {
+    const socket = new net.Socket()
+    
+    socket.setTimeout(3000) // 3 segundos timeout
+    
+    socket.connect(VNC_CONFIG.port, VNC_CONFIG.host, () => {
+      addLog(`Porta VNC ${VNC_CONFIG.port} está aberta`)
       socket.destroy()
       resolve(true)
     })
@@ -269,7 +351,16 @@ app.get('/api/admin/vnc/status', authenticateToken, async (req, res) => {
   try {
     addLog('Verificando status do servidor VNC...')
     
-    const isVNCAvailable = await testVNCConnection()
+    // Primeiro tentar teste completo com handshake
+    let isVNCAvailable = await testVNCConnection()
+    let testMethod = 'handshake'
+    
+    // Se o teste completo falhar, tentar teste básico de porta
+    if (!isVNCAvailable) {
+      addLog('Teste VNC completo falhou, tentando teste básico de porta...')
+      isVNCAvailable = await testVNCPortOnly()
+      testMethod = 'port-only'
+    }
     
     const status = {
       available: isVNCAvailable,
@@ -278,10 +369,14 @@ app.get('/api/admin/vnc/status', authenticateToken, async (req, res) => {
       name: VNC_CONFIG.name,
       wsPort: VNC_CONFIG.wsPort,
       lastChecked: new Date().toISOString(),
-      activeSessions: sessions.size
+      activeSessions: sessions.size,
+      testMethod: testMethod,
+      reliability: testMethod === 'handshake' ? 'high' : 'medium'
     }
     
-    addLog(`Status VNC: ${isVNCAvailable ? 'Disponível' : 'Indisponível'} em ${VNC_CONFIG.host}:${VNC_CONFIG.port}`)
+    const statusText = isVNCAvailable ? 'Disponível' : 'Indisponível'
+    const methodText = testMethod === 'handshake' ? '(handshake VNC)' : '(porta apenas)'
+    addLog(`Status VNC: ${statusText} ${methodText} em ${VNC_CONFIG.host}:${VNC_CONFIG.port}`)
     
     res.json(status)
   } catch (error) {
@@ -300,11 +395,24 @@ app.post('/api/admin/vnc/connect', authenticateToken, async (req, res) => {
     }
     
     // Verificar se VNC está disponível
-    const isVNCAvailable = await testVNCConnection()
+    let isVNCAvailable = await testVNCConnection()
+    let testMethod = 'handshake'
+    
+    // Se o teste completo falhar, tentar teste básico
+    if (!isVNCAvailable) {
+      addLog('Teste VNC completo falhou, tentando teste básico...')
+      isVNCAvailable = await testVNCPortOnly()
+      testMethod = 'port-only'
+    }
+    
     if (!isVNCAvailable) {
       addLog('Tentativa de conexão VNC falhada - servidor VNC não disponível')
-      return res.status(503).json({ error: 'Servidor VNC não está disponível na porta ' + VNC_CONFIG.port })
+      return res.status(503).json({ 
+        error: `Servidor VNC não está disponível na porta ${VNC_CONFIG.port}. Verifique se o túnel SSH está ativo e o TightVNC está rodando.`
+      })
     }
+    
+    addLog(`VNC disponível via ${testMethod} - prosseguindo com conexão`)
     
     // Gerar token de sessão
     const sessionToken = jwt.sign(
