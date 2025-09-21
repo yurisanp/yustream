@@ -110,7 +110,15 @@ services:
       - portainer_data:/data
     networks:
       - streaming-network
-
+  websockify:
+    image: jwnmulder/websockify
+    container_name: yustream-websockify
+    command: 5901 host.docker.internal:5901
+    ports:
+      - "5901:5901"
+    restart: unless-stopped
+    networks:
+      - streaming-network
   nginx:
     image: nginx:alpine
     container_name: nginx-proxy

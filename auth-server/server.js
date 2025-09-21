@@ -1135,6 +1135,47 @@ app.post("/webhook/close", (req, res) => {
 
 // Endpoints do Stremio movidos para servidor dedicado (stremio-addon:7000)
 
+// Endpoint de verificação VNC para NGINX auth_request
+app.get("/auth/verify-vnc", async (req, res) => {
+	try {
+		const authHeader = req.headers.authorization;
+		if (!authHeader || !authHeader.startsWith('Bearer ')) {
+			return res.status(401).json({ error: 'Token requerido' });
+		}
+
+		const token = authHeader.substring(7);
+		
+		// Verificar token
+		const decoded = jwt.verify(token, JWT_SECRET);
+		const user = await User.findById(decoded.id);
+		
+		if (!user) {
+			return res.status(401).json({ error: 'Usuário não encontrado' });
+		}
+		
+		// Apenas admins podem acessar VNC
+		if (user.role !== 'admin') {
+			return res.status(403).json({ error: 'Acesso negado - apenas administradores' });
+		}
+		
+		// Headers para o NGINX
+		res.set('X-User', user.username);
+		res.set('X-User-Role', user.role);
+		res.set('X-User-ID', user.id.toString());
+		
+		console.log(`✅ Acesso VNC autorizado para admin: ${user.username}`);
+		res.status(200).json({ 
+			authorized: true, 
+			user: user.username,
+			role: user.role 
+		});
+		
+	} catch (error) {
+		console.error('❌ Erro na verificação VNC:', error);
+		res.status(401).json({ error: 'Token inválido' });
+	}
+});
+
 // Rota de health check
 app.get("/health", (req, res) => {
 	res.json({ status: "OK", timestamp: new Date().toISOString() });

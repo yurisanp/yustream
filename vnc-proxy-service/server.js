@@ -44,18 +44,17 @@ const app = express()
 const server = http.createServer(app)
 const wss = new WebSocketServer({ server })
 
-// Configuração do servidor VNC fixo
+// Configuração simplificada (VNC agora é gerenciado pelo NGINX)
 const VNC_CONFIG = {
-  host: 'host.docker.internal', // Servidor VNC local via túnel
+  host: 'host.docker.internal',
   port: 5901,
   name: 'Servidor de Streaming',
-  wsPort: 6080 // Porta WebSocket fixa
+  nginxProxyUrl: 'https://vnc.yustream.yurisp.com.br'
 }
 
-// Armazenamento em memória para sessões
-const sessions = new Map() // Session Token -> Session Info
+// Armazenamento para logs e sessões auxiliares
 const connectionLogs = []  // Array de logs simplificado
-let vncWebSocketServer = null // Servidor WebSocket único
+const fileSessions = new Map() // Para upload/download de arquivos
 
 // Middleware
 app.use(helmet({
@@ -142,241 +141,67 @@ const addLog = (message) => {
   logger.info(message)
 }
 
-// Função para testar se VNC está disponível com handshake real
-const testVNCConnection = () => {
-  return new Promise((resolve) => {
-    const socket = new net.Socket()
-    let handshakeComplete = false
-    let dataReceived = false
-    
-    socket.setTimeout(8000) // 8 segundos timeout
-    
-    socket.connect(VNC_CONFIG.port, VNC_CONFIG.host, () => {
-      addLog(`Testando conexão VNC em ${VNC_CONFIG.host}:${VNC_CONFIG.port}`)
-    })
-    
-    socket.on('data', (data) => {
-      try {
-        dataReceived = true
-        
-        if (!handshakeComplete) {
-          // Verificar se recebemos o ProtocolVersion do VNC
-          const response = data.toString('ascii')
-          addLog(`Resposta VNC recebida: ${response.trim().replace(/\n/g, '\\n')}`)
-          
-          // Verificar diferentes formatos de resposta VNC
-          if (response.includes('RFB ') || response.match(/RFB \d{3}\.\d{3}/)) {
-            handshakeComplete = true
-            socket.destroy()
-            addLog('Handshake VNC bem-sucedido - servidor VNC detectado')
-            resolve(true)
-          } else if (data.length >= 4) {
-            // Alguns servidores VNC podem enviar dados binários primeiro
-            const hex = data.toString('hex').substring(0, 24)
-            addLog(`Dados VNC em hex: ${hex}`)
-            
-            // Se recebemos dados mas não é protocolo VNC padrão, ainda pode ser VNC
-            if (data.length >= 8) {
-              handshakeComplete = true
-              socket.destroy()
-              addLog('Possível servidor VNC detectado (formato não padrão)')
-              resolve(true)
-            }
-          }
-        }
-      } catch (error) {
-        addLog(`Erro ao processar resposta VNC: ${error.message}`)
-        socket.destroy()
-        resolve(false)
-      }
-    })
-    
-    socket.on('connect', () => {
-      // Após conectar, aguardar dados por um tempo
-      setTimeout(() => {
-        if (!dataReceived && !handshakeComplete) {
-          addLog('Nenhum dado recebido do servidor VNC - pode estar inativo')
-          socket.destroy()
-          resolve(false)
-        }
-      }, 3000)
-    })
-    
-    socket.on('error', (error) => {
-      addLog(`Erro na conexão VNC: ${error.code} - ${error.message}`)
-      socket.destroy()
-      resolve(false)
-    })
-    
-    socket.on('timeout', () => {
-      addLog('Timeout na conexão VNC - servidor não respondeu')
-      socket.destroy()
-      resolve(false)
-    })
-    
-    socket.on('close', () => {
-      if (!handshakeComplete && !dataReceived) {
-        addLog('Conexão VNC fechada sem dados recebidos')
-        resolve(false)
-      }
-    })
+// Função para gerar sessão de arquivo (para upload/download)
+const generateFileSession = (userId, filename) => {
+  const sessionId = `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+  
+  fileSessions.set(sessionId, {
+    userId,
+    filename,
+    createdAt: Date.now(),
+    expiresAt: Date.now() + (30 * 60 * 1000) // 30 minutos
   })
-}
-
-// Função alternativa para testar VNC via porta básica (fallback)
-const testVNCPortOnly = () => {
-  return new Promise((resolve) => {
-    const socket = new net.Socket()
-    
-    socket.setTimeout(3000) // 3 segundos timeout
-    
-    socket.connect(VNC_CONFIG.port, VNC_CONFIG.host, () => {
-      addLog(`Porta VNC ${VNC_CONFIG.port} está aberta`)
-      socket.destroy()
-      resolve(true)
-    })
-    
-    socket.on('error', () => {
-      socket.destroy()
-      resolve(false)
-    })
-    
-    socket.on('timeout', () => {
-      socket.destroy()
-      resolve(false)
-    })
-  })
-}
-
-// Função para criar servidor WebSocket único para VNC
-const createVNCWebSocketServer = () => {
-  return new Promise((resolve, reject) => {
-    try {
-      const httpServer = createServer()
-      const wsServer = new WebSocketServer({ server: httpServer })
-      
-      wsServer.on('connection', async (ws) => {
-        addLog('Nova conexão WebSocket VNC')
-        
-        try {
-          // Conectar ao servidor VNC local (via túnel)
-          const vncSocket = new net.Socket()
-          
-          vncSocket.connect(VNC_CONFIG.port, VNC_CONFIG.host, () => {
-            addLog(`Conectado ao servidor VNC ${VNC_CONFIG.host}:${VNC_CONFIG.port}`)
-          })
-          
-          // Relay dados do WebSocket para VNC
-          ws.on('message', (data) => {
-            try {
-              // Se for JSON (comandos de controle), processar
-              const jsonData = JSON.parse(data.toString())
-              logger.debug('Comando VNC recebido:', jsonData.type)
-              
-              // Converter comandos para protocolo VNC binário
-              if (jsonData.type === 'pointer') {
-                const pointerMsg = Buffer.alloc(6)
-                pointerMsg[0] = 5 // PointerEvent
-                pointerMsg[1] = jsonData.buttonMask
-                pointerMsg.writeUInt16BE(jsonData.x, 2)
-                pointerMsg.writeUInt16BE(jsonData.y, 4)
-                vncSocket.write(pointerMsg)
-              } else if (jsonData.type === 'key') {
-                const keyMsg = Buffer.alloc(8)
-                keyMsg[0] = 4 // KeyEvent
-                keyMsg[1] = jsonData.down ? 1 : 0
-                keyMsg.writeUInt32BE(jsonData.keysym, 4)
-                vncSocket.write(keyMsg)
-              }
-            } catch {
-              // Se não for JSON, enviar dados binários diretamente
-              vncSocket.write(data)
-            }
-          })
-          
-          // Relay dados do VNC para WebSocket
-          vncSocket.on('data', (data) => {
-            if (ws.readyState === ws.OPEN) {
-              ws.send(data)
-            }
-          })
-          
-          vncSocket.on('error', (error) => {
-            addLog(`Erro na conexão VNC: ${error.message}`)
-            ws.close()
-          })
-          
-          vncSocket.on('close', () => {
-            addLog('Conexão VNC fechada')
-            ws.close()
-          })
-          
-          ws.on('close', () => {
-            addLog('WebSocket VNC fechado')
-            vncSocket.destroy()
-          })
-          
-          ws.on('error', (error) => {
-            addLog(`Erro no WebSocket VNC: ${error.message}`)
-            vncSocket.destroy()
-          })
-          
-        } catch (error) {
-          addLog(`Erro ao estabelecer conexão VNC: ${error.message}`)
-          ws.close()
-        }
-      })
-      
-      httpServer.listen(VNC_CONFIG.wsPort, '0.0.0.0', () => {
-        addLog(`Servidor WebSocket VNC iniciado na porta ${VNC_CONFIG.wsPort}`)
-        vncWebSocketServer = { httpServer, wsServer }
-        resolve({ httpServer, wsServer })
-      })
-      
-      httpServer.on('error', (error) => {
-        logger.error(`Erro ao iniciar servidor WebSocket na porta ${VNC_CONFIG.wsPort}:`, error.message)
-        reject(error)
-      })
-      
-    } catch (error) {
-      reject(error)
-    }
-  })
+  
+  return sessionId
 }
 
 // Rotas da API
 
-// Verificar status do VNC
-app.get('/api/admin/vnc/status', authenticateToken, async (req, res) => {
+// Endpoint de status VNC com teste real
+app.get('/api/vnc/status', async (req, res) => {
   try {
     addLog('Verificando status do servidor VNC...')
     
-    // Primeiro tentar teste completo com handshake
-    let isVNCAvailable = await testVNCConnection()
-    let testMethod = 'handshake'
-    
-    // Se o teste completo falhar, tentar teste básico de porta
-    if (!isVNCAvailable) {
-      addLog('Teste VNC completo falhou, tentando teste básico de porta...')
-      isVNCAvailable = await testVNCPortOnly()
-      testMethod = 'port-only'
-    }
+    // Testar conectividade TCP com o servidor VNC
+    const isVNCAvailable = await new Promise((resolve) => {
+      const socket = new net.Socket()
+      socket.setTimeout(5000)
+      
+      socket.connect(VNC_CONFIG.port, VNC_CONFIG.host, () => {
+        socket.destroy()
+        resolve(true)
+      })
+      
+      socket.on('error', (error) => {
+        addLog(`Erro na conexão VNC: ${error.code} - ${error.message}`)
+        socket.destroy()
+        resolve(false)
+      })
+      
+      socket.on('timeout', () => {
+        addLog('Timeout na conexão VNC')
+        socket.destroy()
+        resolve(false)
+      })
+    })
     
     const status = {
       available: isVNCAvailable,
       host: VNC_CONFIG.host,
       port: VNC_CONFIG.port,
       name: VNC_CONFIG.name,
-      wsPort: VNC_CONFIG.wsPort,
       lastChecked: new Date().toISOString(),
-      activeSessions: sessions.size,
-      testMethod: testMethod,
-      reliability: testMethod === 'handshake' ? 'high' : 'medium'
+      testMethod: 'tcp-direct',
+      reliability: 'high',
+      wsUrl: '/vnc-ws' // WebSocket relativo
     }
     
-    const statusText = isVNCAvailable ? 'Disponível' : 'Indisponível'
-    const methodText = testMethod === 'handshake' ? '(handshake VNC)' : '(porta apenas)'
-    addLog(`Status VNC: ${statusText} ${methodText} em ${VNC_CONFIG.host}:${VNC_CONFIG.port}`)
+    addLog(`Status VNC: ${isVNCAvailable ? 'Disponível' : 'Indisponível'} em ${VNC_CONFIG.host}:${VNC_CONFIG.port}`)
+    
+    // Headers CORS
+    res.header('Access-Control-Allow-Origin', '*')
+    res.header('Access-Control-Allow-Methods', 'GET, OPTIONS')
+    res.header('Access-Control-Allow-Headers', 'Origin, Authorization, Content-Type')
     
     res.json(status)
   } catch (error) {
@@ -385,84 +210,25 @@ app.get('/api/admin/vnc/status', authenticateToken, async (req, res) => {
   }
 })
 
-// Criar sessão VNC
-app.post('/api/admin/vnc/connect', authenticateToken, async (req, res) => {
+// Endpoint simplificado de informações VNC
+app.get('/api/admin/vnc/info', authenticateToken, async (req, res) => {
   try {
-    // Verificar se usuário está definido
-    if (!req.user || !req.user.id) {
-      logger.error('Usuário não definido no middleware de autenticação')
-      return res.status(401).json({ error: 'Usuário não autenticado corretamente' })
-    }
-    
-    // Verificar se VNC está disponível
-    let isVNCAvailable = await testVNCConnection()
-    let testMethod = 'handshake'
-    
-    // Se o teste completo falhar, tentar teste básico
-    if (!isVNCAvailable) {
-      addLog('Teste VNC completo falhou, tentando teste básico...')
-      isVNCAvailable = await testVNCPortOnly()
-      testMethod = 'port-only'
-    }
-    
-    if (!isVNCAvailable) {
-      addLog('Tentativa de conexão VNC falhada - servidor VNC não disponível')
-      return res.status(503).json({ 
-        error: `Servidor VNC não está disponível na porta ${VNC_CONFIG.port}. Verifique se o túnel SSH está ativo e o TightVNC está rodando.`
-      })
-    }
-    
-    addLog(`VNC disponível via ${testMethod} - prosseguindo com conexão`)
-    
-    // Gerar token de sessão
-    const sessionToken = jwt.sign(
-      { 
-        userId: req.user.id,
-        username: req.user.username || 'admin',
-        timestamp: Date.now()
-      },
-      config.jwtSecret,
-      { expiresIn: '1h' }
-    )
-    
-    // Verificar se servidor WebSocket VNC já está rodando
-    if (!vncWebSocketServer) {
-      try {
-        // Criar servidor WebSocket único para VNC
-        await createVNCWebSocketServer()
-        addLog(`Servidor WebSocket VNC iniciado na porta ${VNC_CONFIG.wsPort}`)
-      } catch (error) {
-        logger.error(`Erro ao criar servidor WebSocket VNC:`, error.message)
-        return res.status(500).json({ error: 'Falha ao inicializar servidor VNC' })
-      }
-    }
-    
-    // URL do WebSocket
-    const wsUrl = `ws://localhost:${VNC_CONFIG.wsPort}`
-    
-    // Armazenar sessão
-    sessions.set(sessionToken, {
-      userId: req.user.id,
-      username: req.user.username || 'admin',
-      wsPort: VNC_CONFIG.wsPort,
-      createdAt: Date.now(),
-      lastActivity: Date.now()
-    })
-    
-    addLog(`Sessão VNC criada para usuário ${req.user.username || 'admin'}`)
+    addLog(`Informações VNC solicitadas por ${req.user.username}`)
     
     res.json({
-      sessionToken,
-      wsUrl,
+      message: 'VNC gerenciado via NGINX + websockify',
+      websocketUrl: '/vnc-ws',
+      statusUrl: '/api/vnc/status',
       server: {
         name: VNC_CONFIG.name,
         host: VNC_CONFIG.host,
         port: VNC_CONFIG.port,
-        available: true
-      }
+        proxy: 'nginx-websockify'
+      },
+      instructions: 'Use os endpoints NGINX para conectar diretamente'
     })
   } catch (error) {
-    logger.error('Erro ao criar sessão VNC:', error)
+    logger.error('Erro ao processar informações VNC:', error)
     res.status(500).json({ error: 'Erro interno do servidor' })
   }
 })
@@ -523,7 +289,9 @@ app.get('/health', (req, res) => {
   res.json({ 
     status: 'ok', 
     timestamp: new Date().toISOString(),
-    activeSessions: sessions.size
+    service: 'vnc-auxiliary-service',
+    fileSessions: fileSessions.size,
+    vncProxy: 'nginx'
   })
 })
 
@@ -536,28 +304,27 @@ app.get('/api/admin/vnc/logs', authenticateToken, (req, res) => {
 
 // Iniciar servidor
 server.listen(config.port, () => {
-  logger.info(`Servidor VNC Proxy iniciado na porta ${config.port}`)
-  logger.info(`Configuração VNC: ${VNC_CONFIG.host}:${VNC_CONFIG.port}`)
-  logger.info(`WebSocket VNC será criado na porta: ${VNC_CONFIG.wsPort}`)
+  logger.info(`Servidor VNC Auxiliar iniciado na porta ${config.port}`)
+  logger.info(`VNC Proxy via NGINX: ${VNC_CONFIG.nginxProxyUrl}`)
+  logger.info(`Servidor VNC: ${VNC_CONFIG.host}:${VNC_CONFIG.port}`)
   
-  addLog('Servidor VNC Proxy iniciado e pronto para conexões')
+  addLog('Servidor VNC Auxiliar iniciado - VNC gerenciado pelo NGINX')
 })
 
-// Limpeza de sessões expiradas
+// Limpeza de sessões de arquivo expiradas
 setInterval(() => {
   const now = Date.now()
   const expiredSessions = []
   
-  sessions.forEach((session, token) => {
-    // Sessões expiram após 1 hora de inatividade
-    if (now - session.lastActivity > 60 * 60 * 1000) {
-      expiredSessions.push(token)
+  fileSessions.forEach((session, sessionId) => {
+    if (now > session.expiresAt) {
+      expiredSessions.push(sessionId)
     }
   })
   
-  expiredSessions.forEach(token => {
-    sessions.delete(token)
-    addLog('Sessão VNC expirada removida')
+  expiredSessions.forEach(sessionId => {
+    fileSessions.delete(sessionId)
+    addLog('Sessão de arquivo expirada removida')
   })
 }, 5 * 60 * 1000) // Verificar a cada 5 minutos
 

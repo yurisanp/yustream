@@ -12,9 +12,13 @@ interface VNCStatus {
   host: string
   port: number
   name: string
-  wsPort: number
+  wsPort?: number
   lastChecked: string
-  activeSessions: number
+  activeSessions?: number
+  method?: string
+  wsUrl?: string
+  testMethod?: string
+  reliability?: string
 }
 
 interface VNCViewerProps {
@@ -48,6 +52,30 @@ const VNCViewer = ({ showToast }: VNCViewerProps) => {
   const loadVNCStatus = useCallback(async () => {
     try {
       setStatusLoading(true)
+      
+      // Primeiro tentar via NGINX integrado
+      try {
+        const nginxResponse = await fetch('/api/vnc/status', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+        
+        if (nginxResponse.ok) {
+          const status = await nginxResponse.json()
+          setVncStatus({
+            ...status,
+            method: 'nginx-integrated',
+            wsUrl: window.location.protocol === 'https:' ? 'wss://' + window.location.host + '/vnc-ws' : 'ws://' + window.location.host + '/vnc-ws'
+          })
+          addLog(`Status VNC via NGINX: ${status.available ? 'Disponível' : 'Indisponível'} (${status.testMethod})`)
+          return
+        }
+      } catch (nginxError) {
+        console.warn('NGINX VNC não disponível, tentando fallback:', nginxError)
+      }
+      
+      // Fallback: servidor auxiliar
       const response = await fetch('/api/admin/vnc/status', {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -59,23 +87,38 @@ const VNCViewer = ({ showToast }: VNCViewerProps) => {
       }
 
       const status = await response.json()
-      setVncStatus(status)
-      addLog(`Status VNC: ${status.available ? 'Disponível' : 'Indisponível'} em ${status.host}:${status.port}`)
+      
+      // Se é redirecionamento para NGINX + websockify
+      if (status.message && status.message.includes('websockify')) {
+        setVncStatus({
+          available: true, // Assumir disponível se websockify está configurado
+          host: status.server.host,
+          port: status.server.port,
+          name: status.server.name,
+          lastChecked: new Date().toISOString(),
+          method: 'nginx-websockify',
+          wsUrl: window.location.protocol === 'https:' ? 'wss://' + window.location.host + '/vnc-ws' : 'ws://' + window.location.host + '/vnc-ws'
+        })
+        addLog('VNC gerenciado pelo NGINX + websockify')
+      } else {
+        setVncStatus(status)
+        addLog(`Status VNC: ${status.available ? 'Disponível' : 'Indisponível'} em ${status.host}:${status.port}`)
+      }
     } catch (error) {
       console.error('Erro ao verificar status VNC:', error)
       addLog('Erro ao verificar status do servidor VNC')
       
-      // Fallback: status de demonstração
+      // Fallback final: configuração NGINX integrado
       setVncStatus({
-        available: true,
-        host: 'localhost',
+        available: true, // Assumir disponível para teste
+        host: '192.168.18.96',
         port: 5900,
-        name: 'Servidor de Streaming (Demo)',
-        wsPort: 6080,
+        name: 'Servidor de Streaming',
         lastChecked: new Date().toISOString(),
-        activeSessions: 0
+        method: 'nginx-fallback',
+        wsUrl: window.location.protocol === 'https:' ? 'wss://' + window.location.host + '/vnc-ws' : 'ws://' + window.location.host + '/vnc-ws'
       })
-      addLog('Usando status de demonstração')
+      addLog('Usando configuração NGINX integrado padrão')
     } finally {
       setStatusLoading(false)
     }
@@ -195,21 +238,11 @@ const VNCViewer = ({ showToast }: VNCViewerProps) => {
     }
 
     try {
-      // Obter token de sessão VNC
-      const tokenResponse = await fetch('/api/admin/vnc/connect', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      })
-
-      if (!tokenResponse.ok) {
-        const errorData = await tokenResponse.json()
-        throw new Error(errorData.error || 'Falha ao conectar ao servidor VNC')
-      }
-
-      const { sessionToken, wsUrl, server } = await tokenResponse.json()
+      // Usar WebSocket do NGINX integrado (nova arquitetura)
+      const wsUrl = vncStatus.wsUrl || (window.location.protocol === 'https:' ? 'wss://' + window.location.host + '/vnc-ws' : 'ws://' + window.location.host + '/vnc-ws')
+      const server = { name: vncStatus.name }
+      
+      addLog(`Conectando via NGINX integrado: ${wsUrl}`)
 
       // Verificação final antes de usar
       if (!canvasRef.current) {
@@ -219,11 +252,11 @@ const VNCViewer = ({ showToast }: VNCViewerProps) => {
       // Limpar canvas anterior
       canvasRef.current.innerHTML = ''
 
-      // Criar conexão RFB com controle real
+      // Criar conexão RFB via websockify (WebSocket → TCP direto)
       const rfb = new RFB(canvasRef.current, wsUrl, {
-        credentials: { password: sessionToken },
         shared: false,
         viewOnly: false // Habilitar controle total
+        // websockify gerencia a conversão WebSocket → TCP automaticamente
       })
 
       // Event listeners
@@ -467,7 +500,7 @@ const VNCViewer = ({ showToast }: VNCViewerProps) => {
             <div className="vnc-placeholder">
               <AlertTriangle size={64} />
               <p>Servidor VNC não disponível</p>
-              <small>Verifique se o túnel SSH está ativo e o TightVNC está rodando na porta 5900</small>
+              <small>Verifique se o túnel SSH está ativo e o TightVNC está rodando na porta 5901</small>
             </div>
           ) : (
             <div className="vnc-placeholder">
