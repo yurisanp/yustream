@@ -46,7 +46,7 @@ const wss = new WebSocketServer({ server })
 
 // Configuração do servidor VNC fixo
 const VNC_CONFIG = {
-  host: '127.0.0.1', // Servidor VNC local via túnel
+  host: 'host.docker.internal', // Servidor VNC local via túnel
   port: 5901,
   name: 'Servidor de Streaming',
   wsPort: 6080 // Porta WebSocket fixa
