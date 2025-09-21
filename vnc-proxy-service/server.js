@@ -70,14 +70,25 @@ app.use(express.urlencoded({ extended: true }))
 
 // Configuração do multer para upload
 const upload = multer({
-  dest: path.join(__dirname, 'temp'),
+  dest: path.join(config.uploadsDir, 'temp'),
   limits: {
     fileSize: 100 * 1024 * 1024 // 100MB
   }
 })
 
-// Criar diretório de uploads se não existir
-fs.mkdir(config.uploadsDir, { recursive: true }).catch(console.error)
+// Criar diretórios necessários se não existirem
+const initDirectories = async () => {
+  try {
+    await fs.mkdir(config.uploadsDir, { recursive: true })
+    await fs.mkdir(path.join(config.uploadsDir, 'temp'), { recursive: true })
+    await fs.mkdir(path.join(config.uploadsDir, 'vnc-files'), { recursive: true })
+    logger.info('Diretórios criados com sucesso')
+  } catch (error) {
+    logger.error('Erro ao criar diretórios:', error)
+  }
+}
+
+initDirectories()
 
 // Middleware de autenticação
 const authenticateToken = async (req, res, next) => {
