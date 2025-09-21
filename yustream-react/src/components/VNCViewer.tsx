@@ -7,14 +7,14 @@ import './VNCViewer.css'
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let RFB: any = null
 
-interface VNCConnection {
-  id: string
-  name: string
+interface VNCStatus {
+  available: boolean
   host: string
   port: number
-  status: 'connected' | 'connecting' | 'disconnected' | 'error'
-  lastSeen: string
-  monitors: number
+  name: string
+  wsPort: number
+  lastChecked: string
+  activeSessions: number
 }
 
 interface VNCViewerProps {
@@ -27,17 +27,15 @@ const VNCViewer = ({ showToast }: VNCViewerProps) => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rfbRef = useRef<any>(null)
   
-  const [connections, setConnections] = useState<VNCConnection[]>([])
-  const [selectedConnection, setSelectedConnection] = useState<VNCConnection | null>(null)
+  const [vncStatus, setVncStatus] = useState<VNCStatus | null>(null)
   const [isConnected, setIsConnected] = useState(false)
   const [isConnecting, setIsConnecting] = useState(false)
-  const [currentMonitor, setCurrentMonitor] = useState(0)
   const [showFileTransfer, setShowFileTransfer] = useState(false)
   const [uploadFile, setUploadFile] = useState<File | null>(null)
   const [connectionLogs, setConnectionLogs] = useState<string[]>([])
   const [showLogs, setShowLogs] = useState(false)
-  const [scaleMode, setScaleMode] = useState<'local' | 'remote'>('local')
   const [isVNCReady, setIsVNCReady] = useState(false)
+  const [statusLoading, setStatusLoading] = useState(true)
 
   // Verificar se usuário é admin
   const isAdmin = user?.role === 'admin'
@@ -47,37 +45,39 @@ const VNCViewer = ({ showToast }: VNCViewerProps) => {
     setConnectionLogs(prev => [...prev, `[${timestamp}] ${message}`])
   }, [])
 
-  const loadConnections = useCallback(async () => {
+  const loadVNCStatus = useCallback(async () => {
     try {
-      const response = await fetch('/api/admin/vnc/connections', {
+      setStatusLoading(true)
+      const response = await fetch('/api/admin/vnc/status', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       })
 
       if (!response.ok) {
-        throw new Error('Falha ao carregar conexões VNC')
+        throw new Error('Falha ao verificar status VNC')
       }
 
-      const data = await response.json()
-      setConnections(data.connections)
-      addLog(`Carregadas ${data.connections.length} conexão(ões) do servidor`)
+      const status = await response.json()
+      setVncStatus(status)
+      addLog(`Status VNC: ${status.available ? 'Disponível' : 'Indisponível'} em ${status.host}:${status.port}`)
     } catch (error) {
-      console.error('Erro ao carregar conexões VNC:', error)
-      addLog('Erro ao carregar conexões do servidor, usando dados de demonstração')
+      console.error('Erro ao verificar status VNC:', error)
+      addLog('Erro ao verificar status do servidor VNC')
       
-      // Fallback: carregar dados de demonstração
-      try {
-        const demoResponse = await fetch('/demo-vnc-connections.json')
-        if (demoResponse.ok) {
-          const demoData = await demoResponse.json()
-          setConnections(demoData.connections)
-          addLog(`Carregadas ${demoData.connections.length} conexão(ões) de demonstração`)
-        }
-      } catch (demoError) {
-        console.error('Erro ao carregar dados de demonstração:', demoError)
-        addLog('Não foi possível carregar conexões')
-      }
+      // Fallback: status de demonstração
+      setVncStatus({
+        available: true,
+        host: 'localhost',
+        port: 5900,
+        name: 'Servidor de Streaming (Demo)',
+        wsPort: 6080,
+        lastChecked: new Date().toISOString(),
+        activeSessions: 0
+      })
+      addLog('Usando status de demonstração')
+    } finally {
+      setStatusLoading(false)
     }
   }, [token, addLog])
 
@@ -147,18 +147,18 @@ const VNCViewer = ({ showToast }: VNCViewerProps) => {
     }
   }, [showToast, addLog])
 
-  // Carregar lista de conexões disponíveis
+  // Carregar status do servidor VNC
   useEffect(() => {
     if (!isAdmin) return
 
-    loadConnections()
+    loadVNCStatus()
     
-    // Atualizar lista a cada 30 segundos
-    const interval = setInterval(loadConnections, 30000)
+    // Atualizar status a cada 30 segundos
+    const interval = setInterval(loadVNCStatus, 30000)
     return () => clearInterval(interval)
-  }, [isAdmin, token, loadConnections])
+  }, [isAdmin, token, loadVNCStatus])
 
-  const connectToVNC = async (connection: VNCConnection) => {
+  const connectToVNC = async () => {
     // Verificações básicas primeiro
     if (!isVNCReady) {
       showToast('Sistema VNC ainda está carregando. Aguarde...', 'info')
@@ -170,10 +170,13 @@ const VNCViewer = ({ showToast }: VNCViewerProps) => {
       return
     }
 
-    // Primeiro, selecionar a conexão para renderizar o canvas
-    setSelectedConnection(connection)
+    if (!vncStatus || !vncStatus.available) {
+      showToast('Servidor VNC não está disponível. Verifique se o túnel está ativo.', 'error')
+      return
+    }
+
     setIsConnecting(true)
-    addLog(`Preparando conexão com ${connection.name}`)
+    addLog(`Conectando ao servidor VNC ${vncStatus.name}`)
 
     // Aguardar o React renderizar o canvas
     await new Promise(resolve => setTimeout(resolve, 200))
@@ -181,7 +184,7 @@ const VNCViewer = ({ showToast }: VNCViewerProps) => {
     // Verificar se canvas foi renderizado
     if (!canvasRef.current) {
       showToast('Erro: interface VNC não foi renderizada. Tente novamente.', 'error')
-      addLog('Erro: elemento canvas não encontrado após selecionar conexão')
+      addLog('Erro: elemento canvas não encontrado')
       setIsConnecting(false)
       return
     }
@@ -191,27 +194,22 @@ const VNCViewer = ({ showToast }: VNCViewerProps) => {
       rfbRef.current = null
     }
 
-    addLog(`Conectando a ${connection.name} (${connection.host}:${connection.port})`)
-
     try {
       // Obter token de sessão VNC
-      const tokenResponse = await fetch('/api/admin/vnc/session', {
+      const tokenResponse = await fetch('/api/admin/vnc/connect', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          connectionId: connection.id,
-          monitor: currentMonitor
-        })
+        }
       })
 
       if (!tokenResponse.ok) {
-        throw new Error('Falha ao obter token de sessão VNC')
+        const errorData = await tokenResponse.json()
+        throw new Error(errorData.error || 'Falha ao conectar ao servidor VNC')
       }
 
-      const { sessionToken, wsUrl } = await tokenResponse.json()
+      const { sessionToken, wsUrl, server } = await tokenResponse.json()
 
       // Verificação final antes de usar
       if (!canvasRef.current) {
@@ -232,15 +230,15 @@ const VNCViewer = ({ showToast }: VNCViewerProps) => {
       rfb.addEventListener('connect', () => {
         setIsConnected(true)
         setIsConnecting(false)
-        addLog(`Conectado com sucesso a ${connection.name}`)
-        showToast(`Conectado ao VNC: ${connection.name}`, 'success')
+        addLog(`Conectado com sucesso ao ${server.name}`)
+        showToast(`Conectado ao VNC: ${server.name}`, 'success')
       })
 
       rfb.addEventListener('disconnect', () => {
         setIsConnected(false)
         setIsConnecting(false)
-        addLog(`Desconectado de ${connection.name}`)
-        showToast(`Desconectado do VNC: ${connection.name}`, 'info')
+        addLog(`Desconectado do ${server.name}`)
+        showToast(`Desconectado do VNC: ${server.name}`, 'info')
       })
 
       rfb.addEventListener('credentialsrequired', () => {
@@ -273,26 +271,15 @@ const VNCViewer = ({ showToast }: VNCViewerProps) => {
       rfbRef.current = null
     }
     setIsConnected(false)
-    setSelectedConnection(null)
-    addLog('Desconexão manual')
+    addLog('Desconexão manual do servidor VNC')
   }
 
-  const switchMonitor = async (monitor: number) => {
-    if (!selectedConnection) return
-
-    setCurrentMonitor(monitor)
-    addLog(`Alternando para monitor ${monitor + 1}`)
-    
-    // Reconectar com novo monitor
-    await connectToVNC(selectedConnection)
-  }
 
   const handleFileUpload = async () => {
-    if (!uploadFile || !selectedConnection) return
+    if (!uploadFile) return
 
     const formData = new FormData()
     formData.append('file', uploadFile)
-    formData.append('connectionId', selectedConnection.id)
 
     try {
       const response = await fetch('/api/admin/vnc/upload', {
@@ -343,37 +330,16 @@ const VNCViewer = ({ showToast }: VNCViewerProps) => {
             {isVNCReady ? '🟢 VNC Pronto' : '🟡 Carregando VNC...'}
           </div>
           
-          {selectedConnection && (
+          <div className={`vnc-server-status ${vncStatus?.available ? 'available' : 'unavailable'}`}>
+            {statusLoading ? '🔄 Verificando...' : 
+             vncStatus?.available ? `🟢 ${vncStatus.name}` : '🔴 Servidor Indisponível'}
+          </div>
+
+          {isConnected ? (
             <>
-              <div className="monitor-selector">
-                <label>Monitor:</label>
-                <select 
-                  value={currentMonitor} 
-                  onChange={(e) => switchMonitor(Number(e.target.value))}
-                  disabled={isConnecting}
-                >
-                  {Array.from({ length: selectedConnection.monitors }, (_, i) => (
-                    <option key={i} value={i}>Monitor {i + 1}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="scale-mode">
-                <label>Escala:</label>
-                <select 
-                  value={scaleMode} 
-                  onChange={(e) => setScaleMode(e.target.value as 'local' | 'remote')}
-                  disabled={isConnecting}
-                >
-                  <option value="local">Local</option>
-                  <option value="remote">Remota</option>
-                </select>
-              </div>
-
               <button
                 className="btn-file-transfer"
                 onClick={() => setShowFileTransfer(!showFileTransfer)}
-                disabled={!isConnected}
               >
                 <Upload size={16} />
                 Arquivos
@@ -390,79 +356,87 @@ const VNCViewer = ({ showToast }: VNCViewerProps) => {
               <button
                 className="btn-disconnect"
                 onClick={disconnectVNC}
-                disabled={!isConnected && !isConnecting}
               >
                 <Power size={16} />
                 Desconectar
               </button>
             </>
+          ) : (
+            <button
+              className="btn-connect"
+              onClick={connectToVNC}
+              disabled={!isVNCReady || !vncStatus?.available || isConnecting}
+            >
+              {isConnecting ? (
+                <>
+                  <RefreshCw className="spinning" size={16} />
+                  Conectando...
+                </>
+              ) : (
+                <>
+                  <Monitor size={16} />
+                  Conectar VNC
+                </>
+              )}
+            </button>
           )}
 
           <button
             className="btn-refresh"
-            onClick={loadConnections}
+            onClick={loadVNCStatus}
+            disabled={statusLoading}
           >
             <RefreshCw size={16} />
-            Atualizar
+            Verificar Status
           </button>
         </div>
       </div>
 
       <div className="vnc-content">
-        {/* Lista de conexões */}
-        <div className="vnc-sidebar">
-          <h3>Conexões Disponíveis</h3>
-          <div className="connections-list">
-            {connections.map(connection => (
-              <div
-                key={connection.id}
-                className={`connection-item ${selectedConnection?.id === connection.id ? 'selected' : ''} ${connection.status} ${!isVNCReady ? 'disabled' : ''}`}
-                onClick={() => isVNCReady ? connectToVNC(connection) : showToast('Aguarde o sistema VNC carregar completamente', 'info')}
-                style={{ 
-                  cursor: isVNCReady ? 'pointer' : 'not-allowed',
-                  opacity: isVNCReady ? 1 : 0.6
-                }}
-              >
-                <div className="connection-info">
-                  <div className="connection-name">{connection.name}</div>
-                  <div className="connection-details">
-                    {connection.host}:{connection.port}
-                  </div>
-                  <div className="connection-monitors">
-                    {connection.monitors} monitor(s)
-                  </div>
+        {/* Área principal VNC */}
+        <div className="vnc-main">
+          {/* Status do servidor */}
+          <div className="vnc-server-info">
+            {statusLoading ? (
+              <div className="server-status loading">
+                <RefreshCw className="spinning" size={20} />
+                <span>Verificando servidor VNC...</span>
+              </div>
+            ) : vncStatus ? (
+              <div className={`server-status ${vncStatus.available ? 'available' : 'unavailable'}`}>
+                <div className="server-details">
+                  <h3>{vncStatus.name}</h3>
+                  <p>{vncStatus.host}:{vncStatus.port}</p>
+                  <small>
+                    Status: {vncStatus.available ? 'Disponível' : 'Indisponível'} • 
+                    Sessões ativas: {vncStatus.activeSessions} • 
+                    Última verificação: {new Date(vncStatus.lastChecked).toLocaleTimeString()}
+                  </small>
                 </div>
-                <div className={`connection-status ${connection.status}`}>
-                  {connection.status === 'connected' && '🟢'}
-                  {connection.status === 'connecting' && '🟡'}
-                  {connection.status === 'disconnected' && '🔴'}
-                  {connection.status === 'error' && '❌'}
+                <div className="server-indicator">
+                  {vncStatus.available ? '🟢' : '🔴'}
                 </div>
               </div>
-            ))}
+            ) : (
+              <div className="server-status error">
+                <span>❌ Erro ao verificar servidor VNC</span>
+              </div>
+            )}
           </div>
 
-          {connections.length === 0 && (
-            <div className="no-connections">
-              <p>Nenhuma conexão VNC disponível</p>
-            </div>
-          )}
-        </div>
-
-        {/* Viewer VNC */}
-        <div className="vnc-main">
-          {selectedConnection ? (
+          {/* Canvas VNC */}
+          {isConnected || isConnecting ? (
             <div className="vnc-container">
               <div className="vnc-status">
                 {isConnecting && (
                   <div className="connecting-status">
                     <RefreshCw className="spinning" size={16} />
-                    Conectando a {selectedConnection.name}...
+                    Conectando ao servidor de streaming...
                   </div>
                 )}
                 {isConnected && (
                   <div className="connected-status">
-                    🟢 Conectado a {selectedConnection.name} - Monitor {currentMonitor + 1}
+                    🟢 Conectado ao servidor de streaming
                     <div className="control-instructions">
                       <small>
                         Mouse e teclado ativos • Clique no canvas para focar • 
@@ -489,11 +463,17 @@ const VNCViewer = ({ showToast }: VNCViewerProps) => {
               <p>Carregando sistema VNC...</p>
               <small>Aguarde enquanto a biblioteca é inicializada</small>
             </div>
+          ) : !vncStatus?.available ? (
+            <div className="vnc-placeholder">
+              <AlertTriangle size={64} />
+              <p>Servidor VNC não disponível</p>
+              <small>Verifique se o túnel SSH está ativo e o TightVNC está rodando na porta 5900</small>
+            </div>
           ) : (
             <div className="vnc-placeholder">
               <Monitor size={64} />
-              <p>Selecione uma conexão VNC para começar</p>
-              <small>Sistema VNC pronto para uso</small>
+              <p>Clique em "Conectar VNC" para iniciar</p>
+              <small>Servidor VNC disponível e pronto para conexão</small>
             </div>
           )}
         </div>

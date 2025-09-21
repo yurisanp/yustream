@@ -3,11 +3,16 @@
     {
       "id": "demo_connection_001_abc123",
       "name": "Servidor de Streaming Principal",
-      "host": "192.168.1.100",
+      "host": "45.190.118.113",
       "port": 5900,
       "status": "connected",
       "lastSeen": "2025-09-20T21:45:00.000Z",
-      "monitors": 2
+      "monitors": 2,
+      "vncPort": 5900,
+      "sshEnabled": true,
+      "sshPort": 22,
+      "sshUsername": "streaming_user",
+      "sshPassword": "secure_password"
     },
     {
       "id": "demo_connection_002_def456", 
@@ -16,7 +21,8 @@
       "port": 5900,
       "status": "connected",
       "lastSeen": "2025-09-20T21:44:30.000Z",
-      "monitors": 1
+      "monitors": 1,
+      "vncPort": 5900
     },
     {
       "id": "demo_connection_003_ghi789",
@@ -25,7 +31,8 @@
       "port": 5900,
       "status": "disconnected",
       "lastSeen": "2025-09-20T21:30:00.000Z",
-      "monitors": 3
+      "monitors": 3,
+      "vncPort": 5900
     }
   ]
 }
