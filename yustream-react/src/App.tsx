@@ -6,7 +6,8 @@ import Toast from './components/Toast'
 import Login from './components/Login'
 import StremioConfig from './components/StremioConfig'
 import AdminScreen from './components/AdminScreen'
-import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { AuthProvider } from './contexts/AuthContextProvider'
+import { useAuth } from './hooks/useAuth'
 
 export interface ToastMessage {
   message: string

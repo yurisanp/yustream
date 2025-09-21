@@ -13,6 +13,7 @@ ssl/
 
 auth-server/node_modules
 stremio-addon/node_modules
+vnc-proxy-service/node_modules
 mongodb_data
 
 ome-config/mux_files

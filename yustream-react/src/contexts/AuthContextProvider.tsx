@@ -1,34 +1,7 @@
-import { createContext, useContext, useState, useEffect, useCallback, memo } from 'react'
+import { useState, useEffect, useCallback, memo } from 'react'
 import type { ReactNode } from 'react'
-
-interface User {
-  id: number
-  username: string
-  role: string
-}
-
-interface AuthContextType {
-  user: User | null
-  token: string | null
-  isAuthenticated: boolean
-  isLoading: boolean
-  login: (token: string, user: User) => void
-  logout: () => void
-  checkStreamStatus: () => Promise<{ online: boolean; status: string }>
-  getStreamToken: () => Promise<string | null>
-  refreshToken: () => Promise<boolean>
-  clearStreamTokenCache: () => void
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
-
-export const useAuth = () => {
-  const context = useContext(AuthContext)
-  if (context === undefined) {
-    throw new Error('useAuth deve ser usado dentro de um AuthProvider')
-  }
-  return context
-}
+import type { AuthContextType, User } from './AuthContextType'
+import { AuthContext } from './AuthContext'
 
 interface AuthProviderProps {
   children: ReactNode

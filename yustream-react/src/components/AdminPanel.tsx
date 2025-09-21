@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
-import { Users, Plus, Edit, Trash2, Search, UserCheck, UserX, Shield, Eye, EyeOff, Video } from 'lucide-react'
-import { useAuth } from '../contexts/AuthContext'
+import { useState, useEffect, useCallback } from 'react'
+import { Users, Plus, Edit, Trash2, Search, UserCheck, UserX, Shield, Eye, EyeOff, Video, Monitor } from 'lucide-react'
+import { useAuth } from '../hooks/useAuth'
 import ABRControl from './ABRControl'
+import VNCViewer from './VNCViewer'
 import './AdminPanel.css'
 
 interface User {
@@ -33,7 +34,7 @@ interface AdminPanelProps {
 
 const AdminPanel = ({ showToast, onClose }: AdminPanelProps) => {
   const { token } = useAuth()
-  const [activeTab, setActiveTab] = useState<'users' | 'abr'>('users')
+  const [activeTab, setActiveTab] = useState<'users' | 'abr' | 'vnc'>('users')
   const [users, setUsers] = useState<User[]>([])
   const [stats, setStats] = useState<UserStats | null>(null)
   const [loading, setLoading] = useState(true)
@@ -52,12 +53,7 @@ const AdminPanel = ({ showToast, onClose }: AdminPanelProps) => {
   })
   const [showPassword, setShowPassword] = useState(false)
 
-  useEffect(() => {
-    loadUsers()
-    loadStats()
-  }, [currentPage])
-
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     try {
       setLoading(true)
       const response = await fetch(`/api/admin/users?page=${currentPage}&limit=10`, {
@@ -79,9 +75,9 @@ const AdminPanel = ({ showToast, onClose }: AdminPanelProps) => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [currentPage, token, showToast])
 
-  const loadStats = async () => {
+  const loadStats = useCallback(async () => {
     try {
       const response = await fetch('/api/admin/stats', {
         headers: {
@@ -98,7 +94,12 @@ const AdminPanel = ({ showToast, onClose }: AdminPanelProps) => {
     } catch (error) {
       console.error('Erro ao carregar estatísticas:', error)
     }
-  }
+  }, [token])
+
+  useEffect(() => {
+    loadUsers()
+    loadStats()
+  }, [currentPage, loadUsers, loadStats])
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -124,8 +125,9 @@ const AdminPanel = ({ showToast, onClose }: AdminPanelProps) => {
       resetForm()
       loadUsers()
       loadStats()
-    } catch (error: any) {
-      showToast(error.message || 'Erro ao criar usuário', 'error')
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao criar usuário'
+      showToast(errorMessage, 'error')
     }
   }
 
@@ -135,7 +137,7 @@ const AdminPanel = ({ showToast, onClose }: AdminPanelProps) => {
     if (!selectedUser) return
 
     try {
-      const updateData: any = { ...formData }
+      const updateData: Partial<typeof formData> = { ...formData }
       if (!updateData.password) {
         delete updateData.password
       }
@@ -161,8 +163,9 @@ const AdminPanel = ({ showToast, onClose }: AdminPanelProps) => {
       resetForm()
       loadUsers()
       loadStats()
-    } catch (error: any) {
-      showToast(error.message || 'Erro ao atualizar usuário', 'error')
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao atualizar usuário'
+      showToast(errorMessage, 'error')
     }
   }
 
@@ -188,8 +191,9 @@ const AdminPanel = ({ showToast, onClose }: AdminPanelProps) => {
       showToast('Usuário deletado com sucesso!', 'success')
       loadUsers()
       loadStats()
-    } catch (error: any) {
-      showToast(error.message || 'Erro ao deletar usuário', 'error')
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao deletar usuário'
+      showToast(errorMessage, 'error')
     }
   }
 
@@ -246,8 +250,10 @@ const AdminPanel = ({ showToast, onClose }: AdminPanelProps) => {
           <h1>
             {activeTab === 'users' ? (
               <><Users size={24} /> Gerenciamento de Usuários</>
-            ) : (
+            ) : activeTab === 'abr' ? (
               <><Video size={24} /> Controle ABR</>
+            ) : (
+              <><Monitor size={24} /> Controle VNC Remoto</>
             )}
           </h1>
         </div>
@@ -279,6 +285,13 @@ const AdminPanel = ({ showToast, onClose }: AdminPanelProps) => {
         >
           <Video size={16} />
           Controle ABR
+        </button>
+        <button 
+          className={`tab-button ${activeTab === 'vnc' ? 'active' : ''}`}
+          onClick={() => setActiveTab('vnc')}
+        >
+          <Monitor size={16} />
+          VNC Remoto
         </button>
       </div>
 
@@ -475,7 +488,7 @@ const AdminPanel = ({ showToast, onClose }: AdminPanelProps) => {
                 <label>Role</label>
                 <select
                   value={formData.role}
-                  onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
+                  onChange={(e) => setFormData({ ...formData, role: e.target.value as 'admin' | 'user' | 'moderator' })}
                 >
                   <option value="user">Usuário</option>
                   <option value="moderator">Moderador</option>
@@ -542,7 +555,7 @@ const AdminPanel = ({ showToast, onClose }: AdminPanelProps) => {
                 <label>Role</label>
                 <select
                   value={formData.role}
-                  onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
+                  onChange={(e) => setFormData({ ...formData, role: e.target.value as 'admin' | 'user' | 'moderator' })}
                 >
                   <option value="user">Usuário</option>
                   <option value="moderator">Moderador</option>
@@ -570,8 +583,10 @@ const AdminPanel = ({ showToast, onClose }: AdminPanelProps) => {
         </div>
       )}
         </>
-      ) : (
+      ) : activeTab === 'abr' ? (
         <ABRControl showToast={showToast} />
+      ) : (
+        <VNCViewer showToast={showToast} />
       )}
     </div>
   )

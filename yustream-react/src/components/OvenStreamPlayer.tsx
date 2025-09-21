@@ -22,7 +22,7 @@ import {
 	PlayArrow,
 	Refresh,
 } from "@mui/icons-material";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../hooks/useAuth";
 import { useStreamPlayer } from "../hooks/useStreamPlayer";
 import { usePlayerDimensions } from "../hooks/usePlayerDimensions";
 

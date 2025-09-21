@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Snackbar, Alert } from '@mui/material'
 import { CheckCircle, AlertCircle, Info } from 'lucide-react'
 
@@ -11,6 +11,11 @@ interface ToastProps {
 const Toast = ({ message, type, onClose }: ToastProps) => {
   const [open, setOpen] = useState(true)
 
+  const handleClose = useCallback(() => {
+    setOpen(false)
+    setTimeout(onClose, 300)
+  }, [onClose])
+
   useEffect(() => {
     // Auto close após 4 segundos
     const timer = setTimeout(() => {
@@ -18,12 +23,7 @@ const Toast = ({ message, type, onClose }: ToastProps) => {
     }, 4000)
 
     return () => clearTimeout(timer)
-  }, [])
-
-  const handleClose = () => {
-    setOpen(false)
-    setTimeout(onClose, 300)
-  }
+  }, [handleClose])
 
   const getSeverity = () => {
     switch (type) {
@@ -61,7 +61,7 @@ const Toast = ({ message, type, onClose }: ToastProps) => {
     >
       <Alert
         onClose={handleClose}
-        severity={getSeverity() as any}
+        severity={getSeverity() as 'success' | 'info' | 'warning' | 'error'}
         icon={getIcon()}
         variant="filled"
         sx={{ 

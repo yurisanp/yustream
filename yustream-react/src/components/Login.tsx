@@ -20,7 +20,7 @@ import {
 } from '@mui/icons-material'
 
 interface LoginProps {
-  onLogin: (token: string, user: any) => void
+  onLogin: (token: string, user: { id: number; username: string; role: string }) => void
   showToast: (message: string, type: 'success' | 'error' | 'info') => void
 }
 

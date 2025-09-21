@@ -1,0 +1,16 @@
+{
+  "server_url": "https://your-yustream-server.com",
+  "register_token": "yustream-vnc-register-token-change-in-production",
+  "machine_name": "Streaming-PC-01",
+  "vnc_port": 5900,
+  "monitors": 1,
+  "ssh_enabled": true,
+  "ssh_port": 22,
+  "ssh_username": "streaming_user",
+  "ssh_password": "",
+  "ssh_private_key_path": "/home/user/.ssh/id_rsa",
+  "heartbeat_interval": 30,
+  "auto_start_vnc": true,
+  "vnc_password": "",
+  "display": ":0"
+}

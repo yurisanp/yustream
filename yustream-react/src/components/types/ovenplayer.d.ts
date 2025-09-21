@@ -24,13 +24,13 @@ declare module 'ovenplayer' {
   }
 
   interface OvenPlayerInstance {
-    on(event: string, callback: (data?: any) => void): void
+    on(event: string, callback: (data?: unknown) => void): void
     play(): void
     pause(): void
     setVolume(volume: number): void
     setMute(mute: boolean): void
     destroy(): void
-    getSources(): any[]
+    getSources(): { file: string; type?: string; label?: string }[]
     setCurrentSource(index: number): void
   }
 

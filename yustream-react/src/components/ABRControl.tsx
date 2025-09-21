@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   Box,
   Card,
@@ -39,7 +39,7 @@ const ABRControl: React.FC<ABRControlProps> = ({ showToast }) => {
     return localStorage.getItem('yustream_token')
   }
 
-  const loadConfig = async () => {
+  const loadConfig = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -52,11 +52,11 @@ const ABRControl: React.FC<ABRControlProps> = ({ showToast }) => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
     loadConfig()
-  }, []);
+  }, [loadConfig]);
 
   const handleQualityToggle = async (qualityName: string, enabled: boolean) => {
     if (!config) return

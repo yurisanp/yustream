@@ -25,7 +25,7 @@ import {
   Person,
   Lock
 } from '@mui/icons-material'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 
 interface StremioConfigProps {
   showToast: (message: string, type: 'success' | 'error' | 'info') => void

@@ -76,6 +76,31 @@ services:
     networks:
       - streaming-network
 
+  vnc-proxy:
+    build: ./vnc-proxy-service
+    container_name: yustream-vnc-proxy
+    restart: unless-stopped
+    ports:
+      - "3003:3003"
+      - "6080-6180:6080-6180"  # Portas WebSocket para VNC
+    environment:
+      - NODE_ENV=production
+      - VNC_PROXY_PORT=3003
+      - JWT_SECRET=yustream-jwt-secret-change-in-production-2024
+      - AUTH_SERVER_URL=http://yustream-auth:3001
+      - VNC_REGISTER_TOKEN=yustream-vnc-register-token-change-in-production
+    volumes:
+      - ./vnc-proxy-service:/app
+      - /app/node_modules
+      - vnc_uploads:/app/uploads
+      - vnc_logs:/app/logs
+    depends_on:
+      - yustream-auth
+    networks:
+      - streaming-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
   portainer:
     image: portainer/portainer-ce:latest
     container_name: yustream-portainer
@@ -103,6 +128,7 @@ services:
       - ovenmediaengine
       - yustream-auth
       - stremio-addon
+      - vnc-proxy
       - portainer
     networks:
       - streaming-network
@@ -113,3 +139,5 @@ networks:
 
 volumes:
   portainer_data:
+  vnc_uploads:
+  vnc_logs:
