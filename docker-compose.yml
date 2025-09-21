@@ -113,7 +113,7 @@ services:
   websockify:
     image: jwnmulder/websockify
     container_name: yustream-websockify
-    command: 5901 host.docker.internal:5901
+    command: 5901 host.docker.internal:5900
     ports:
       - "5901:5901"
     restart: unless-stopped
