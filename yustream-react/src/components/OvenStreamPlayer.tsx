@@ -1,4 +1,4 @@
-import { useRef, useCallback, memo, useEffect } from "react";
+import { useRef, useCallback, memo, useEffect, useMemo, startTransition } from "react";
 import {
 	Box,
 	AppBar,
@@ -38,11 +38,22 @@ const OvenStreamPlayer = memo(
 		onNavigateToStremio,
 		onNavigateToAdmin,
 	}: OvenStreamPlayerProps) => {
-		const { user, logout, getStreamToken } = useAuth();
-		const theme = useTheme();
-		const isMobile = useMediaQuery(theme.breakpoints.down("md"));
-		const isTablet = useMediaQuery(theme.breakpoints.down("lg"));
-		const playerDimensions = usePlayerDimensions();
+	const { user, logout, getStreamToken } = useAuth();
+	const theme = useTheme();
+	const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+	const isTablet = useMediaQuery(theme.breakpoints.down("lg"));
+	const playerDimensions = usePlayerDimensions();
+
+	// Memoizar informações de dispositivo para evitar recálculos
+	const deviceInfo = useMemo(() => ({
+		isMobile,
+		isTablet,
+		isDesktop: !isMobile && !isTablet,
+		screenSize: {
+			width: window.innerWidth,
+			height: window.innerHeight
+		}
+	}), [isMobile, isTablet]);
 
 		// Refs
 		const showToastRef = useRef(showToast);
@@ -52,13 +63,15 @@ const OvenStreamPlayer = memo(
 			showToastRef.current = showToast;
 		}, [showToast]);
 
-		// Callback para mudanças no status da stream
+		// Callback para mudanças no status da stream com startTransition
 		const handleStreamOnlineChange = useCallback((isOnline: boolean) => {
-			if (isOnline) {
-				showToastRef.current("Stream está online", "success");
-			} else {
-				showToastRef.current("Stream está offline", "info");
-			}
+			startTransition(() => {
+				if (isOnline) {
+					showToastRef.current("Stream está online", "success");
+				} else {
+					showToastRef.current("Stream está offline", "info");
+				}
+			});
 		}, []);
 
 		// Hook do player com validação de stream
@@ -93,9 +106,9 @@ const OvenStreamPlayer = memo(
 			getStreamToken,
 		});
 
-		// Funções de callback para ações do usuário
+		// Funções de callback para ações do usuário - memoizadas para performance
 
-		const getStatusIcon = () => {
+		const statusIconComponent = useMemo(() => {
 			switch (status) {
 				case "connecting":
 					return <CircularProgress size={24} color="primary" />;
@@ -108,9 +121,9 @@ const OvenStreamPlayer = memo(
 				default:
 					return <Wifi color="action" />;
 			}
-		};
+		}, [status]);
 
-		const getStatusText = () => {
+		const statusText = useMemo(() => {
 			switch (status) {
 				case "connecting":
 					return "Conectando à stream...";
@@ -123,9 +136,9 @@ const OvenStreamPlayer = memo(
 				default:
 					return "Status desconhecido";
 			}
-		};
+		}, [status]);
 
-		const getStatusColor = ():
+		const statusColor = useMemo(():
 			| "info"
 			| "success"
 			| "warning"
@@ -143,7 +156,7 @@ const OvenStreamPlayer = memo(
 				default:
 					return "default";
 			}
-		};
+		}, [status]);
 
 		const handleLogout = () => {
 			logout();
@@ -191,7 +204,7 @@ const OvenStreamPlayer = memo(
 							}}
 						>
 							<Typography
-								variant={isMobile ? "body1" : "h6"}
+								variant={deviceInfo.isMobile ? "body1" : "h6"}
 								component="div"
 								color="text.primary"
 								sx={{
@@ -202,7 +215,7 @@ const OvenStreamPlayer = memo(
 									flexShrink: 0,
 								}}
 							>
-								{isMobile ? user?.username : `Bem-vindo, ${user?.username}`}
+								{deviceInfo.isMobile ? user?.username : `Bem-vindo, ${user?.username}`}
 							</Typography>
 
 							{/* Chips de status - responsivos */}
@@ -222,11 +235,11 @@ const OvenStreamPlayer = memo(
 									sx={{ fontSize: { xs: "0.7rem", sm: "0.75rem" } }}
 								/>
 
-								{!isMobile && (
+								{!deviceInfo.isMobile && (
 									<Chip
-										icon={getStatusIcon()}
-										label={getStatusText()}
-										color={getStatusColor()}
+										icon={statusIconComponent}
+										label={statusText}
+										color={statusColor}
 										size="small"
 										variant="filled"
 									/>
@@ -242,7 +255,7 @@ const OvenStreamPlayer = memo(
 										)
 									}
 									label={
-										isMobile
+										deviceInfo.isMobile
 											? streamStatus.isOnline
 												? "Online"
 												: "Offline"
@@ -259,7 +272,7 @@ const OvenStreamPlayer = memo(
 								{streamStatus.isLoading && (
 									<Chip
 										icon={<CircularProgress size={16} color="primary" />}
-										label={isMobile ? "..." : "Verificando..."}
+										label={deviceInfo.isMobile ? "..." : "Verificando..."}
 										color="info"
 										size="small"
 										variant="outlined"
@@ -279,7 +292,7 @@ const OvenStreamPlayer = memo(
 							}}
 						>
 							{/* Desktop/Tablet: botões completos */}
-							{!isMobile && (
+							{!deviceInfo.isMobile && (
 								<>
 									<Button
 										variant="outlined"
@@ -313,7 +326,7 @@ const OvenStreamPlayer = memo(
 							)}
 
 							{/* Mobile: menu hambúrguer */}
-							{isMobile && (
+							{deviceInfo.isMobile && (
 								<>
 									<IconButton
 										onClick={handleStremioConfig}
@@ -339,7 +352,7 @@ const OvenStreamPlayer = memo(
 								color="inherit"
 								onClick={handleLogout}
 								sx={{ color: "text.primary" }}
-								size={isMobile ? "small" : "medium"}
+								size={deviceInfo.isMobile ? "small" : "medium"}
 							>
 								<Logout />
 							</IconButton>
@@ -423,7 +436,7 @@ const OvenStreamPlayer = memo(
 								/>
 							</Box>
 							<Typography
-								variant={isMobile ? "h6" : "h5"}
+								variant={deviceInfo.isMobile ? "h6" : "h5"}
 								color="text.primary"
 								gutterBottom
 								sx={{ fontWeight: 600 }}
@@ -506,7 +519,7 @@ const OvenStreamPlayer = memo(
 								variant="contained"
 								startIcon={<Refresh />}
 								onClick={handleManualRetry}
-								size={isMobile ? "small" : "medium"}
+								size={deviceInfo.isMobile ? "small" : "medium"}
 								sx={{
 									pointerEvents: "auto", // Permite cliques no botão
 									mt: 1,
@@ -558,10 +571,10 @@ const OvenStreamPlayer = memo(
 									justifyContent: "center",
 								}}
 							>
-								{getStatusIcon()}
+								{statusIconComponent}
 							</Box>
 							<Typography
-								variant={isMobile ? "h6" : "h5"}
+								variant={deviceInfo.isMobile ? "h6" : "h5"}
 								color="text.primary"
 								gutterBottom
 								sx={{
@@ -569,14 +582,14 @@ const OvenStreamPlayer = memo(
 									fontSize: { xs: "1.1rem", sm: "1.25rem", md: "1.5rem" },
 								}}
 							>
-								{getStatusText()}
+								{statusText}
 							</Typography>
 							{status === "error" && (
 								<Button
 									variant="contained"
 									startIcon={<Refresh />}
 									onClick={handleManualRetry}
-									size={isMobile ? "small" : "medium"}
+									size={deviceInfo.isMobile ? "small" : "medium"}
 									sx={{
 										mt: { xs: 2, sm: 3 },
 										px: { xs: 2, sm: 3 },

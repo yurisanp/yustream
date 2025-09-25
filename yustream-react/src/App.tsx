@@ -1,4 +1,4 @@
-import { useState, useEffect, memo, useCallback } from 'react'
+import { useState, useEffect, memo, useCallback, useMemo, startTransition } from 'react'
 import { Box, CircularProgress, Typography, Backdrop } from '@mui/material'
 import './App.css'
 import OvenStreamPlayer from './components/OvenStreamPlayer'
@@ -20,48 +20,67 @@ const AppContent = memo(() => {
   const [toasts, setToasts] = useState<ToastMessage[]>([])
   const [currentPage, setCurrentPage] = useState<'main' | 'stremio-config' | 'admin'>('main')
 
-  // Detectar rota atual
-  useEffect(() => {
+  // Otimizar detecção de rota com useMemo para evitar recálculos desnecessários
+  const routeInfo = useMemo(() => {
     const path = window.location.pathname
-    if (path === '/configure') {
-      setCurrentPage('stremio-config')
-    } else if (path === '/admin') {
-      setCurrentPage('admin')
-    } else {
-      setCurrentPage('main')
+    return {
+      path,
+      isStremio: path === '/configure',
+      isAdmin: path === '/admin',
+      isMain: path === '/' || (!path.startsWith('/configure') && !path.startsWith('/admin'))
     }
   }, [])
+
+  // Detectar rota atual com startTransition para não bloquear UI
+  useEffect(() => {
+    startTransition(() => {
+      if (routeInfo.isStremio) {
+        setCurrentPage('stremio-config')
+      } else if (routeInfo.isAdmin) {
+        setCurrentPage('admin')
+      } else {
+        setCurrentPage('main')
+      }
+    })
+  }, [routeInfo])
 
   const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'info') => {
     // Usar timestamp mais específico e um número aleatório para garantir unicidade
     const id = Date.now() + Math.random()
     const toast: ToastMessage = { message, type, id }
     
-    setToasts(prev => [...prev, toast])
+    // Usar startTransition para não bloquear a UI durante updates de toast
+    startTransition(() => {
+      setToasts(prev => [...prev, toast])
+    })
     
-    // Remove toast após 4 segundos
+    // Remove toast após 4 segundos com startTransition
     setTimeout(() => {
-      setToasts(prev => prev.filter(t => t.id !== id))
+      startTransition(() => {
+        setToasts(prev => prev.filter(t => t.id !== id))
+      })
     }, 4000)
   }, [])
 
   const removeToast = useCallback((id: number) => {
-    setToasts(prev => prev.filter(t => t.id !== id))
+    startTransition(() => {
+      setToasts(prev => prev.filter(t => t.id !== id))
+    })
   }, [])
 
   const handleBackToMain = useCallback(() => {
-    setCurrentPage('main')
-    window.history.pushState({}, '', '/')
+      setCurrentPage('main')
+      window.history.pushState({}, '', '/')
   }, [])
 
   const handleNavigateToStremio = useCallback(() => {
-    setCurrentPage('stremio-config')
-    window.history.pushState({}, '', '/configure')
+      setCurrentPage('stremio-config')
+      window.history.pushState({}, '', '/configure')
   }, [])
 
   const handleNavigateToAdmin = useCallback(() => {
-    setCurrentPage('admin')
-    window.history.pushState({}, '', '/admin')
+      setCurrentPage('admin')
+      window.history.pushState({}, '', '/admin')
   }, [])
 
   // Mostrar loading durante verificação de autenticação

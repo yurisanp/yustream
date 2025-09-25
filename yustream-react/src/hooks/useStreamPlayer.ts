@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import OvenPlayer from 'ovenplayer';
 import Hls from 'hls.js';
 import { useStreamStatus } from './useStreamStatus';
@@ -9,6 +9,9 @@ interface OvenPlayerInstance {
   on?: (event: string, callback: (data?: unknown) => void) => void;
   destroy?: () => void;
   remove?: () => void;
+  getState?: () => string;
+  play?: () => void;
+  pause?: () => void;
 }
 
 interface UseStreamPlayerOptions {
@@ -28,13 +31,25 @@ export const useStreamPlayer = ({
   const [retryCount, setRetryCount] = useState(0);
   const [lastInitTime, setLastInitTime] = useState(0);
   const [currentToken, setCurrentToken] = useState<string | null>(null);
+  const [isInitializing, setIsInitializing] = useState(false);
   
   const ovenPlayerRef = useRef<OvenPlayerInstance | null>(null);
   const playerContainerRef = useRef<HTMLDivElement>(null);
+  const cleanupTimeoutRef = useRef<number | null>(null);
+  const initializationAbortRef = useRef<AbortController | null>(null);
   
-  const MAX_RETRY_ATTEMPTS = 3;
-  const MIN_RETRY_INTERVAL = 10000;
+  // Constantes otimizadas para melhor performance
+  const MAX_RETRY_ATTEMPTS = 2; // Reduzido de 3 para 2
+  const MIN_RETRY_INTERVAL = 15000; // Aumentado para 15s
   const STREAM_ID = 'live';
+  
+  // Detectar dispositivo para otimizações específicas
+  const deviceType = useMemo(() => {
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+    const isTV = /smart-tv|smarttv|tv/i.test(userAgent) || window.innerWidth > 1920;
+    return { isMobile, isTV };
+  }, []);
 
   // Hook para verificar status da stream - SEM verificação periódica
   const streamStatus = useStreamStatus({
@@ -44,20 +59,22 @@ export const useStreamPlayer = ({
     authToken: currentToken || undefined // Passar o token atual para autenticação
   });
 
+  // Configuração otimizada baseada no dispositivo
   const getPlayerConfig = useCallback((streamToken: string | null) => {
     const hostname = window.location.hostname;
     const isSecure = window.location.protocol === 'https:';
-		const httpProtocol = isSecure ? 'https:' : 'http:';
-		const httpPort = isSecure ? '8443' : '8080';
+    const httpProtocol = isSecure ? 'https:' : 'http:';
+    const httpPort = isSecure ? '8443' : '8080';
     const tokenParam = streamToken ? `?token=${streamToken}` : '';
     
-    return {
+    // Configurações otimizadas baseadas no tipo de dispositivo
+    const baseConfig = {
       autoStart: true,
       autoFallback: true,
       controls: true,
       loop: false,
       muted: false,
-      volume: 100,
+      volume: deviceType.isMobile ? 80 : 100, // Volume menor em mobile para economizar bateria
       playbackRate: 1,
       playsinline: true,
       sources: [
@@ -65,21 +82,26 @@ export const useStreamPlayer = ({
           label: 'Baixa latência',
           type: 'llhls' as const,
           file: `${httpProtocol}//${hostname}:${httpPort}/live/${STREAM_ID}/abr.m3u8${tokenParam}`,
-          lowLatency: true,
+          lowLatency: !deviceType.isTV, // Desabilitar baixa latência em TVs para melhor estabilidade
         },
         {
           label: 'Padrão',
           type: 'llhls' as const,
           file: `${httpProtocol}//${hostname}:${httpPort}/live/${STREAM_ID}/ts:abr.m3u8${tokenParam}`,
-          lowLatency: true,
+          lowLatency: false,
         },
       ],
       hlsConfig: {
-        lowLatencyMode: true,
-        backBufferLength: 90,
+        lowLatencyMode: !deviceType.isTV && !deviceType.isMobile, // Apenas desktop
+        backBufferLength: deviceType.isMobile ? 30 : deviceType.isTV ? 120 : 60, // Otimizado por dispositivo
+        maxBufferLength: deviceType.isMobile ? 60 : 120,
+        maxMaxBufferLength: deviceType.isMobile ? 120 : 300,
+        startLevel: deviceType.isMobile ? 0 : -1, // Começar com qualidade baixa em mobile
       },
     };
-  }, []);
+
+    return baseConfig;
+  }, [deviceType]);
 
   const updateStatus = useCallback((newStatus: StreamStatus) => {
     setStatus(newStatus);
@@ -110,17 +132,114 @@ export const useStreamPlayer = ({
     }, 5000);
   }, [retryCount, lastInitTime, updateStatus]);
 
+  // Função de cleanup otimizada para evitar múltiplos players
+  const cleanupPlayer = useCallback(() => {
+    console.log('🧹 Iniciando cleanup do player...');
+    
+    // Cancelar inicialização em andamento
+    if (initializationAbortRef.current) {
+      initializationAbortRef.current.abort();
+      initializationAbortRef.current = null;
+    }
+    
+    // Limpar timeout de cleanup
+    if (cleanupTimeoutRef.current) {
+      clearTimeout(cleanupTimeoutRef.current);
+      cleanupTimeoutRef.current = null;
+    }
+    
+    // Parar verificação periódica da stream
+    streamStatus.stopPeriodicCheck();
+    
+    // Destruir player existente
+    if (ovenPlayerRef.current) {
+      try {
+        const player = ovenPlayerRef.current;
+        console.log('🗑️ Destruindo player existente...');
+        
+        // Tentar pausar antes de destruir
+        if (typeof player.pause === 'function') {
+          player.pause();
+        }
+        
+        // Aguardar um pouco para garantir que o pause foi processado
+        setTimeout(() => {
+          try {
+            if (typeof player.destroy === 'function') {
+              player.destroy();
+            } else if (typeof player.remove === 'function') {
+              player.remove();
+            }
+          } catch (destroyError) {
+            console.warn('Erro ao destruir player (ignorado):', destroyError);
+          }
+        }, 100);
+        
+        ovenPlayerRef.current = null;
+      } catch (error) {
+        console.error('Erro ao limpar player:', error);
+        ovenPlayerRef.current = null; // Forçar limpeza mesmo com erro
+      }
+    }
+    
+    // Limpar elemento DOM do player para garantir que não há múltiplas instâncias
+    const playerElement = document.getElementById('ovenPlayer');
+    if (playerElement) {
+      playerElement.innerHTML = '';
+    }
+    
+    console.log('✅ Cleanup do player concluído');
+  }, [streamStatus]);
+
   const initializePlayer = useCallback(async () => {
     console.log('🚀 Iniciando initializePlayer...');
+    
+    // Verificar se já está inicializando para evitar múltiplas chamadas
+    if (isInitializing) {
+      console.log('⚠️ Player já está sendo inicializado, ignorando...');
+      return;
+    }
     
     if (!playerContainerRef.current) {
       console.log('❌ playerContainerRef não encontrado');
       return;
     }
 
+    // Criar AbortController para cancelar inicialização se necessário
+    if (initializationAbortRef.current) {
+      initializationAbortRef.current.abort();
+    }
+    initializationAbortRef.current = new AbortController();
+    const abortSignal = initializationAbortRef.current.signal;
+
     try {
+      setIsInitializing(true);
       console.log('📡 Atualizando status para connecting...');
       updateStatus('connecting');
+
+      // Verificar se foi cancelado
+      if (abortSignal.aborted) {
+        console.log('🚫 Inicialização cancelada');
+        return;
+      }
+
+      // Limpar player existente antes de criar um novo
+      await new Promise<void>((resolve) => {
+        if (ovenPlayerRef.current) {
+          console.log('🧹 Limpando player existente antes de inicializar novo...');
+          cleanupPlayer();
+          // Aguardar um pouco para garantir que o cleanup foi concluído
+          setTimeout(resolve, 200);
+        } else {
+          resolve();
+        }
+      });
+
+      // Verificar se foi cancelado após cleanup
+      if (abortSignal.aborted) {
+        console.log('🚫 Inicialização cancelada após cleanup');
+        return;
+      }
 
       console.log('🔑 Obtendo token de stream...');
       const token = await getStreamToken();
@@ -134,7 +253,13 @@ export const useStreamPlayer = ({
       console.log('✅ Token obtido:', token.substring(0, 20) + '...');
       setCurrentToken(token);
 
-      // Verificar se a stream está online antes de inicializar o player (verificação única)
+      // Verificar se foi cancelado
+      if (abortSignal.aborted) {
+        console.log('🚫 Inicialização cancelada após obter token');
+        return;
+      }
+
+      // Verificar se a stream está online antes de inicializar o player
       console.log('🔍 Verificando status da stream na inicialização...');
       const isStreamOnline = await streamStatus.checkOnce(token);
       console.log('📊 Status da stream:', isStreamOnline ? 'ONLINE' : 'OFFLINE');
@@ -146,9 +271,21 @@ export const useStreamPlayer = ({
         return;
       }
 
-      // NÃO iniciar verificação periódica - apenas verificação única na inicialização
-      console.log('✅ Stream online, inicializando player sem verificação periódica');
+      // Verificar se foi cancelado
+      if (abortSignal.aborted) {
+        console.log('🚫 Inicialização cancelada após verificar stream');
+        return;
+      }
 
+      console.log('✅ Stream online, inicializando player...');
+
+      // Garantir que o elemento DOM está limpo
+      const playerElement = document.getElementById('ovenPlayer');
+      if (playerElement) {
+        playerElement.innerHTML = '';
+      }
+
+      // Criar novo player
       ovenPlayerRef.current = OvenPlayer.create(
         'ovenPlayer',
         getPlayerConfig(token)
@@ -160,65 +297,81 @@ export const useStreamPlayer = ({
 
       const player = ovenPlayerRef.current;
 
+      // Configurar event listeners com verificação de abort
       player.on?.('ready', () => {
-        console.log('OvenPlayer pronto');
-        updateStatus('playing');
+        if (!abortSignal.aborted) {
+          console.log('OvenPlayer pronto');
+          updateStatus('playing');
+        }
       });
 
       player.on?.('stateChanged', (data: unknown) => {
-        const stateData = data as { prevstate: string; newstate: string };
-        console.log('Estado mudou:', stateData);
+        if (!abortSignal.aborted) {
+          const stateData = data as { prevstate: string; newstate: string };
+          console.log('Estado mudou:', stateData);
 
-        switch (stateData.newstate) {
-          case 'playing':
-            updateStatus('playing');
-            break;
-          case 'paused':
-            updateStatus('paused');
-            break;
-          case 'loading':
-            updateStatus('connecting');
-            break;
-          case 'error':
-            updateStatus('error');
-            break;
+          switch (stateData.newstate) {
+            case 'playing':
+              updateStatus('playing');
+              break;
+            case 'paused':
+              updateStatus('paused');
+              break;
+            case 'loading':
+              updateStatus('connecting');
+              break;
+            case 'error':
+              updateStatus('error');
+              break;
+          }
         }
       });
 
       player.on?.('error', async (error: unknown) => {
-        const errorData = error as { message?: string; code?: number };
-        console.error('Erro do OvenPlayer:', errorData);
-        
-        // Verificar se a stream ainda está online quando há erro
-        console.log('🚨 Verificando status da stream devido ao erro...');
-        const isStreamStillOnline = await streamStatus.checkOnError(currentToken || undefined);
-        console.log('📊 Status da stream após erro:', isStreamStillOnline ? 'ONLINE' : 'OFFLINE');
-        
-        if (!isStreamStillOnline) {
-          console.log('❌ Stream offline, mudando status para offline');
-          updateStatus('offline');
-          onError?.('Stream está offline');
-        } else {
-          console.log('⚠️ Stream online, mas player com erro - tentando reconectar');
-          updateStatus('error');
-          onError?.(errorData);
-          scheduleRetry();
+        if (!abortSignal.aborted) {
+          const errorData = error as { message?: string; code?: number };
+          console.error('Erro do OvenPlayer:', errorData);
+          
+          // Verificar se a stream ainda está online quando há erro
+          console.log('🚨 Verificando status da stream devido ao erro...');
+          const isStreamStillOnline = await streamStatus.checkOnError(currentToken || undefined);
+          console.log('📊 Status da stream após erro:', isStreamStillOnline ? 'ONLINE' : 'OFFLINE');
+          
+          if (!isStreamStillOnline) {
+            console.log('❌ Stream offline, mudando status para offline');
+            updateStatus('offline');
+            onError?.('Stream está offline');
+          } else {
+            console.log('⚠️ Stream online, mas player com erro - tentando reconectar');
+            updateStatus('error');
+            onError?.(errorData);
+            scheduleRetry();
+          }
         }
       });
 
       player.on?.('destroy', () => {
-        console.log('OvenPlayer destruído');
-        updateStatus('offline');
+        if (!abortSignal.aborted) {
+          console.log('OvenPlayer destruído');
+          updateStatus('offline');
+        }
       });
 
       console.log('OvenPlayer inicializado com sucesso');
     } catch (error) {
-      console.error('Erro ao inicializar OvenPlayer:', error);
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      onError?.(errorMessage);
-      scheduleRetry();
+      if (!abortSignal.aborted) {
+        console.error('Erro ao inicializar OvenPlayer:', error);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        onError?.(errorMessage);
+        scheduleRetry();
+      }
+    } finally {
+      setIsInitializing(false);
+      if (initializationAbortRef.current?.signal === abortSignal) {
+        initializationAbortRef.current = null;
+      }
     }
-  }, [getStreamToken, getPlayerConfig, updateStatus, onError, scheduleRetry, streamStatus, currentToken]);
+  }, [getStreamToken, getPlayerConfig, updateStatus, onError, scheduleRetry, streamStatus, currentToken, isInitializing, cleanupPlayer]);
 
   const handleManualRetry = useCallback(async () => {
     console.log('🔄 Retry manual solicitado...');
@@ -242,25 +395,6 @@ export const useStreamPlayer = ({
     updateStatus('connecting');
     initializePlayer();
   }, [initializePlayer, updateStatus, currentToken, streamStatus, onError]);
-
-  const cleanupPlayer = useCallback(() => {
-    // Parar verificação periódica da stream
-    streamStatus.stopPeriodicCheck();
-    
-    if (ovenPlayerRef.current) {
-      try {
-        const player = ovenPlayerRef.current;
-        if (typeof player.destroy === 'function') {
-          player.destroy();
-        } else if (typeof player.remove === 'function') {
-          player.remove();
-        }
-        ovenPlayerRef.current = null;
-      } catch (error) {
-        console.error('Erro ao destruir player:', error);
-      }
-    }
-  }, [streamStatus]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -300,3 +434,4 @@ export const useStreamPlayer = ({
     }
   };
 };
+

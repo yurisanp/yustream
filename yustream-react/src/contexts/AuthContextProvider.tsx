@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, memo } from 'react'
+import { useState, useEffect, useCallback, memo, useMemo, startTransition } from 'react'
 import type { ReactNode } from 'react'
 import type { AuthContextType, User } from './AuthContextType'
 import { AuthContext } from './AuthContext'
@@ -17,68 +17,7 @@ export const AuthProvider = memo(({ children }: AuthProviderProps) => {
   const [streamToken, setStreamToken] = useState<string | null>(null)
   const [streamTokenExpiry, setStreamTokenExpiry] = useState<number | null>(null)
 
-  const isAuthenticated = !!user && !!token
-
-  // Verificar se há token salvo no localStorage na inicialização
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const savedToken = localStorage.getItem('yustream_token')
-        const savedUser = localStorage.getItem('yustream_user')
-
-        if (savedToken && savedUser) {
-          // Verificar se o token ainda é válido
-          const response = await fetch('/api/auth/verify', {
-            headers: {
-              'Authorization': `Bearer ${savedToken}`
-            }
-          })
-
-          if (response.ok) {
-            setToken(savedToken)
-            setUser(JSON.parse(savedUser))
-          } else {
-            // Token inválido, limpar storage
-            localStorage.removeItem('yustream_token')
-            localStorage.removeItem('yustream_user')
-          }
-        }
-      } catch (error) {
-        console.error('Erro ao verificar autenticação:', error)
-        localStorage.removeItem('yustream_token')
-        localStorage.removeItem('yustream_user')
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    checkAuth()
-  }, [])
-
-  const login = (newToken: string, newUser: User) => {
-    setToken(newToken)
-    setUser(newUser)
-    localStorage.setItem('yustream_token', newToken)
-    localStorage.setItem('yustream_user', JSON.stringify(newUser))
-    
-    // Iniciar monitoramento do novo token
-    startTokenMonitoring()
-  }
-
-  const logout = useCallback(() => {
-    setToken(null)
-    setUser(null)
-    setStreamToken(null)
-    setStreamTokenExpiry(null)
-    localStorage.removeItem('yustream_token')
-    localStorage.removeItem('yustream_user')
-    
-    // Limpar intervalo de renovação
-    if (refreshInterval) {
-      clearInterval(refreshInterval)
-      setRefreshInterval(null)
-    }
-  }, [refreshInterval])
+  const isAuthenticated = useMemo(() => !!user && !!token, [user, token])
 
   // Função para verificar se o token está próximo do vencimento
   const isTokenExpiringSoon = (token: string): boolean => {
@@ -95,6 +34,23 @@ export const AuthProvider = memo(({ children }: AuthProviderProps) => {
       return true // Se não conseguir decodificar, considerar como expirado
     }
   }
+
+  const logout = useCallback(() => {
+    startTransition(() => {
+      setToken(null)
+      setUser(null)
+      setStreamToken(null)
+      setStreamTokenExpiry(null)
+      localStorage.removeItem('yustream_token')
+      localStorage.removeItem('yustream_user')
+      
+      // Limpar intervalo de renovação
+      if (refreshInterval) {
+        clearInterval(refreshInterval)
+        setRefreshInterval(null)
+      }
+    })
+  }, [refreshInterval])
 
   // Função para renovar o token
   const refreshToken = useCallback(async (): Promise<boolean> => {
@@ -148,6 +104,54 @@ export const AuthProvider = memo(({ children }: AuthProviderProps) => {
 
     setRefreshInterval(interval)
   }, [refreshInterval, token, refreshToken])
+
+  // Verificar se há token salvo no localStorage na inicialização
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const savedToken = localStorage.getItem('yustream_token')
+        const savedUser = localStorage.getItem('yustream_user')
+
+        if (savedToken && savedUser) {
+          // Verificar se o token ainda é válido
+          const response = await fetch('/api/auth/verify', {
+            headers: {
+              'Authorization': `Bearer ${savedToken}`
+            }
+          })
+
+          if (response.ok) {
+            setToken(savedToken)
+            setUser(JSON.parse(savedUser))
+          } else {
+            // Token inválido, limpar storage
+            localStorage.removeItem('yustream_token')
+            localStorage.removeItem('yustream_user')
+          }
+        }
+      } catch (error) {
+        console.error('Erro ao verificar autenticação:', error)
+        localStorage.removeItem('yustream_token')
+        localStorage.removeItem('yustream_user')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    checkAuth()
+  }, [])
+
+  const login = useCallback((newToken: string, newUser: User) => {
+    startTransition(() => {
+      setToken(newToken)
+      setUser(newUser)
+      localStorage.setItem('yustream_token', newToken)
+      localStorage.setItem('yustream_user', JSON.stringify(newUser))
+      
+      // Iniciar monitoramento do novo token
+      startTokenMonitoring()
+    })
+  }, [startTokenMonitoring])
 
   // Função para parar o monitoramento
   const stopTokenMonitoring = useCallback(() => {
@@ -262,7 +266,7 @@ export const AuthProvider = memo(({ children }: AuthProviderProps) => {
     }
   }
 
-  const value: AuthContextType = {
+  const value: AuthContextType = useMemo(() => ({
     user,
     token,
     isAuthenticated,
@@ -273,7 +277,7 @@ export const AuthProvider = memo(({ children }: AuthProviderProps) => {
     getStreamToken,
     refreshToken,
     clearStreamTokenCache
-  }
+  }), [user, token, isAuthenticated, isLoading, login, logout, checkStreamStatus, getStreamToken, refreshToken, clearStreamTokenCache])
 
   return (
     <AuthContext.Provider value={value}>
