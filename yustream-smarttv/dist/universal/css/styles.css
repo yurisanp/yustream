@@ -223,6 +223,21 @@ body {
     display: flex;
     flex-direction: column;
     background: #000000;
+    position: relative;
+}
+
+/* Fullscreen mode */
+#player-screen.fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9999;
+}
+
+#player-screen.fullscreen .status-bar {
+    display: none; /* Esconder header em fullscreen */
 }
 
 .status-bar {
@@ -234,6 +249,29 @@ body {
     backdrop-filter: blur(10px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     z-index: 100;
+    transition: opacity 0.3s ease;
+}
+
+/* Status bar overlay para fullscreen */
+.status-bar-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    background: linear-gradient(rgba(0, 0, 0, 0.8), transparent);
+    z-index: 150;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.status-bar-overlay.visible {
+    opacity: 1;
+    visibility: visible;
 }
 
 .stream-status {
@@ -298,6 +336,18 @@ body {
     min-height: 70vh; /* Garantir altura mínima */
 }
 
+/* Fullscreen player container */
+#player-screen.fullscreen .player-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    min-height: 100vh;
+    width: 100vw;
+    height: 100vh;
+}
+
 .video-player {
     width: 100%;
     height: 100%;
@@ -306,6 +356,13 @@ body {
     object-fit: contain;
     background: #000000;
     display: block; /* Garantir que seja visível */
+}
+
+/* Fullscreen video */
+#player-screen.fullscreen .video-player {
+    width: 100vw;
+    height: 100vh;
+    object-fit: cover; /* Preencher tela em fullscreen */
 }
 
 /* Debug para verificar se o player está sendo renderizado */

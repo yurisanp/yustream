@@ -95,6 +95,7 @@
             <button id="btn-stream">2. Testar Status Stream</button>
             <button id="btn-player">3. Inicializar Player</button>
             <button id="btn-qualities">4. Mostrar Qualidades</button>
+            <button id="btn-fullscreen">5. Toggle Fullscreen</button>
             <button id="btn-play">Play</button>
             <button id="btn-pause">Pause</button>
             <button id="btn-reload">Reload</button>
@@ -349,6 +350,31 @@
             }
         }
         
+        function testFullscreen() {
+            try {
+                log('🖥️ Testando fullscreen...', 'info');
+                
+                const playerScreen = document.getElementById('player-screen');
+                if (!playerScreen) {
+                    log('❌ Elemento player-screen não encontrado', 'error');
+                    return;
+                }
+                
+                const isCurrentlyFullscreen = playerScreen.classList.contains('fullscreen');
+                
+                if (isCurrentlyFullscreen) {
+                    playerScreen.classList.remove('fullscreen');
+                    log('✅ Fullscreen desativado', 'success');
+                } else {
+                    playerScreen.classList.add('fullscreen');
+                    log('✅ Fullscreen ativado', 'success');
+                }
+                
+            } catch (error) {
+                log(`❌ Erro no fullscreen: ${error.message}`, 'error');
+            }
+        }
+        
         // Inicializar quando DOM estiver pronto
         document.addEventListener('DOMContentLoaded', () => {
             log('🚀 Página de teste carregada', 'success');
@@ -359,6 +385,7 @@
             document.getElementById('btn-stream').addEventListener('click', testStreamStatus);
             document.getElementById('btn-player').addEventListener('click', testPlayer);
             document.getElementById('btn-qualities').addEventListener('click', showQualities);
+            document.getElementById('btn-fullscreen').addEventListener('click', testFullscreen);
             document.getElementById('btn-play').addEventListener('click', testPlay);
             document.getElementById('btn-pause').addEventListener('click', testPause);
             document.getElementById('btn-reload').addEventListener('click', testReload);

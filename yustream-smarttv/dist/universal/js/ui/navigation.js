@@ -145,6 +145,9 @@ class TVNavigation {
             this.goHome();
         } else if (this.matchKey('MENU', keyCode, keyName)) {
             this.showMenu();
+        } else if (keyCode === 70 || keyName === 'f' || keyName === 'F') {
+            // Tecla F para fullscreen
+            this.toggleFullscreen();
         }
         
         this.lastFocusTime = now;
@@ -441,6 +444,11 @@ class TVNavigation {
     showMenu() {
         console.log('[Navigation] Botão menu pressionado');
         window.dispatchEvent(new CustomEvent('tvMenu'));
+    }
+
+    toggleFullscreen() {
+        console.log('[Navigation] Botão fullscreen pressionado');
+        window.dispatchEvent(new CustomEvent('tvFullscreen'));
     }
 
     // Mutation Observer para detectar mudanças no DOM

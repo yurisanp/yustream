@@ -23,7 +23,7 @@
     <link rel="stylesheet" href="css/styles.css">
     
     <link rel="icon" href="assets/icon.png">
-    <!-- Build: webOS LG TV - 2025-09-27T05:45:09.393Z -->
+    <!-- Build: webOS LG TV - 2025-09-27T05:58:06.931Z -->
 </head>
 <body>
     <div id="app">
@@ -91,6 +91,19 @@
                 </div>
             </div>
 
+            <!-- Status Bar Overlay para Fullscreen -->
+            <div id="status-bar-overlay" class="status-bar-overlay">
+                <div class="stream-status">
+                    <div id="status-indicator-overlay" class="status-dot"></div>
+                    <span id="status-text-overlay">Stream Online</span>
+                </div>
+                
+                <div class="status-right">
+                    <span id="user-name-overlay" class="user-info"></span>
+                    <button id="logout-btn-overlay" class="status-btn focusable" tabindex="101">Sair</button>
+                </div>
+            </div>
+
             <!-- Video Player Container -->
             <div id="player-container" class="player-container">
                 <video id="video-player" class="video-player" 
@@ -116,6 +129,11 @@
                         
                         <button id="reload-btn" class="control-btn focusable" tabindex="12">
                             <span>🔄</span>
+                        </button>
+                        
+                        <button id="fullscreen-btn" class="control-btn focusable" tabindex="13">
+                            <span class="fullscreen-enter">⛶</span>
+                            <span class="fullscreen-exit hidden">⛷</span>
                         </button>
                     </div>
                     

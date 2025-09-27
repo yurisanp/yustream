@@ -12,6 +12,7 @@ class TVInterface {
         this.controlsVisible = false;
         this.controlsTimeout = null;
         this.isPlayerReady = false;
+        this.isFullscreen = false;
         
         console.log('[Interface] Inicializando interface...');
         this.init();
@@ -37,6 +38,7 @@ class TVInterface {
         window.addEventListener('tvPlayPause', () => this.handlePlayPause());
         window.addEventListener('tvHome', () => this.handleHomeButton());
         window.addEventListener('tvMenu', () => this.handleMenuButton());
+        window.addEventListener('tvFullscreen', () => this.toggleFullscreen());
         
         // Eventos de autenticação
         window.addEventListener('auth:tokenExpired', () => this.handleTokenExpired());
@@ -88,6 +90,18 @@ class TVInterface {
         const checkBtn = document.getElementById('check-btn');
         if (checkBtn) {
             checkBtn.addEventListener('click', () => this.checkStreamStatus());
+        }
+
+        // Fullscreen button
+        const fullscreenBtn = document.getElementById('fullscreen-btn');
+        if (fullscreenBtn) {
+            fullscreenBtn.addEventListener('click', () => this.toggleFullscreen());
+        }
+
+        // Logout button overlay (fullscreen)
+        const logoutBtnOverlay = document.getElementById('logout-btn-overlay');
+        if (logoutBtnOverlay) {
+            logoutBtnOverlay.addEventListener('click', () => this.handleLogout());
         }
 
         // Player container para mostrar/esconder controles
@@ -278,6 +292,13 @@ class TVInterface {
             }
             this.isPlayerReady = true;
             
+            // Entrar automaticamente em fullscreen para Smart TVs
+            setTimeout(() => {
+                if (window.deviceUtils && window.deviceUtils.isSmartTV()) {
+                    this.enterFullscreen();
+                }
+            }, 2000);
+            
         } catch (error) {
             console.error('[Interface] Erro ao inicializar player:', error);
             this.showToast('Erro ao inicializar player: ' + error.message, 'error');
@@ -398,6 +419,12 @@ class TVInterface {
         if (controlsOverlay) {
             controlsOverlay.classList.add('visible');
             this.controlsVisible = true;
+            
+            // Se estiver em fullscreen, mostrar também o status overlay
+            if (this.isFullscreen) {
+                this.showStatusOverlay();
+            }
+            
             this.autoHideControls();
         }
     }
@@ -582,10 +609,13 @@ class TVInterface {
     // Navegação por controle remoto
     handleBackButton() {
         if (this.currentScreen === 'player') {
-            if (this.controlsVisible) {
+            if (this.isFullscreen) {
+                // Em fullscreen, back sai do fullscreen
+                this.exitFullscreen();
+            } else if (this.controlsVisible) {
                 this.hideControls();
             } else {
-                // Mostrar menu de saída ou minimizar
+                // Mostrar controles
                 this.showControls();
             }
         } else if (this.currentScreen === 'login') {
@@ -655,12 +685,130 @@ class TVInterface {
         }
     }
 
+    // Fullscreen
+    toggleFullscreen() {
+        if (this.isFullscreen) {
+            this.exitFullscreen();
+        } else {
+            this.enterFullscreen();
+        }
+    }
+
+    enterFullscreen() {
+        console.log('[Interface] 🖥️ Entrando em fullscreen...');
+        
+        const playerScreen = document.getElementById('player-screen');
+        if (playerScreen) {
+            playerScreen.classList.add('fullscreen');
+            this.isFullscreen = true;
+            
+            // Mostrar controles overlay
+            this.showControls();
+            
+            // Atualizar botão fullscreen
+            this.updateFullscreenButton();
+            
+            // Auto-esconder controles após 3 segundos
+            this.autoHideControls(3000);
+            
+            console.log('[Interface] ✅ Fullscreen ativado');
+        }
+    }
+
+    exitFullscreen() {
+        console.log('[Interface] 🖥️ Saindo de fullscreen...');
+        
+        const playerScreen = document.getElementById('player-screen');
+        if (playerScreen) {
+            playerScreen.classList.remove('fullscreen');
+            this.isFullscreen = false;
+            
+            // Esconder overlay de status
+            this.hideStatusOverlay();
+            
+            // Atualizar botão fullscreen
+            this.updateFullscreenButton();
+            
+            console.log('[Interface] ✅ Fullscreen desativado');
+        }
+    }
+
+    updateFullscreenButton() {
+        const enterIcon = document.querySelector('.fullscreen-enter');
+        const exitIcon = document.querySelector('.fullscreen-exit');
+        
+        if (enterIcon && exitIcon) {
+            if (this.isFullscreen) {
+                enterIcon.classList.add('hidden');
+                exitIcon.classList.remove('hidden');
+            } else {
+                enterIcon.classList.remove('hidden');
+                exitIcon.classList.add('hidden');
+            }
+        }
+    }
+
+    showStatusOverlay() {
+        const overlay = document.getElementById('status-bar-overlay');
+        if (overlay) {
+            overlay.classList.add('visible');
+            
+            // Sincronizar informações com status bar principal
+            this.syncStatusOverlay();
+        }
+    }
+
+    hideStatusOverlay() {
+        const overlay = document.getElementById('status-bar-overlay');
+        if (overlay) {
+            overlay.classList.remove('visible');
+        }
+    }
+
+    syncStatusOverlay() {
+        // Sincronizar status
+        const statusText = document.getElementById('status-text');
+        const statusTextOverlay = document.getElementById('status-text-overlay');
+        if (statusText && statusTextOverlay) {
+            statusTextOverlay.textContent = statusText.textContent;
+        }
+
+        // Sincronizar indicador
+        const statusIndicator = document.getElementById('status-indicator');
+        const statusIndicatorOverlay = document.getElementById('status-indicator-overlay');
+        if (statusIndicator && statusIndicatorOverlay) {
+            statusIndicatorOverlay.className = statusIndicator.className;
+        }
+
+        // Sincronizar nome do usuário
+        const userName = document.getElementById('user-name');
+        const userNameOverlay = document.getElementById('user-name-overlay');
+        if (userName && userNameOverlay) {
+            userNameOverlay.textContent = userName.textContent;
+        }
+    }
+
+    autoHideControls(delay = 5000) {
+        this.clearControlsTimeout();
+        this.controlsTimeout = setTimeout(() => {
+            this.hideControls();
+            if (this.isFullscreen) {
+                this.hideStatusOverlay();
+            }
+        }, delay);
+    }
+
     destroy() {
         if (this.streamPlayer) {
             this.streamPlayer.destroy();
         }
         
         this.clearControlsTimeout();
+        
+        // Sair de fullscreen se estiver ativo
+        if (this.isFullscreen) {
+            this.exitFullscreen();
+        }
         
         console.log('[Interface] Interface destruída');
     }
