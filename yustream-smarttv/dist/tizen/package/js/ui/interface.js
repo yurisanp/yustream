@@ -456,9 +456,13 @@ class TVInterface {
         console.log('[Interface] 🎬 Toggle quality menu solicitado');
         
         if (!this.qualitySelector) {
-            console.log('[Interface] ❌ QualitySelector não inicializado');
-            this.showToast('Seletor de qualidades não disponível', 'error');
-            return;
+            console.log('[Interface] ❌ QualitySelector não inicializado, criando...');
+            
+            // Recriar seletor se não existir
+            this.qualitySelector = new SimpleQualitySelector({
+                onQualityChange: (qualityName) => this.changeQuality(qualityName),
+                onQualitiesUpdate: () => this.updateQualityDisplay()
+            });
         }
         
         if (!this.streamPlayer || !this.streamPlayer.isReady) {
@@ -469,6 +473,16 @@ class TVInterface {
         
         // Atualizar qualidades antes de mostrar
         this.updateQualitySelector();
+        
+        // Verificar se qualidades foram carregadas
+        const qualities = this.streamPlayer.getAvailableQualities();
+        console.log('[Interface] 📊 Qualidades para seletor:', qualities?.length || 0);
+        
+        if (!qualities || qualities.length === 0) {
+            console.log('[Interface] ⚠️ Nenhuma qualidade disponível');
+            this.showToast('Nenhuma qualidade disponível', 'info');
+            return;
+        }
         
         // Mostrar menu
         this.qualitySelector.toggle();

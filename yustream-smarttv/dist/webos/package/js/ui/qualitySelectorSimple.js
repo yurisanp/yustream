@@ -64,21 +64,26 @@ class SimpleQualitySelector {
         style.id = 'simple-quality-styles';
         style.textContent = `
             .simple-quality-overlay {
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: rgba(0, 0, 0, 0.9);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                z-index: 2000;
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                bottom: 0 !important;
+                background: rgba(0, 0, 0, 0.95) !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                z-index: 10000 !important; /* Maior que fullscreen (9999) */
                 transition: opacity 0.3s ease;
             }
 
             .simple-quality-overlay.hidden {
                 display: none !important;
+            }
+
+            /* Garantir visibilidade em fullscreen */
+            #player-screen.fullscreen ~ .simple-quality-overlay {
+                z-index: 10001 !important;
             }
 
             .simple-quality-menu {
@@ -286,14 +291,30 @@ class SimpleQualitySelector {
 
     show() {
         console.log('[SimpleQualitySelector] 👁️ Mostrando menu...');
+        console.log('[SimpleQualitySelector] Qualidades disponíveis:', this.qualities.length);
         
         if (!this.container) {
             console.log('[SimpleQualitySelector] ❌ Container não existe, criando...');
             this.createUI();
         }
         
+        // Verificar se container foi criado
+        if (!this.container) {
+            console.error('[SimpleQualitySelector] ❌ Falha ao criar container');
+            return;
+        }
+        
+        // Verificar se está no DOM
+        if (!document.body.contains(this.container)) {
+            console.log('[SimpleQualitySelector] 🔧 Re-adicionando ao DOM...');
+            document.body.appendChild(this.container);
+        }
+        
         this.container.classList.remove('hidden');
         this.isVisible = true;
+        
+        console.log('[SimpleQualitySelector] 📊 Container classes:', this.container.className);
+        console.log('[SimpleQualitySelector] 📊 Container style:', this.container.style.cssText);
         
         // Atualizar elementos focáveis
         setTimeout(() => {
