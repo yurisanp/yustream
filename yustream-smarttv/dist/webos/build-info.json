@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
   "build": "webos",
-  "timestamp": "2025-09-27T06:01:47.285Z",
+  "timestamp": "2025-09-27T06:03:59.909Z",
   "platform": "LG webOS TV",
   "targetDevices": [
     "LG Smart TV 2014+",
