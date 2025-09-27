@@ -298,6 +298,15 @@
                     const status = q.current ? '▶️ ATUAL' : (q.active ? '⚪ Disponível' : '⚫ Inativa');
                     const latency = q.lowLatency ? ' [Baixa Latência]' : '';
                     log(`  ${status} ${q.displayName}${latency}`, q.current ? 'success' : 'info');
+                    
+                    // Mostrar URL para debug (verificar se tem token)
+                    if (playerInstance.availableQualities) {
+                        const fullQuality = playerInstance.availableQualities.find(fq => fq.name === q.name);
+                        if (fullQuality) {
+                            const hasToken = fullQuality.url.includes('token=');
+                            log(`    URL: ${fullQuality.url.substring(0, 80)}... ${hasToken ? '✅ COM TOKEN' : '❌ SEM TOKEN'}`, hasToken ? 'success' : 'error');
+                        }
+                    }
                 });
                 
                 const current = playerInstance.getCurrentQuality();

@@ -167,8 +167,14 @@ class AdvancedStreamPlayer {
                 throw new Error('Formato inválido da API de qualidades');
             }
             
-            // Filtrar apenas qualidades ativas (como no addon Stremio)
-            this.availableQualities = data.qualities.filter(q => q.active);
+            // Filtrar apenas qualidades ativas e adicionar token às URLs
+            this.availableQualities = data.qualities
+                .filter(q => q.active)
+                .map(quality => ({
+                    ...quality,
+                    url: this.addTokenToUrl(quality.url, token),
+                    originalUrl: quality.url // Manter URL original para referência
+                }));
             
             console.log(`[AdvancedPlayer] ✅ ${this.availableQualities.length} qualidades ativas de ${data.qualities.length} total`);
             
@@ -254,8 +260,8 @@ class AdvancedStreamPlayer {
         // Event listeners
         this.setupVideoEvents();
         
-        // Usar URL específica da qualidade (não ABR)
-        const streamUrl = quality.url;
+        // Usar URL específica da qualidade (já com token se necessário)
+        const streamUrl = quality.url; // URL já processada com token no loadAvailableQualities
         console.log('[AdvancedPlayer] 🎬 Carregando qualidade:', quality.displayName);
         console.log('[AdvancedPlayer] 📡 URL:', streamUrl);
         
@@ -389,6 +395,18 @@ class AdvancedStreamPlayer {
     }
 
     // Método para trocar qualidade (similar ao mobile)
+    addTokenToUrl(url, token) {
+        if (!token || !url) {
+            return url;
+        }
+        
+        // Usar mesmo padrão do addon Stremio: ${quality.url}?token=${streamToken}
+        const streamUrl = `${url}?token=${token}`;
+        console.log('[AdvancedPlayer] 🔑 Token adicionado à URL (padrão Stremio)');
+        
+        return streamUrl;
+    }
+
     async changeQuality(qualityName) {
         try {
             console.log('[AdvancedPlayer] 🔄 Mudando para qualidade:', qualityName);

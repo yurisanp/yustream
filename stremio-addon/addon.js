@@ -360,8 +360,9 @@ builder.defineStreamHandler(async (args, callback, req) => {
 		if (id === "yustream_live_main") {
 			// Adicionar qualidades individuais ativas
 			for (const quality of activeQualities) {
+				let streamUrl = `${quality.url}?token=${streamToken}`;
 				streams.push({
-					url: quality.url,
+					url: streamUrl,
 					name: quality.displayName,
 					description: `Stream ao vivo em ${quality.displayName} - ${quality.description}`,
 				});
