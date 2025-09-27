@@ -189,3 +189,5 @@ window.tvInterface?.exitFullscreen();
 **🎉 Fullscreen implementado!** 
 
 O player agora ocupa toda a tela automaticamente em Smart TVs, com controles overlay que aparecem quando necessário e botão de sair sempre acessível.
+
+

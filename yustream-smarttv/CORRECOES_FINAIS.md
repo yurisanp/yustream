@@ -145,3 +145,5 @@ npm run deploy:docker
 **🎉 Token implementado igual ao Stremio!** 
 
 Agora todas as URLs de qualidade incluem o token necessário: `?token=${streamToken}`
+
+
