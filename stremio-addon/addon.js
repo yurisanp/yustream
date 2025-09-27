@@ -358,14 +358,10 @@ builder.defineStreamHandler(async (args, callback, req) => {
 
 		const streams = [];
 		if (id === "yustream_live_main") {
-			const baseUrl = "https://yustream.yurisp.com.br";
-			
 			// Adicionar qualidades individuais ativas
 			for (const quality of activeQualities) {
-				const qualityUrl = `${baseUrl}:8443/${quality.application}/${quality.streamName}/${quality.streamName}.m3u8?token=${streamToken}`;
-				
 				streams.push({
-					url: qualityUrl,
+					url: quality.url,
 					name: quality.displayName,
 					description: `Stream ao vivo em ${quality.displayName} - ${quality.description}`,
 				});

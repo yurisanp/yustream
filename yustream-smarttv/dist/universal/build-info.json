@@ -1,0 +1,21 @@
+{
+  "version": "1.0.0",
+  "build": "universal",
+  "timestamp": "2025-09-27T05:27:24.225Z",
+  "platform": "PWA Universal",
+  "features": [
+    "Smart TV Navigation",
+    "HLS/LLHLS Streaming",
+    "Authentication",
+    "Responsive Design",
+    "Service Worker",
+    "Offline Support"
+  ],
+  "compatibility": [
+    "Tizen (via browser)",
+    "WebOS (via browser)",
+    "Android TV (via browser)",
+    "Generic Smart TVs",
+    "Desktop browsers"
+  ]
+}

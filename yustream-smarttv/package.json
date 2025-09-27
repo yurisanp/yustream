@@ -1,0 +1,39 @@
+{
+  "name": "yustream-smarttv",
+  "version": "1.0.0",
+  "description": "YuStream para Smart TVs - Tizen, WebOS, Android TV",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "live-server --port=3000 --host=0.0.0.0 --cors",
+    "build": "npm run build:universal && npm run build:tizen && npm run build:webos",
+    "build:universal": "node scripts/build-universal.js",
+    "build:tizen": "node scripts/build-tizen.js",
+    "build:webos": "node scripts/build-webos.js",
+    "deploy:universal": "node scripts/deploy-universal.js",
+    "deploy:nginx": "node scripts/deploy-nginx.js",
+    "deploy:docker": "npm run build:universal && docker-compose restart nginx",
+    "serve": "http-server dist/universal -p 3000 -c-1 --cors",
+    "serve:all": "http-server dist -p 3000 -c-1 --cors",
+    "config": "node -e \"console.log(require('./config/server').SERVER_CONFIG)\"",
+    "test": "echo \"No tests specified\" && exit 0"
+  },
+  "keywords": [
+    "smarttv",
+    "streaming",
+    "tizen",
+    "webos",
+    "androidtv",
+    "yustream"
+  ],
+  "author": "YuStream",
+  "license": "MIT",
+  "devDependencies": {
+    "live-server": "^1.2.2",
+    "http-server": "^14.1.1",
+    "fs-extra": "^11.1.1",
+    "archiver": "^5.3.1"
+  },
+  "dependencies": {
+    "hls.js": "^1.6.11"
+  }
+}

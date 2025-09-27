@@ -294,7 +294,7 @@ app.get("/stream/qualities", authenticateToken, async (req, res) => {
 					url: `https://yustream.yurisp.com.br:8443/360/360/360.m3u8`,
 				},
 				{
-					name: "Fonte",
+					name: "FonteDefault",
 					application: "fonte",
 					streamName: "fonte",
 					displayName: "Fonte Original",
@@ -303,7 +303,7 @@ app.get("/stream/qualities", authenticateToken, async (req, res) => {
 					url: `https://yustream.yurisp.com.br:8443/fonte/fonte/ts:fonte.m3u8`,
 				},
 				{
-					name: "1440p",
+					name: "1440pDefault",
 					application: "1440",
 					streamName: "1440",
 					displayName: "1440p Ultra HD",
@@ -312,7 +312,7 @@ app.get("/stream/qualities", authenticateToken, async (req, res) => {
 					url: `https://yustream.yurisp.com.br:8443/1440/1440/ts:1440.m3u8`,
 				},
 				{
-					name: "1080p",
+					name: "1080pDefault",
 					application: "1080",
 					streamName: "1080",
 					displayName: "1080p Full HD",
@@ -321,7 +321,7 @@ app.get("/stream/qualities", authenticateToken, async (req, res) => {
 					url: `https://yustream.yurisp.com.br:8443/1080/1080/ts:1080.m3u8`,
 				},
 				{
-					name: "720p",
+					name: "720pDefault",
 					application: "720",
 					streamName: "720",
 					displayName: "720p HD",
@@ -330,7 +330,7 @@ app.get("/stream/qualities", authenticateToken, async (req, res) => {
 					url: `https://yustream.yurisp.com.br:8443/720/720/ts:720.m3u8`,
 				},
 				{
-					name: "360p",
+					name: "360pDefault",
 					application: "360",
 					streamName: "360",
 					displayName: "360p SD",
@@ -676,7 +676,7 @@ app.get("/admin/stats", authenticateToken, requireAdmin, async (req, res) => {
 
 // Configurações do OvenMediaEngine
 const getOMEConfig = () => ({
-	hostname: process.env.OME_HOSTNAME || "host.docker.internal",
+	hostname: process.env.OME_HOSTNAME || "ovenmediaengine",
 	apiPort: process.env.OME_API_PORT || "8081",
 	vhostName: process.env.OME_VHOST || "default",
 	appName: process.env.OME_APP || "live",

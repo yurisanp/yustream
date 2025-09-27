@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<widget xmlns="http://www.w3.org/ns/widgets" 
+        xmlns:tizen="http://tizen.org/ns/widgets"
+        id="http://yustream.com/smarttv"
+        version="1.0.0"
+        viewmodes="maximized">
+    
+    <name>YuStream TV</name>
+    <description>YuStream - Streaming para Samsung Smart TV</description>
+    <author href="http://yustream.com" email="contato@yustream.com">YuStream</author>
+    
+    <content src="index.html"/>
+    
+    <icon src="icon.png"/>
+    
+    <!-- Tizen Application ID -->
+    <tizen:application id="yustream.tv" package="yustream" required_version="2.3"/>
+    
+    <!-- Configurações de exibição -->
+    <tizen:setting screen-orientation="landscape" 
+                   context-menu="disable"
+                   background-support="disable"
+                   encryption="disable"
+                   install-location="internal-only"/>
+    
+    <!-- Permissões necessárias -->
+    <tizen:privilege name="http://tizen.org/privilege/internet"/>
+    <tizen:privilege name="http://tizen.org/privilege/network.get"/>
+    <tizen:privilege name="http://tizen.org/privilege/tv.audio"/>
+    <tizen:privilege name="http://tizen.org/privilege/tv.inputdevice"/>
+    <tizen:privilege name="http://tizen.org/privilege/application.launch"/>
+    
+    <!-- Features necessárias -->
+    <feature name="http://tizen.org/feature/network.internet"/>
+    <feature name="http://tizen.org/feature/multimedia.player"/>
+    <feature name="http://tizen.org/feature/tv.display"/>
+    
+    <!-- Configurações de rede -->
+    <access origin="*" subdomains="true"/>
+    
+    <!-- Configurações específicas para Smart TV -->
+    <tizen:metadata key="http://samsung.com/tv/metadata/use.preview" value="endpoint_URL"/>
+    <tizen:metadata key="http://samsung.com/tv/metadata/prelaunch.support" value="true"/>
+    <tizen:metadata key="http://samsung.com/tv/metadata/drminfo.value" value="false"/>
+    
+    <!-- Configurações de categoria -->
+    <tizen:category name="http://tizen.org/category/tv"/>
+    
+    <!-- Política de segurança de conteúdo -->
+    <tizen:content-security-policy>
+        default-src 'self' data: 'unsafe-inline' 'unsafe-eval' https: http: wss: ws:;
+        media-src 'self' https: http: data: blob:;
+        img-src 'self' https: http: data: blob:;
+        connect-src 'self' https: http: wss: ws:;
+        script-src 'self' 'unsafe-inline' 'unsafe-eval' https: http:;
+        style-src 'self' 'unsafe-inline' https: http:;
+    </tizen:content-security-policy>
+    
+</widget>
