@@ -23,6 +23,10 @@
                 <Port>1935</Port>
                 <WorkerCount>2</WorkerCount>
             </RTMP>
+            <SRT>
+                <Port>9998</Port>
+                <WorkerCount>2</WorkerCount>
+            </SRT>
         </Providers>
         <Publishers>
             <LLHLS>

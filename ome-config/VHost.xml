@@ -112,6 +112,7 @@
                 <RTMP>
                     <BlockDuplicateStreamName>true</BlockDuplicateStreamName>
                 </RTMP>
+                <SRT />
             </Providers>
             <Publishers>
                 <AppWorkerCount>2</AppWorkerCount>
@@ -130,7 +131,7 @@
                     <CrossDomains>
                         <Url>*</Url>
                     </CrossDomains>
-                </HLS>
+                </HLS>               
             </Publishers>
         </Application>
         <Application>
@@ -171,6 +172,7 @@
                 <RTMP>
                     <BlockDuplicateStreamName>true</BlockDuplicateStreamName>
                 </RTMP>
+                <SRT />
             </Providers>
             <Publishers>
                 <AppWorkerCount>2</AppWorkerCount>
@@ -230,6 +232,7 @@
                 <RTMP>
                     <BlockDuplicateStreamName>true</BlockDuplicateStreamName>
                 </RTMP>
+                <SRT />
             </Providers>
             <Publishers>
                 <AppWorkerCount>2</AppWorkerCount>
@@ -289,6 +292,7 @@
                 <RTMP>
                     <BlockDuplicateStreamName>true</BlockDuplicateStreamName>
                 </RTMP>
+                <SRT />
             </Providers>
             <Publishers>
                 <AppWorkerCount>2</AppWorkerCount>
@@ -348,6 +352,7 @@
                 <RTMP>
                     <BlockDuplicateStreamName>true</BlockDuplicateStreamName>
                 </RTMP>
+                <SRT />
             </Providers>
             <Publishers>
                 <AppWorkerCount>2</AppWorkerCount>
