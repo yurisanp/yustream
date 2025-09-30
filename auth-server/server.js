@@ -256,6 +256,7 @@ app.get("/stream/qualities", authenticateToken, async (req, res) => {
 					description: "Qualidade original da fonte Baixa latencia",
 					priority: 1,
 					url: `https://yustream.yurisp.com.br:8443/fonte/fonte/fonte.m3u8`,
+					url_nossl: `http://yustream.yurisp.com.br:8080/fonte/fonte/fonte.m3u8`,
 				},
 				{
 					name: "1440p",
@@ -265,6 +266,7 @@ app.get("/stream/qualities", authenticateToken, async (req, res) => {
 					description: "Qualidade Ultra HD 1440p Baixa latencia",
 					priority: 2,
 					url: `https://yustream.yurisp.com.br:8443/1440/1440/1440.m3u8`,
+					url_nossl: `http://yustream.yurisp.com.br:8080/1440/1440/1440.m3u8`,
 				},
 				{
 					name: "1080p",
@@ -274,6 +276,7 @@ app.get("/stream/qualities", authenticateToken, async (req, res) => {
 					description: "Qualidade Full HD 1080p Baixa latencia",
 					priority: 3,
 					url: `https://yustream.yurisp.com.br:8443/1080/1080/1080.m3u8`,
+					url_nossl: `http://yustream.yurisp.com.br:8080/1080/1080/1080.m3u8`,
 				},
 				{
 					name: "720p",
@@ -283,6 +286,7 @@ app.get("/stream/qualities", authenticateToken, async (req, res) => {
 					description: "Qualidade HD 720p Baixa latencia",
 					priority: 4,
 					url: `https://yustream.yurisp.com.br:8443/720/720/720.m3u8`,
+					url_nossl: `http://yustream.yurisp.com.br:8080/720/720/720.m3u8`,
 				},
 				{
 					name: "360p",
@@ -292,6 +296,7 @@ app.get("/stream/qualities", authenticateToken, async (req, res) => {
 					description: "Qualidade SD 360p Baixa latencia",
 					priority: 5,
 					url: `https://yustream.yurisp.com.br:8443/360/360/360.m3u8`,
+					url_nossl: `http://yustream.yurisp.com.br:8080/360/360/360.m3u8`,
 				},
 				{
 					name: "FonteDefault",
@@ -301,6 +306,7 @@ app.get("/stream/qualities", authenticateToken, async (req, res) => {
 					description: "Qualidade original da fonte",
 					priority: 6,
 					url: `https://yustream.yurisp.com.br:8443/fonte/fonte/ts:fonte.m3u8`,
+					url_nossl: `http://yustream.yurisp.com.br:8080/fonte/fonte/ts:fonte.m3u8`,
 				},
 				{
 					name: "1440pDefault",
@@ -310,6 +316,7 @@ app.get("/stream/qualities", authenticateToken, async (req, res) => {
 					description: "Qualidade Ultra HD 1440p",
 					priority: 7,
 					url: `https://yustream.yurisp.com.br:8443/1440/1440/ts:1440.m3u8`,
+					url_nossl: `http://yustream.yurisp.com.br:8080/1440/1440/ts:1440.m3u8`,
 				},
 				{
 					name: "1080pDefault",
@@ -319,6 +326,7 @@ app.get("/stream/qualities", authenticateToken, async (req, res) => {
 					description: "Qualidade Full HD 1080p",
 					priority: 8,
 					url: `https://yustream.yurisp.com.br:8443/1080/1080/ts:1080.m3u8`,
+					url_nossl: `http://yustream.yurisp.com.br:8080/1080/1080/ts:1080.m3u8`,
 				},
 				{
 					name: "720pDefault",
@@ -328,6 +336,7 @@ app.get("/stream/qualities", authenticateToken, async (req, res) => {
 					description: "Qualidade HD 720p",
 					priority: 9,
 					url: `https://yustream.yurisp.com.br:8443/720/720/ts:720.m3u8`,
+					url_nossl: `http://yustream.yurisp.com.br:8080/720/720/ts:720.m3u8`,
 				},
 				{
 					name: "360pDefault",
@@ -337,6 +346,7 @@ app.get("/stream/qualities", authenticateToken, async (req, res) => {
 					description: "Qualidade SD 360p",
 					priority: 10,
 					url: `https://yustream.yurisp.com.br:8443/360/360/ts:360.m3u8`,
+					url_nossl: `http://yustream.yurisp.com.br:8080/360/360/ts:360.m3u8`,
 				},
 			];
 
@@ -1184,40 +1194,41 @@ app.post("/webhook/close", (req, res) => {
 app.get("/auth/verify-vnc", async (req, res) => {
 	try {
 		const authHeader = req.headers.authorization;
-		if (!authHeader || !authHeader.startsWith('Bearer ')) {
-			return res.status(401).json({ error: 'Token requerido' });
+		if (!authHeader || !authHeader.startsWith("Bearer ")) {
+			return res.status(401).json({ error: "Token requerido" });
 		}
 
 		const token = authHeader.substring(7);
-		
+
 		// Verificar token
 		const decoded = jwt.verify(token, JWT_SECRET);
 		const user = await User.findById(decoded.id);
-		
+
 		if (!user) {
-			return res.status(401).json({ error: 'Usuário não encontrado' });
+			return res.status(401).json({ error: "Usuário não encontrado" });
 		}
-		
+
 		// Apenas admins podem acessar VNC
-		if (user.role !== 'admin') {
-			return res.status(403).json({ error: 'Acesso negado - apenas administradores' });
+		if (user.role !== "admin") {
+			return res
+				.status(403)
+				.json({ error: "Acesso negado - apenas administradores" });
 		}
-		
+
 		// Headers para o NGINX
-		res.set('X-User', user.username);
-		res.set('X-User-Role', user.role);
-		res.set('X-User-ID', user.id.toString());
-		
+		res.set("X-User", user.username);
+		res.set("X-User-Role", user.role);
+		res.set("X-User-ID", user.id.toString());
+
 		console.log(`✅ Acesso VNC autorizado para admin: ${user.username}`);
-		res.status(200).json({ 
-			authorized: true, 
+		res.status(200).json({
+			authorized: true,
 			user: user.username,
-			role: user.role 
+			role: user.role,
 		});
-		
 	} catch (error) {
-		console.error('❌ Erro na verificação VNC:', error);
-		res.status(401).json({ error: 'Token inválido' });
+		console.error("❌ Erro na verificação VNC:", error);
+		res.status(401).json({ error: "Token inválido" });
 	}
 });
 
