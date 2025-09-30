@@ -85,6 +85,10 @@
                     <Name>fonte</Name>
                     <OutputStreamName>${OriginStreamName}</OutputStreamName>
                     <Playlist>
+                        <Options>
+                            <HLSChunklistPathDepth>0</HLSChunklistPathDepth>
+                            <EnableTsPackaging>true</EnableTsPackaging>
+                        </Options>
                         <Name>Fonte</Name>
                         <FileName>fonte</FileName>
                         <Rendition>
@@ -145,6 +149,10 @@
                     <Name>1440</Name>
                     <OutputStreamName>${OriginStreamName}</OutputStreamName>
                     <Playlist>
+                        <Options>
+                            <HLSChunklistPathDepth>0</HLSChunklistPathDepth>
+                            <EnableTsPackaging>true</EnableTsPackaging>
+                        </Options>
                         <Name>1440p</Name>
                         <FileName>1440</FileName>
                         <Rendition>
@@ -205,6 +213,10 @@
                     <Name>1080</Name>
                     <OutputStreamName>${OriginStreamName}</OutputStreamName>
                     <Playlist>
+                        <Options>
+                            <HLSChunklistPathDepth>0</HLSChunklistPathDepth>
+                            <EnableTsPackaging>true</EnableTsPackaging>
+                        </Options>
                         <Name>1080p</Name>
                         <FileName>1080</FileName>
                         <Rendition>
@@ -265,6 +277,10 @@
                     <Name>720</Name>
                     <OutputStreamName>${OriginStreamName}</OutputStreamName>
                     <Playlist>
+                        <Options>
+                            <HLSChunklistPathDepth>0</HLSChunklistPathDepth>
+                            <EnableTsPackaging>true</EnableTsPackaging>
+                        </Options>
                         <Name>720p</Name>
                         <FileName>720</FileName>
                         <Rendition>
@@ -325,6 +341,10 @@
                     <Name>360</Name>
                     <OutputStreamName>${OriginStreamName}</OutputStreamName>
                     <Playlist>
+                        <Options>
+                            <HLSChunklistPathDepth>0</HLSChunklistPathDepth>
+                            <EnableTsPackaging>true</EnableTsPackaging>
+                        </Options>
                         <Name>360p</Name>
                         <FileName>360</FileName>
                         <Rendition>
