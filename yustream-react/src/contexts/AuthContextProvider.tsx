@@ -11,29 +11,12 @@ export const AuthProvider = memo(({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null)
   const [token, setToken] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [refreshInterval, setRefreshInterval] = useState<number | null>(null)
   
   // Cache para token de stream
   const [streamToken, setStreamToken] = useState<string | null>(null)
   const [streamTokenExpiry, setStreamTokenExpiry] = useState<number | null>(null)
 
   const isAuthenticated = useMemo(() => !!user && !!token, [user, token])
-
-  // Função para verificar se o token está próximo do vencimento
-  const isTokenExpiringSoon = (token: string): boolean => {
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]))
-      const expirationTime = payload.exp * 1000 // Converter para milliseconds
-      const currentTime = Date.now()
-      const timeUntilExpiry = expirationTime - currentTime
-      
-      // Renovar se restam menos de 30 minutos (1800000 ms)
-      return timeUntilExpiry < 1800000
-    } catch (error) {
-      console.error('Erro ao verificar expiração do token:', error)
-      return true // Se não conseguir decodificar, considerar como expirado
-    }
-  }
 
   const logout = useCallback(() => {
     startTransition(() => {
@@ -44,66 +27,8 @@ export const AuthProvider = memo(({ children }: AuthProviderProps) => {
       localStorage.removeItem('yustream_token')
       localStorage.removeItem('yustream_user')
       
-      // Limpar intervalo de renovação
-      if (refreshInterval) {
-        clearInterval(refreshInterval)
-        setRefreshInterval(null)
-      }
     })
-  }, [refreshInterval])
-
-  // Função para renovar o token
-  const refreshToken = useCallback(async (): Promise<boolean> => {
-    if (!token || !user) {
-      return false
-    }
-
-    try {
-      const response = await fetch('/api/auth/refresh', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        const newToken = data.token
-        
-        setToken(newToken)
-        localStorage.setItem('yustream_token', newToken)
-        
-        console.log('Token renovado com sucesso')
-        return true
-      } else {
-        console.log('Falha ao renovar token, fazendo logout')
-        logout()
-        return false
-      }
-    } catch (error) {
-      console.error('Erro ao renovar token:', error)
-      logout()
-      return false
-    }
-  }, [token, user, logout])
-
-  // Função para iniciar o monitoramento automático do token
-  const startTokenMonitoring = useCallback(() => {
-    if (refreshInterval) {
-      clearInterval(refreshInterval)
-    }
-
-    // Verificar a cada 5 minutos se o token precisa ser renovado
-    const interval = setInterval(async () => {
-      if (token && isTokenExpiringSoon(token)) {
-        console.log('Token próximo do vencimento, renovando...')
-        await refreshToken()
-      }
-    }, 5 * 60 * 1000) // 5 minutos
-
-    setRefreshInterval(interval)
-  }, [refreshInterval, token, refreshToken])
+  }, [])
 
   // Verificar se há token salvo no localStorage na inicialização
   useEffect(() => {
@@ -148,21 +73,11 @@ export const AuthProvider = memo(({ children }: AuthProviderProps) => {
       localStorage.setItem('yustream_token', newToken)
       localStorage.setItem('yustream_user', JSON.stringify(newUser))
       
-      // Iniciar monitoramento do novo token
-      startTokenMonitoring()
     })
-  }, [startTokenMonitoring])
-
-  // Função para parar o monitoramento
-  const stopTokenMonitoring = useCallback(() => {
-    if (refreshInterval) {
-      clearInterval(refreshInterval)
-      setRefreshInterval(null)
-    }
-  }, [refreshInterval])
+  }, [])
 
   // Função para verificar se o token de stream ainda é válido
-  const isStreamTokenValid = (): boolean => {
+  const isStreamTokenValid = useCallback((): boolean => {
     if (!streamToken || !streamTokenExpiry) {
       return false
     }
@@ -170,62 +85,9 @@ export const AuthProvider = memo(({ children }: AuthProviderProps) => {
     const currentTime = Date.now()
     // Considerar válido se restam mais de 5 minutos (300000 ms)
     return streamTokenExpiry - currentTime > 300000
-  }
+  }, [streamToken, streamTokenExpiry]);
 
-  // Função para limpar o cache do token de stream
-  const clearStreamTokenCache = () => {
-    console.log('Limpando cache do token de stream')
-    setStreamToken(null)
-    setStreamTokenExpiry(null)
-  }
-
-  // Iniciar monitoramento de token quando usuário estiver autenticado
-  useEffect(() => {
-    if (isAuthenticated && token) {
-      // Verificar se o token precisa ser renovado imediatamente
-      if (isTokenExpiringSoon(token)) {
-        console.log('Token próximo do vencimento na inicialização, renovando...')
-        refreshToken()
-      }
-      
-      // Iniciar monitoramento automático
-      startTokenMonitoring()
-    } else {
-      // Parar monitoramento se não estiver autenticado
-      stopTokenMonitoring()
-    }
-
-    // Cleanup ao desmontar
-    return () => {
-      stopTokenMonitoring()
-    }
-  }, [isAuthenticated, token, refreshToken, startTokenMonitoring, stopTokenMonitoring])
-
-  const checkStreamStatus = async (): Promise<{ online: boolean; status: string }> => {
-    if (!token) {
-      throw new Error('Usuário não autenticado')
-    }
-
-    try {
-      const response = await fetch('/api/stream/status', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-
-      if (!response.ok) {
-        throw new Error('Falha ao verificar status da stream')
-      }
-
-      const data = await response.json()
-      return { online: data.online, status: data.status }
-    } catch (error) {
-      console.error('Erro ao verificar status da stream:', error)
-      return { online: false, status: 'error' }
-    }
-  }
-
-  const getStreamToken = async (): Promise<string | null> => {
+  const getStreamToken = useCallback(async (): Promise<string | null> => {
     if (!token) {
       throw new Error('Usuário não autenticado')
     }
@@ -264,7 +126,7 @@ export const AuthProvider = memo(({ children }: AuthProviderProps) => {
       console.error('Erro ao obter token de stream:', error)
       return null
     }
-  }
+  }, [token, streamToken, isStreamTokenValid])
 
   const value: AuthContextType = useMemo(() => ({
     user,
@@ -273,11 +135,8 @@ export const AuthProvider = memo(({ children }: AuthProviderProps) => {
     isLoading,
     login,
     logout,
-    checkStreamStatus,
     getStreamToken,
-    refreshToken,
-    clearStreamTokenCache
-  }), [user, token, isAuthenticated, isLoading, login, logout, checkStreamStatus, getStreamToken, refreshToken, clearStreamTokenCache])
+  }), [user, token, isAuthenticated, isLoading, login, logout, getStreamToken])
 
   return (
     <AuthContext.Provider value={value}>

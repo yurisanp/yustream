@@ -61,7 +61,7 @@ export const usePlayerDimensions = () => {
       }
 
       // Evitar cálculos desnecessários se as dimensões não mudaram significativamente
-      const threshold = 5; // pixels
+      const threshold = 20; // Aumentado para 20px para reduzir re-renders
       const currentDimensions = {
         width: finalWidth,
         height: finalHeight,
@@ -88,7 +88,7 @@ export const usePlayerDimensions = () => {
     }
 
     // Debounce mais agressivo em mobile para economizar bateria
-    const debounceTime = deviceType.isMobile ? 250 : 150;
+    const debounceTime = deviceType.isMobile ? 500 : 300; // Aumentado para reduzir cálculos
 
     resizeTimeoutRef.current = setTimeout(() => {
       calculateDimensions();

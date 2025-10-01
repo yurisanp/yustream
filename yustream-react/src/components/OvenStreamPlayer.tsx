@@ -7,15 +7,12 @@ import {
 	Button,
 	IconButton,
 	Chip,
-	CircularProgress,
 	Paper,
 	useMediaQuery,
 	useTheme,
 	Stack,
 } from "@mui/material";
 import {
-	Wifi,
-	WifiOff,
 	ErrorOutline,
 	Logout,
 	Settings,
@@ -25,6 +22,7 @@ import {
 import { useAuth } from "../hooks/useAuth";
 import { useStreamPlayer } from "../hooks/useStreamPlayer";
 import { usePlayerDimensions } from "../hooks/usePlayerDimensions";
+import { StreamStatusChip, LoadingChip, StatusIcon } from "./MemoizedComponents";
 
 interface OvenStreamPlayerProps {
 	showToast: (message: string, type: "success" | "error" | "info") => void;
@@ -49,10 +47,7 @@ const OvenStreamPlayer = memo(
 		isMobile,
 		isTablet,
 		isDesktop: !isMobile && !isTablet,
-		screenSize: {
-			width: window.innerWidth,
-			height: window.innerHeight
-		}
+		// Remover screenSize para evitar re-renders desnecessários
 	}), [isMobile, isTablet]);
 
 		// Refs
@@ -108,20 +103,9 @@ const OvenStreamPlayer = memo(
 
 		// Funções de callback para ações do usuário - memoizadas para performance
 
-		const statusIconComponent = useMemo(() => {
-			switch (status) {
-				case "connecting":
-					return <CircularProgress size={24} color="primary" />;
-				case "playing":
-					return <Wifi color="success" />;
-				case "offline":
-					return <ErrorOutline color="warning" />;
-				case "error":
-					return <WifiOff color="error" />;
-				default:
-					return <Wifi color="action" />;
-			}
-		}, [status]);
+		const statusIconComponent = useMemo(() => (
+			<StatusIcon status={status} />
+		), [status]);
 
 		const statusText = useMemo(() => {
 			switch (status) {
@@ -158,18 +142,18 @@ const OvenStreamPlayer = memo(
 			}
 		}, [status]);
 
-		const handleLogout = () => {
+		const handleLogout = useCallback(() => {
 			logout();
 			showToastRef.current("Logout realizado com sucesso", "info");
-		};
+		}, [logout]);
 
-		const handleAdminPanel = () => {
+		const handleAdminPanel = useCallback(() => {
 			onNavigateToAdmin();
-		};
+		}, [onNavigateToAdmin]);
 
-		const handleStremioConfig = () => {
+		const handleStremioConfig = useCallback(() => {
 			onNavigateToStremio();
-		};
+		}, [onNavigateToStremio]);
 
 		return (
 			<Box
@@ -245,40 +229,15 @@ const OvenStreamPlayer = memo(
 									/>
 								)}
 
-								{/* Status da Stream - sempre visível */}
-								<Chip
-									icon={
-										streamStatus.isOnline ? (
-											<Wifi color="success" />
-										) : (
-											<WifiOff color="error" />
-										)
-									}
-									label={
-										deviceInfo.isMobile
-											? streamStatus.isOnline
-												? "Online"
-												: "Offline"
-											: streamStatus.isOnline
-											? "Stream Online"
-											: "Stream Offline"
-									}
-									color={streamStatus.isOnline ? "success" : "error"}
-									size="small"
-									variant="outlined"
-									sx={{ fontSize: { xs: "0.7rem", sm: "0.75rem" } }}
-								/>
+							{/* Status da Stream - sempre visível - Componente Memoizado */}
+							<StreamStatusChip 
+								isOnline={streamStatus.isOnline} 
+								isMobile={deviceInfo.isMobile} 
+							/>
 
-								{streamStatus.isLoading && (
-									<Chip
-										icon={<CircularProgress size={16} color="primary" />}
-										label={deviceInfo.isMobile ? "..." : "Verificando..."}
-										color="info"
-										size="small"
-										variant="outlined"
-										sx={{ fontSize: { xs: "0.7rem", sm: "0.75rem" } }}
-									/>
-								)}
+							{streamStatus.isLoading && (
+								<LoadingChip isMobile={deviceInfo.isMobile} />
+							)}
 							</Stack>
 						</Box>
 

@@ -21,7 +21,7 @@ interface UseStreamStatusOptions {
 
 export const useStreamStatus = (options: UseStreamStatusOptions = {}) => {
   const {
-    checkInterval = 30000, // 30 segundos por padrão
+    checkInterval = 120000, // Aumentado para 2 minutos para reduzir carga
     onStatusChange,
     enablePeriodicCheck = false, // Por padrão, não fazer verificação periódica
     authToken

@@ -11,8 +11,5 @@ export interface AuthContextType {
   isLoading: boolean
   login: (token: string, user: User) => void
   logout: () => void
-  checkStreamStatus: () => Promise<{ online: boolean; status: string }>
   getStreamToken: () => Promise<string | null>
-  refreshToken: () => Promise<boolean>
-  clearStreamTokenCache: () => void
 }

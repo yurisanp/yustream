@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect, useMemo } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import OvenPlayer from "ovenplayer";
 import Hls from "hls.js";
 import { useStreamStatus } from "./useStreamStatus";
@@ -47,25 +47,21 @@ export const useStreamPlayer = ({
 	const initializationAbortRef = useRef<AbortController | null>(null);
 
 	// Constantes otimizadas para melhor performance
-	const MAX_RETRY_ATTEMPTS = 2; // Reduzido de 3 para 2
-	const MIN_RETRY_INTERVAL = 15000; // Aumentado para 15s
+	const MAX_RETRY_ATTEMPTS = 1; // Reduzido para 1 para evitar loops desnecessários
+	const MIN_RETRY_INTERVAL = 30000; // Aumentado para 30s para reduzir carga
 	const STREAM_ID = "live";
 
-	// Detectar dispositivo para otimizações específicas
-	const deviceType = useMemo(() => {
-		const userAgent = navigator.userAgent.toLowerCase();
-		const isMobile =
-			/android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(
-				userAgent
-			);
-		const isTV =
-			/smart-tv|smarttv|tv/i.test(userAgent) || window.innerWidth > 1920;
-		return { isMobile, isTV };
-	}, []);
+	// Detectar dispositivo para otimizações específicas (removido pois não é usado)
+	// const deviceType = useMemo(() => {
+	//   const userAgent = navigator.userAgent.toLowerCase();
+	//   const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+	//   const isTV = /smart-tv|smarttv|tv/i.test(userAgent) || window.innerWidth > 1920;
+	//   return { isMobile, isTV };
+	// }, []);
 
 	// Hook para verificar status da stream - SEM verificação periódica
 	const streamStatus = useStreamStatus({
-		checkInterval: 30000, // Intervalo para caso seja habilitado
+		checkInterval: 60000, // Aumentado para 60s para reduzir carga
 		onStatusChange: onStreamOnlineChange,
 		enablePeriodicCheck: false, // Desabilitar verificação periódica por padrão
 		authToken: currentToken || undefined, // Passar o token atual para autenticação
@@ -108,7 +104,7 @@ export const useStreamPlayer = ({
 
 			return baseConfig;
 		},
-		[deviceType]
+		[] // Removido deviceType da dependência pois é estável
 	);
 
 	const updateStatus = useCallback(

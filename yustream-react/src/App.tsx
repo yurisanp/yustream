@@ -8,16 +8,11 @@ import StremioConfig from './components/StremioConfig'
 import AdminScreen from './components/AdminScreen'
 import { AuthProvider } from './contexts/AuthContextProvider'
 import { useAuth } from './hooks/useAuth'
-
-export interface ToastMessage {
-  message: string
-  type: 'success' | 'error' | 'info'
-  id: number
-}
+import { useOptimizedToast } from './hooks/useOptimizedToast'
 
 const AppContent = memo(() => {
   const { isAuthenticated, isLoading, login, user } = useAuth()
-  const [toasts, setToasts] = useState<ToastMessage[]>([])
+  const { toasts, showToast, removeToast } = useOptimizedToast()
   const [currentPage, setCurrentPage] = useState<'main' | 'stremio-config' | 'admin'>('main')
 
   // Otimizar detecção de rota com useMemo para evitar recálculos desnecessários
@@ -29,7 +24,7 @@ const AppContent = memo(() => {
       isAdmin: path === '/admin',
       isMain: path === '/' || (!path.startsWith('/configure') && !path.startsWith('/admin'))
     }
-  }, [])
+  }, [currentPage]) // Dependência otimizada
 
   // Detectar rota atual com startTransition para não bloquear UI
   useEffect(() => {
@@ -44,29 +39,7 @@ const AppContent = memo(() => {
     })
   }, [routeInfo])
 
-  const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'info') => {
-    // Usar timestamp mais específico e um número aleatório para garantir unicidade
-    const id = Date.now() + Math.random()
-    const toast: ToastMessage = { message, type, id }
-    
-    // Usar startTransition para não bloquear a UI durante updates de toast
-    startTransition(() => {
-      setToasts(prev => [...prev, toast])
-    })
-    
-    // Remove toast após 4 segundos com startTransition
-    setTimeout(() => {
-      startTransition(() => {
-        setToasts(prev => prev.filter(t => t.id !== id))
-      })
-    }, 4000)
-  }, [])
-
-  const removeToast = useCallback((id: number) => {
-    startTransition(() => {
-      setToasts(prev => prev.filter(t => t.id !== id))
-    })
-  }, [])
+  // Toast functions are now provided by useOptimizedToast hook
 
   const handleBackToMain = useCallback(() => {
       setCurrentPage('main')
