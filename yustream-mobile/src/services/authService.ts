@@ -1,8 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 import { AuthUser, LoginCredentials } from '../types';
 
-const AUTH_TOKEN_KEY = '@yustream_auth_token';
-const USER_DATA_KEY = '@yustream_user_data';
+const AUTH_TOKEN_KEY = '@yustream_auth_token_app';
+const USER_DATA_KEY = '@yustream_user_data_app';
 
 class AuthService {
   private baseUrl: string;
@@ -66,7 +67,16 @@ class AuthService {
   async logout(): Promise<{ success: boolean; error?: string }> {
     try {
       console.log('[AuthService] Fazendo logout...');
-      await AsyncStorage.multiRemove([AUTH_TOKEN_KEY, USER_DATA_KEY]);
+      
+      if (Platform.OS === 'web') {
+        // No web, remover itens individualmente para maior compatibilidade
+        await AsyncStorage.removeItem(AUTH_TOKEN_KEY);
+        await AsyncStorage.removeItem(USER_DATA_KEY);
+      } else {
+        // No mobile, usar multiRemove para melhor performance
+        await AsyncStorage.multiRemove([AUTH_TOKEN_KEY, USER_DATA_KEY]);
+      }
+      
       console.log('[AuthService] Logout realizado com sucesso');
       return { success: true };
     } catch (error) {
@@ -216,6 +226,7 @@ class AuthService {
       description: string;
       priority: number;
       url: string;
+      url_nossl: string;
       active: boolean;
       state?: string;
       uptime?: number;
@@ -276,10 +287,6 @@ class AuthService {
         console.log('[AuthService] Fallback para configuração padrão');
         return this.getDefaultStreamSources(streamToken);
       }
-
-      const hostname = this.baseUrl.replace(/^https?:\/\//, '');
-      const protocol = this.baseUrl.startsWith('https') ? 'https' : 'http';
-      const port = this.baseUrl.startsWith('https') ? '8443' : '8080';
       
       const tokenParam = `?token=${streamToken}`;
       const sources: Array<{ label: string; uri: string; type: 'hls'; quality?: string }> = [];
@@ -289,8 +296,7 @@ class AuthService {
       // Adicionar qualidades individuais ativas
       const activeQualities = qualitiesData.qualities.filter(q => q.active);
       for (const quality of activeQualities) {
-        const qualityUrl = `${protocol}://${hostname}:${port}/${quality.application}/${quality.streamName}/${quality.streamName}.m3u8${tokenParam}`;
-        
+        const qualityUrl = `${quality.url}${tokenParam}`;
         sources.push({
           label: quality.displayName,
           uri: qualityUrl,

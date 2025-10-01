@@ -28,8 +28,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { useStreamPlayer } from "../hooks/useStreamPlayer";
 import { useFullscreenPlayer } from "../hooks/useFullscreenPlayer";
 import PlayerControls from "./PlayerControls";
+import ConfirmDialog from "./ConfirmDialog";
 import { StreamStatus, StreamPlayerOptions } from "../types";
 import { useAuth } from "../contexts/AuthContext";
+import { useConfirmDialog } from "../hooks/useConfirmDialog";
 import { useEvent } from "expo";
 
 interface StreamPlayerProps extends StreamPlayerOptions {
@@ -78,7 +80,6 @@ const StreamPlayer = memo<StreamPlayerProps>(
 			getStreamToken,
 		});
 
-		console.log(streamStatus);
 		// Função para mostrar informações sobre qualidades
 		const showQualityDetails = useCallback(() => {
 			const { stats, activeQualities } = streamQualities;
@@ -107,33 +108,41 @@ const StreamPlayer = memo<StreamPlayerProps>(
 		// Hook de autenticação para logout
 		const { logout } = useAuth();
 
+		// Hook para diálogos de confirmação
+		const { dialogState, showConfirmDialog } = useConfirmDialog();
+
 		// Função para logout
 		const handleLogout = useCallback(async () => {
-			Alert.alert(
-				"Sair da Conta",
-				"Tem certeza que deseja sair da sua conta?",
-				[
-					{
-						text: "Cancelar",
-						style: "cancel",
-					},
-					{
-						text: "Sair",
-						style: "destructive",
-						onPress: async () => {
-							try {
-								await logout();
-								// O AuthContext automaticamente redireciona para LoginScreen
-								// quando isAuthenticated se torna false
-							} catch (error) {
-								console.error("Erro no logout:", error);
-								Alert.alert("Erro", "Erro inesperado ao fazer logout");
-							}
-						},
-					},
-				]
+			showConfirmDialog(
+				{
+					title: "Sair da Conta",
+					message: "Tem certeza que deseja sair da sua conta?",
+					confirmText: "Sair",
+					cancelText: "Cancelar",
+					confirmStyle: "destructive",
+				},
+				async () => {
+					try {
+						await logout();
+						// O AuthContext automaticamente redireciona para LoginScreen
+						// quando isAuthenticated se torna false
+					} catch (error) {
+						console.error("Erro no logout:", error);
+						// Em caso de erro, mostrar outro diálogo
+						showConfirmDialog(
+							{
+								title: "Erro",
+								message: "Erro inesperado ao fazer logout",
+								confirmText: "OK",
+								cancelText: "",
+							},
+							() => {},
+							() => {}
+						);
+					}
+				}
 			);
-		}, [logout]);
+		}, [logout, showConfirmDialog]);
 
 		// Hook do fullscreen
 		const {
@@ -143,6 +152,8 @@ const StreamPlayer = memo<StreamPlayerProps>(
 			toggleFullscreen,
 			toggleControls,
 			setShowControls: setShowPlayerControls,
+			containerRef,
+			isWebPlatform,
 		} = useFullscreenPlayer();
 
 		// Qualidades disponíveis baseadas nas fontes
@@ -179,7 +190,9 @@ const StreamPlayer = memo<StreamPlayerProps>(
 				uri: selectedSource.uri,
 				headers: {
 					"User-Agent": "YuStream Mobile/1.0",
+					"Access-Control-Allow-Origin": "*"
 				},
+				contentType: "hls"
 			};
 		}, [streamSources, currentQuality]);
 
@@ -289,11 +302,16 @@ const StreamPlayer = memo<StreamPlayerProps>(
 
 		// Handler para retry manual
 		const handleRetryPress = useCallback(() => {
-			Alert.alert("Tentar Novamente", "Deseja tentar reconectar à stream?", [
-				{ text: "Cancelar", style: "cancel" },
-				{ text: "Sim", onPress: handleManualRetry },
-			]);
-		}, [handleManualRetry]);
+			showConfirmDialog(
+				{
+					title: "Tentar Novamente",
+					message: "Deseja tentar reconectar à stream?",
+					confirmText: "Sim",
+					cancelText: "Cancelar",
+				},
+				handleManualRetry
+			);
+		}, [handleManualRetry, showConfirmDialog]);
 
 		const renderLogoutButton = () => (
 			<TouchableOpacity
@@ -457,6 +475,16 @@ const StreamPlayer = memo<StreamPlayerProps>(
 			);
 		};
 
+		// Configurar referência para fullscreen web
+		const setContainerRef = useCallback((element: any) => {
+			if (isWebPlatform && containerRef && element) {
+				// No web, o elemento é um HTMLElement
+				if (Platform.OS === 'web') {
+					(containerRef as any).current = element;
+				}
+			}
+		}, [isWebPlatform, containerRef]);
+
 		return (
 			<View
 				style={[
@@ -464,6 +492,7 @@ const StreamPlayer = memo<StreamPlayerProps>(
 					style,
 					isFullscreen && styles.containerFullscreen,
 				]}
+				ref={isWebPlatform ? setContainerRef : undefined}
 			>
 				{showStatusBar && !isFullscreen && (
 					<StatusBar style="light" backgroundColor="transparent" />
@@ -498,6 +527,18 @@ const StreamPlayer = memo<StreamPlayerProps>(
 
 				{/* Conteúdo principal */}
 				{renderContent()}
+
+				{/* Diálogo de confirmação */}
+				<ConfirmDialog
+					visible={dialogState.visible}
+					title={dialogState.title}
+					message={dialogState.message}
+					confirmText={dialogState.confirmText}
+					cancelText={dialogState.cancelText}
+					confirmStyle={dialogState.confirmStyle}
+					onConfirm={dialogState.onConfirm}
+					onCancel={dialogState.onCancel}
+				/>
 			</View>
 		);
 	}
@@ -520,7 +561,7 @@ const styles = StyleSheet.create({
 	},
 	statusBar: {
 		position: "absolute",
-		top: Platform.OS === "ios" ? 50 : 30,
+		top: Platform.OS === "ios" ? 50 : Platform.OS === 'web' ? 2 : 30,
 		left: 8,
 		right: 8,
 		flexDirection: "row",

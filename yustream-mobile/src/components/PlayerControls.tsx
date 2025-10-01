@@ -111,19 +111,21 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
 	const handleFullscreenToggle = useCallback(async (e: GestureResponderEvent) => {
     e.stopPropagation();
 		try {
-			if (isFullscreen) {
-				// Sair do fullscreen
-				await ScreenOrientation.lockAsync(
-					ScreenOrientation.OrientationLock.PORTRAIT_UP
-				);
-			} else {
-				// Entrar em fullscreen
-				await ScreenOrientation.unlockAsync();
+			if (Platform.OS !== 'web') {
+				// Lógica de orientação apenas para mobile
+				if (isFullscreen) {
+					await ScreenOrientation.lockAsync(
+						ScreenOrientation.OrientationLock.PORTRAIT_UP
+					);
+				} else {
+					await ScreenOrientation.unlockAsync();
+				}
 			}
+			// Chamar o toggle do hook que já gerencia web/mobile
 			onFullscreenToggle();
 			resetHideTimer();
 		} catch (error) {
-			console.error("Erro ao alterar orientação:", error);
+			console.error("Erro ao alterar fullscreen:", error);
 		}
 	}, [isFullscreen, onFullscreenToggle, resetHideTimer]);
 
@@ -381,7 +383,7 @@ const styles = StyleSheet.create({
 		backgroundColor: "rgba(0, 0, 0, 0.3)",
 		justifyContent: "space-between",
 		paddingHorizontal: 16,
-		paddingVertical: 20,
+		paddingVertical: Platform.OS != 'web' ? 20 : 0,
 		flexDirection: "column",
 	},
 	controlsContainerFullscreen: {

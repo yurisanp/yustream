@@ -126,10 +126,10 @@ const AppContent = memo(() => {
 		return null; // A splash screen ficará visível
 	}
 
-	return (
-		<SafeAreaProvider>
-			<GestureHandlerRootView style={{ flex: 1 }}>
-				<View style={styles.container}>
+	// Renderizar com ou sem SafeAreaProvider baseado na plataforma
+	const renderContent = () => (
+		<GestureHandlerRootView style={{ flex: 1 }}>
+			<View style={styles.container}>
 					{/* Status Bar */}
 					<StatusBar
 						barStyle="light-content"
@@ -160,8 +160,19 @@ const AppContent = memo(() => {
 							onHide={() => hideToast(toast.id)}
 						/>
 					))}
-				</View>
-			</GestureHandlerRootView>
+			</View>
+		</GestureHandlerRootView>
+	);
+
+	// No web, não usar SafeAreaProvider para evitar espaçamentos desnecessários
+	if (Platform.OS === 'web') {
+		return renderContent();
+	}
+
+	// No mobile, usar SafeAreaProvider
+	return (
+		<SafeAreaProvider>
+			{renderContent()}
 		</SafeAreaProvider>
 	);
 });

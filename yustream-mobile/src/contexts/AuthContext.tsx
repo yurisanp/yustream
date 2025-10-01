@@ -73,12 +73,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = useCallback(async () => {
     try {
       console.log('[AuthContext] Fazendo logout...');
-      await authService.logout();
-      setUser(null);
-      setIsAuthenticated(false);
-      console.log('[AuthContext] Logout realizado com sucesso');
+      const result = await authService.logout();
+      
+      if (result.success) {
+        setUser(null);
+        setIsAuthenticated(false);
+        console.log('[AuthContext] Logout realizado com sucesso');
+      } else {
+        console.error('[AuthContext] Erro no logout:', result.error);
+        // Mesmo com erro, limpar o estado local
+        setUser(null);
+        setIsAuthenticated(false);
+      }
     } catch (error) {
       console.error('[AuthContext] Erro no logout:', error);
+      // Em caso de erro, ainda assim limpar o estado local
+      setUser(null);
+      setIsAuthenticated(false);
     }
   }, []);
 

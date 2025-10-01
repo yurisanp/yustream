@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { Dimensions, StatusBar, Platform } from 'react-native';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { useKeepAwake } from 'expo-keep-awake';
+import { useWebFullscreen } from './useWebFullscreen';
 
 interface FullscreenPlayerState {
   isFullscreen: boolean;
@@ -24,6 +25,9 @@ export const useFullscreenPlayer = () => {
 
   const [showControls, setShowControls] = useState(true);
   const orientationSubscription = useRef<ReturnType<typeof ScreenOrientation.addOrientationChangeListener> | null>(null);
+  
+  // Hook para fullscreen web
+  const webFullscreen = useWebFullscreen();
 
   /**
    * Atualizar dimensões quando a tela rotacionar
@@ -40,7 +44,12 @@ export const useFullscreenPlayer = () => {
    * Configurar listeners de orientação
    */
   useEffect(() => {
-    // Listener para mudanças de orientação
+    // No web, usar o hook específico para web
+    if (Platform.OS === 'web') {
+      return;
+    }
+
+    // Listener para mudanças de orientação (apenas mobile)
     orientationSubscription.current = ScreenOrientation.addOrientationChangeListener((event) => {
       console.log('[FullscreenPlayer] Orientação mudou:', event.orientationInfo.orientation);
       
@@ -81,34 +90,47 @@ export const useFullscreenPlayer = () => {
   }, [updateDimensions]);
 
   /**
+   * Sincronizar estado com web fullscreen
+   */
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      setState(prev => ({
+        ...prev,
+        isFullscreen: webFullscreen.isFullscreen,
+      }));
+    }
+  }, [webFullscreen.isFullscreen]);
+
+  /**
    * Entrar em modo fullscreen
    */
   const enterFullscreen = useCallback(async () => {
     try {
       console.log('[FullscreenPlayer] Entrando em fullscreen...');
       
-      // Desbloquear orientação para permitir rotação
-      await ScreenOrientation.unlockAsync();
-      
-      // Manter tela ativa - será gerenciado pelo componente pai
-      
-      // Forçar orientação landscape se necessário
-      const currentOrientation = await ScreenOrientation.getOrientationAsync();
-      if (currentOrientation === ScreenOrientation.Orientation.PORTRAIT_UP) {
-        await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
-      }
-      
-      setState(prev => ({ ...prev, isFullscreen: true }));
-      
-      // Esconder status bar no Android
-      if (Platform.OS === 'android') {
-        StatusBar.setHidden(true, 'fade');
+      if (Platform.OS === 'web') {
+        // Usar API do navegador para fullscreen
+        await webFullscreen.enterFullscreen();
+      } else {
+        // Lógica mobile original
+        await ScreenOrientation.unlockAsync();
+        
+        const currentOrientation = await ScreenOrientation.getOrientationAsync();
+        if (currentOrientation === ScreenOrientation.Orientation.PORTRAIT_UP) {
+          await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
+        }
+        
+        setState(prev => ({ ...prev, isFullscreen: true }));
+        
+        if (Platform.OS === 'android') {
+          StatusBar.setHidden(true, 'fade');
+        }
       }
       
     } catch (error) {
       console.error('[FullscreenPlayer] Erro ao entrar em fullscreen:', error);
     }
-  }, []);
+  }, [webFullscreen]);
 
   /**
    * Sair do modo fullscreen
@@ -117,33 +139,37 @@ export const useFullscreenPlayer = () => {
     try {
       console.log('[FullscreenPlayer] Saindo do fullscreen...');
       
-      // Bloquear em portrait
-      await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
-      
-      // Permitir que a tela desligue - será gerenciado pelo componente pai
-      
-      setState(prev => ({ ...prev, isFullscreen: false }));
-      
-      // Mostrar status bar
-      if (Platform.OS === 'android') {
-        StatusBar.setHidden(false, 'fade');
+      if (Platform.OS === 'web') {
+        // Usar API do navegador para sair do fullscreen
+        await webFullscreen.exitFullscreen();
+      } else {
+        // Lógica mobile original
+        await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+        
+        setState(prev => ({ ...prev, isFullscreen: false }));
+        
+        if (Platform.OS === 'android') {
+          StatusBar.setHidden(false, 'fade');
+        }
       }
       
     } catch (error) {
       console.error('[FullscreenPlayer] Erro ao sair do fullscreen:', error);
     }
-  }, []);
+  }, [webFullscreen]);
 
   /**
    * Toggle fullscreen
    */
   const toggleFullscreen = useCallback(async () => {
-    if (state.isFullscreen) {
+    const currentFullscreenState = Platform.OS === 'web' ? webFullscreen.isFullscreen : state.isFullscreen;
+    
+    if (currentFullscreenState) {
       await exitFullscreen();
     } else {
       await enterFullscreen();
     }
-  }, [state.isFullscreen, enterFullscreen, exitFullscreen]);
+  }, [state.isFullscreen, webFullscreen.isFullscreen, enterFullscreen, exitFullscreen]);
 
   /**
    * Toggle controles
@@ -184,7 +210,7 @@ export const useFullscreenPlayer = () => {
 
   return {
     // Estados
-    isFullscreen: state.isFullscreen,
+    isFullscreen: Platform.OS === 'web' ? webFullscreen.isFullscreen : state.isFullscreen,
     orientation: state.orientation,
     dimensions: state.dimensions,
     showControls,
@@ -203,5 +229,9 @@ export const useFullscreenPlayer = () => {
                  state.orientation === ScreenOrientation.Orientation.LANDSCAPE_RIGHT,
     isPortrait: state.orientation === ScreenOrientation.Orientation.PORTRAIT_UP || 
                 state.orientation === ScreenOrientation.Orientation.PORTRAIT_DOWN,
+    
+    // Web específico
+    containerRef: webFullscreen.containerRef,
+    isWebPlatform: webFullscreen.isWebPlatform,
   };
 };
