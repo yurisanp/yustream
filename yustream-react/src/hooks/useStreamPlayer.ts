@@ -78,7 +78,7 @@ export const useStreamPlayer = ({
 
 			// Configurações otimizadas baseadas no tipo de dispositivo
 			const baseConfig = {
-				autoStart: true,
+				autoStart: false,
 				autoFallback: true,
 				controls: true,
 				loop: false,
@@ -89,15 +89,11 @@ export const useStreamPlayer = ({
 						label: "Baixa latência",
 						type: "llhls" as const,
 						file: `${httpProtocol}//${hostname}:${httpPort}/live/${STREAM_ID}/abr.m3u8${tokenParam}`,
-						lowLatency: true,
-						overrideNative: true
 					},
 					{
 						label: "Padrão",
 						type: "hls" as const,
 						file: `${httpProtocol}//${hostname}:${httpPort}/live/${STREAM_ID}/ts:abr.m3u8${tokenParam}`,
-						lowLatency: false,
-						overrideNative: true
 					},
 				],
 			};
