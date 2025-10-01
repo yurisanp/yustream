@@ -12,6 +12,19 @@ services:
     environment:
       - OME_HOST_IP=0.0.0.0
     network_mode: host
+    # ports:
+    #   # RTMP port for OBS streaming
+    #   - "1935:1935"
+    #   # HLS/DASH HTTP port
+    #   - "8080:8080"
+    #   # HLS/DASH HTTP port
+    #   - "8081:8081"
+    #   # HLS/DASH HTTPS port
+    #   - "8443:8443"
+    #   # WebRTC UDP ports for ICE
+    #   - "9998:9998/udp"
+    # networks:
+    #   - streaming-network
 
   mongodb:
     image: mongo:7
@@ -43,6 +56,7 @@ services:
       - WEBHOOK_SECRET=yustream-webhook-secret-2024
       # Configurações do OvenMediaEngine API
       - OME_HOSTNAME=host.docker.internal
+      # - OME_HOSTNAME=ovenmediaengine
       - OME_API_PORT=8081
       - OME_VHOST=default
       - OME_APP=live
@@ -76,31 +90,6 @@ services:
     networks:
       - streaming-network
 
-  vnc-proxy:
-    build: ./vnc-proxy-service
-    container_name: yustream-vnc-proxy
-    restart: unless-stopped
-    ports:
-      - "3003:3003"
-      - "6080-6180:6080-6180"  # Portas WebSocket para VNC
-    environment:
-      - NODE_ENV=production
-      - VNC_PROXY_PORT=3003
-      - JWT_SECRET=yustream-jwt-secret-change-in-production-2024
-      - AUTH_SERVER_URL=http://yustream-auth:3001
-      - VNC_REGISTER_TOKEN=yustream-vnc-register-token-change-in-production
-    volumes:
-      - ./vnc-proxy-service:/app
-      - /app/node_modules
-      - vnc_uploads:/app/uploads
-      - vnc_logs:/app/logs
-    depends_on:
-      - yustream-auth
-    networks:
-      - streaming-network
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-
   portainer:
     image: portainer/portainer-ce:latest
     container_name: yustream-portainer
@@ -110,15 +99,7 @@ services:
       - portainer_data:/data
     networks:
       - streaming-network
-  websockify:
-    image: jwnmulder/websockify
-    container_name: yustream-websockify
-    command: 5901 host.docker.internal:5900
-    ports:
-      - "5901:5901"
-    restart: unless-stopped
-    networks:
-      - streaming-network
+
   nginx:
     image: nginx:alpine
     container_name: nginx-proxy
@@ -138,7 +119,6 @@ services:
       - ovenmediaengine
       - yustream-auth
       - stremio-addon
-      - vnc-proxy
       - portainer
     networks:
       - streaming-network
@@ -149,5 +129,3 @@ networks:
 
 volumes:
   portainer_data:
-  vnc_uploads:
-  vnc_logs:

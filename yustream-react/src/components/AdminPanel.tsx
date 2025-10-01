@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Users, Plus, Edit, Trash2, Search, UserCheck, UserX, Shield, Eye, EyeOff, Video, Monitor } from 'lucide-react'
+import { Users, Plus, Edit, Trash2, Search, UserCheck, UserX, Shield, Eye, EyeOff, Video } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import ABRControl from './ABRControl'
-import VNCViewer from './VNCViewer'
 import './AdminPanel.css'
 
 interface User {
@@ -34,7 +33,7 @@ interface AdminPanelProps {
 
 const AdminPanel = ({ showToast, onClose }: AdminPanelProps) => {
   const { token } = useAuth()
-  const [activeTab, setActiveTab] = useState<'users' | 'abr' | 'vnc'>('users')
+  const [activeTab, setActiveTab] = useState<'users' | 'abr'>('users')
   const [users, setUsers] = useState<User[]>([])
   const [stats, setStats] = useState<UserStats | null>(null)
   const [loading, setLoading] = useState(true)
@@ -250,10 +249,8 @@ const AdminPanel = ({ showToast, onClose }: AdminPanelProps) => {
           <h1>
             {activeTab === 'users' ? (
               <><Users size={24} /> Gerenciamento de Usuários</>
-            ) : activeTab === 'abr' ? (
-              <><Video size={24} /> Controle ABR</>
             ) : (
-              <><Monitor size={24} /> Controle VNC Remoto</>
+              <><Video size={24} /> Controle ABR</>
             )}
           </h1>
         </div>
@@ -285,13 +282,6 @@ const AdminPanel = ({ showToast, onClose }: AdminPanelProps) => {
         >
           <Video size={16} />
           Controle ABR
-        </button>
-        <button 
-          className={`tab-button ${activeTab === 'vnc' ? 'active' : ''}`}
-          onClick={() => setActiveTab('vnc')}
-        >
-          <Monitor size={16} />
-          VNC Remoto
         </button>
       </div>
 
@@ -583,10 +573,8 @@ const AdminPanel = ({ showToast, onClose }: AdminPanelProps) => {
         </div>
       )}
         </>
-      ) : activeTab === 'abr' ? (
-        <ABRControl showToast={showToast} />
       ) : (
-        <VNCViewer showToast={showToast} />
+        <ABRControl showToast={showToast} />
       )}
     </div>
   )
