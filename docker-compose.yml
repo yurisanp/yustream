@@ -6,9 +6,9 @@ services:
     volumes:
       - ./ome-config:/opt/ovenmediaengine/bin/origin_conf
       - ./ome-logs:/var/log/ovenmediaengine
-      - /etc/letsencrypt/live/yustream.yurisp.com.br/cert.pem:/opt/ovenmediaengine/bin/ssl_conf/cert.pem
-      - /etc/letsencrypt/live/yustream.yurisp.com.br/privkey.pem:/opt/ovenmediaengine/bin/ssl_conf/privkey.pem
-      - /etc/letsencrypt/live/yustream.yurisp.com.br/chain.pem:/opt/ovenmediaengine/bin/ssl_conf/chain.pem
+      - /ssl/letsencrypt/live/yustream.yurisp.com.br/cert.pem:/opt/ovenmediaengine/bin/ssl_conf/cert.pem
+      - /ssl/letsencrypt/live/yustream.yurisp.com.br/privkey.pem:/opt/ovenmediaengine/bin/ssl_conf/privkey.pem
+      - /ssl/letsencrypt/live/yustream.yurisp.com.br/chain.pem:/opt/ovenmediaengine/bin/ssl_conf/chain.pem
     environment:
       - OME_HOST_IP=0.0.0.0
     network_mode: host
@@ -113,7 +113,7 @@ services:
       - ./yustream-react/dist:/usr/share/nginx/html
       - ./yustream-smarttv/dist/universal:/usr/share/nginx/html/smarttv
       - ./yustream-mobile/dist:/usr/share/nginx/html/mobile
-      - /etc/letsencrypt:/etc/letsencrypt
+      - /ssl/letsencrypt:/etc/letsencrypt
       - ./ssl/certbot/www:/var/www/certbot
     depends_on:
       - ovenmediaengine
