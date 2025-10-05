@@ -5,6 +5,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./ome-config:/opt/ovenmediaengine/bin/origin_conf
+      - ome_mux_data:/opt/ovenmediaengine/bin/origin_conf/mux_files
       - ./ome-logs:/var/log/ovenmediaengine
       - /ssl/letsencrypt/live/yustream.yurisp.com.br/cert.pem:/opt/ovenmediaengine/bin/ssl_conf/cert.pem
       - /ssl/letsencrypt/live/yustream.yurisp.com.br/privkey.pem:/opt/ovenmediaengine/bin/ssl_conf/privkey.pem
@@ -35,7 +36,7 @@ services:
       - MONGO_INITDB_ROOT_PASSWORD=yustream123
       - MONGO_INITDB_DATABASE=yustream
     volumes:
-      - ./mongodb_data:/data/db
+      - mongodb_data:/data/db
       - ./mongo-init:/docker-entrypoint-initdb.d
     networks:
       - streaming-network
@@ -129,3 +130,5 @@ networks:
 
 volumes:
   portainer_data:
+  mongodb_data:
+  ome_mux_data:
