@@ -13,20 +13,20 @@ services:
       - /ssl/letsencrypt/live/yustream.yurisp.com.br/chain.pem:/opt/ovenmediaengine/bin/ssl_conf/chain.pem
     environment:
       - OME_HOST_IP=0.0.0.0
-    # network_mode: host
-    ports:
-      # RTMP port for OBS streaming
-      - "1935:1935"
-      # HLS/DASH HTTP port
-      - "8080:8080"
-      # HLS/DASH HTTP port
-      - "8081:8081"
-      # HLS/DASH HTTPS port
-      - "8443:8443"
-      # WebRTC UDP ports for ICE
-      - "9998:9998/udp"
-    networks:
-      - streaming-network
+    network_mode: host
+    # ports:
+    #   # RTMP port for OBS streaming
+    #   - "1935:1935"
+    #   # HLS/DASH HTTP port
+    #   - "8080:8080"
+    #   # HLS/DASH HTTP port
+    #   - "8081:8081"
+    #   # HLS/DASH HTTPS port
+    #   - "8443:8443"
+    #   # WebRTC UDP ports for ICE
+    #   - "9998:9998/udp"
+    # networks:
+    #   - streaming-network
 
   mongodb:
     image: mongo:7
@@ -57,8 +57,8 @@ services:
       - MONGODB_URI=mongodb://yustream:yustream123@mongodb:27017/yustream?authSource=admin
       - WEBHOOK_SECRET=yustream-webhook-secret-2024
       # Configurações do OvenMediaEngine API
-      # - OME_HOSTNAME=host.docker.internal
-      - OME_HOSTNAME=ovenmediaengine
+      - OME_HOSTNAME=host.docker.internal
+      # - OME_HOSTNAME=ovenmediaengine
       - OME_API_PORT=8081
       - OME_VHOST=default
       - OME_APP=live
@@ -102,6 +102,7 @@ services:
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf
       - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/conf.d/ssl.conf.production:/etc/nginx/conf.d/ssl.conf
       - ./yustream-react/dist:/usr/share/nginx/html
       - ./yustream-smarttv/dist/universal:/usr/share/nginx/html/smarttv
       - ./yustream-mobile/dist:/usr/share/nginx/html/mobile
