@@ -384,6 +384,28 @@ app.get("/stream/qualities", authenticateToken, async (req, res) => {
 			// Ordenar por prioridade (menor número = maior prioridade)
 			activeQualities.sort((a, b) => a.priority - b.priority);
 
+			let abr = {};
+
+			if (activeQualities.length > 0) {
+				abr = {
+					active: true,
+					url: `https://yustream.yurisp.com.br:8443/live/live/abr.m3u8`,
+					url_nossl: `http://72.60.243.188:8080/live/live/abr.m3u8`,
+					url_ts: `https://yustream.yurisp.com.br:8443/live/live/abr.m3u8`,
+					url_ts_nossl: `http://72.60.243.188:8080/live/live/ts:abr.m3u8`,
+					description: "Stream adaptativa com múltiplas qualidades",
+				};
+			} else {
+				abr = {
+					active: false,
+					url: null,
+					url_nossl: null,
+					url_ts: null,
+					url_ts_nossl: null,
+					description: "Stream adaptativa com múltiplas qualidades",
+				};
+			}
+
 			res.json({
 				qualities: activeQualities,
 				abr: {
