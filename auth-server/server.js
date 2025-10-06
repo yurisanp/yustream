@@ -408,11 +408,7 @@ app.get("/stream/qualities", authenticateToken, async (req, res) => {
 
 			res.json({
 				qualities: activeQualities,
-				abr: {
-					active: false,
-					url: null,
-					description: "Stream adaptativa com múltiplas qualidades",
-				},
+				abr: abr,
 				timestamp: new Date().toISOString(),
 				totalQualities: availableQualities.length,
 				activeQualities: activeQualities.filter((q) => q.active).length,
