@@ -111,7 +111,6 @@ services:
       - ovenmediaengine
       - yustream-auth
       - stremio-addon
-      - portainer
     networks:
       - streaming-network
 
