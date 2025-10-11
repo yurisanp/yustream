@@ -114,6 +114,14 @@ services:
       - stremio-addon
     networks:
       - streaming-network
+  redis:
+    image: "redis:5.0.7-alpine"
+    container_name: yustream-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
 
 networks:
   streaming-network:
@@ -122,3 +130,4 @@ networks:
 volumes:
   mongodb_data:
   ome_mux_data:
+  redis_data:
