@@ -141,7 +141,6 @@ app.get("/auth/verify", authenticateToken, (req, res) => {
 app.get("/stream/status", authenticateToken, async (req, res) => {
 	const streamName = process.env.OME_STREAM || "live";
 	try {
-		console.log(JSON.stringify(response, null, 4));
 		res.json({
 			online: true,
 			status: "online",
@@ -149,7 +148,7 @@ app.get("/stream/status", authenticateToken, async (req, res) => {
 			hasWebRTC: false,
 			hasLLHLS: true,
 			totalActiveStreams: 1,
-			streamDetails: response.response || null,
+			streamDetails: null,
 			timestamp: new Date().toISOString(),
 		});
 	} catch (error) {
