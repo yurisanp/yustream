@@ -226,206 +226,144 @@ app.get("/stream/token", authenticateToken, (req, res) => {
 // Rota para listar qualidades disponíveis
 app.get("/stream/qualities", authenticateToken, async (req, res) => {
 	try {
-		const vhostName = process.env.OME_VHOST || "default";
-		const appName = process.env.OME_APP || "live";
-		const streamName = process.env.OME_STREAM || "live";
+		const availableQualities = [
+			{
+				name: "Fonte",
+				application: "fonte",
+				streamName: "fonte",
+				displayName: "Fonte Original Baixa latencia",
+				description: "Qualidade original da fonte Baixa latencia",
+				priority: 1,
+				url: `https://yustream.yurisp.com.br:8443/live/live/fonte.m3u8`,
+				url_nossl: `http://72.60.243.188:8080/live/live/fonte.m3u8`,
+			},
+			{
+				name: "1080p",
+				application: "1080",
+				streamName: "1080",
+				displayName: "1080p Full HD Baixa latencia",
+				description: "Qualidade Full HD 1080p Baixa latencia",
+				priority: 2,
+				url: `https://yustream.yurisp.com.br:8443/live/live/1080.m3u8`,
+				url_nossl: `http://72.60.243.188:8080/live/live/1080.m3u8`,
+			},
+			{
+				name: "720p",
+				application: "720",
+				streamName: "720",
+				displayName: "720p HD Baixa latencia",
+				description: "Qualidade HD 720p Baixa latencia",
+				priority: 3,
+				url: `https://yustream.yurisp.com.br:8443/live/live/720.m3u8`,
+				url_nossl: `http://72.60.243.188:8080/live/live/720.m3u8`,
+			},
+			{
+				name: "480p",
+				application: "480",
+				streamName: "480",
+				displayName: "480 SD Baixa latencia",
+				description: "Qualidade SD 480 Baixa latencia",
+				priority: 4,
+				url: `https://yustream.yurisp.com.br:8443/live/live/480.m3u8`,
+				url_nossl: `http://72.60.243.188:8080/live/live/480.m3u8`,
+			},
+			{
+				name: "FonteDefault",
+				application: "fonte",
+				streamName: "fonte",
+				displayName: "Fonte Original",
+				description: "Qualidade original da fonte",
+				priority: 5,
+				url: `https://yustream.yurisp.com.br:8443/live/live/ts:fonte.m3u8`,
+				url_nossl: `http://72.60.243.188:8080/live/live/ts:fonte.m3u8`,
+			},
+			{
+				name: "1080pDefault",
+				application: "1080",
+				streamName: "1080",
+				displayName: "1080p Full HD",
+				description: "Qualidade Full HD 1080p",
+				priority: 6,
+				url: `https://yustream.yurisp.com.br:8443/live/live/ts:1080.m3u8`,
+				url_nossl: `http://72.60.243.188:8080/live/live/ts:1080.m3u8`,
+			},
+			{
+				name: "720pDefault",
+				application: "720",
+				streamName: "720",
+				displayName: "720p HD",
+				description: "Qualidade HD 720p",
+				priority: 7,
+				url: `https://yustream.yurisp.com.br:8443/live/live/ts:720.m3u8`,
+				url_nossl: `http://72.60.243.188:8080/live/live/ts:720.m3u8`,
+			},
+			{
+				name: "480pDefault",
+				application: "480",
+				streamName: "480",
+				displayName: "480p SD",
+				description: "Qualidade SD 480p",
+				priority: 8,
+				url: `https://yustream.yurisp.com.br:8443/live/live/ts:480.m3u8`,
+				url_nossl: `http://72.60.243.188:8080/live/live/ts:480.m3u8`,
+			},
+		];
 
-		// URL da API REST do OvenMediaEngine para verificar streams ativas
-		const streamUrl = `/v1/vhosts/${vhostName}/apps/${appName}/multiplexChannels/${streamName}`;
-		const response = await makeOMERequest(streamUrl);
+		// Verificar quais qualidades estão ativas
+		const activeQualities = [];
 
-		console.log(response);
-		if (
-			response.statusCode === 200 &&
-			response.response &&
-			response.response.state &&
-			response.response.state === "Playing" &&
-			response.response.sourceStreams
-		) {
-			let arrayStream = [];
-			for (const sourceStream of response.response.sourceStreams) {
-				arrayStream.push(sourceStream.name);
-			}
-
-			const availableQualities = [
-				{
-					name: "Fonte",
-					application: "fonte",
-					streamName: "fonte",
-					displayName: "Fonte Original Baixa latencia",
-					description: "Qualidade original da fonte Baixa latencia",
-					priority: 1,
-					url: `https://yustream.yurisp.com.br:8443/fonte/fonte/fonte.m3u8`,
-					url_nossl: `http://72.60.243.188:8080/fonte/fonte/fonte.m3u8`,
-				},
-				{
-					name: "1440p",
-					application: "1440",
-					streamName: "1440",
-					displayName: "1440p Ultra HD Baixa latencia",
-					description: "Qualidade Ultra HD 1440p Baixa latencia",
-					priority: 2,
-					url: `https://yustream.yurisp.com.br:8443/1440/1440/1440.m3u8`,
-					url_nossl: `http://72.60.243.188:8080/1440/1440/1440.m3u8`,
-				},
-				{
-					name: "1080p",
-					application: "1080",
-					streamName: "1080",
-					displayName: "1080p Full HD Baixa latencia",
-					description: "Qualidade Full HD 1080p Baixa latencia",
-					priority: 3,
-					url: `https://yustream.yurisp.com.br:8443/1080/1080/1080.m3u8`,
-					url_nossl: `http://72.60.243.188:8080/1080/1080/1080.m3u8`,
-				},
-				{
-					name: "720p",
-					application: "720",
-					streamName: "720",
-					displayName: "720p HD Baixa latencia",
-					description: "Qualidade HD 720p Baixa latencia",
-					priority: 4,
-					url: `https://yustream.yurisp.com.br:8443/720/720/720.m3u8`,
-					url_nossl: `http://72.60.243.188:8080/720/720/720.m3u8`,
-				},
-				{
-					name: "360p",
-					application: "360",
-					streamName: "360",
-					displayName: "360p SD Baixa latencia",
-					description: "Qualidade SD 360p Baixa latencia",
-					priority: 5,
-					url: `https://yustream.yurisp.com.br:8443/360/360/360.m3u8`,
-					url_nossl: `http://72.60.243.188:8080/360/360/360.m3u8`,
-				},
-				{
-					name: "FonteDefault",
-					application: "fonte",
-					streamName: "fonte",
-					displayName: "Fonte Original",
-					description: "Qualidade original da fonte",
-					priority: 6,
-					url: `https://yustream.yurisp.com.br:8443/fonte/fonte/ts:fonte.m3u8`,
-					url_nossl: `http://72.60.243.188:8080/fonte/fonte/ts:fonte.m3u8`,
-				},
-				{
-					name: "1440pDefault",
-					application: "1440",
-					streamName: "1440",
-					displayName: "1440p Ultra HD",
-					description: "Qualidade Ultra HD 1440p",
-					priority: 7,
-					url: `https://yustream.yurisp.com.br:8443/1440/1440/ts:1440.m3u8`,
-					url_nossl: `http://72.60.243.188:8080/1440/1440/ts:1440.m3u8`,
-				},
-				{
-					name: "1080pDefault",
-					application: "1080",
-					streamName: "1080",
-					displayName: "1080p Full HD",
-					description: "Qualidade Full HD 1080p",
-					priority: 8,
-					url: `https://yustream.yurisp.com.br:8443/1080/1080/ts:1080.m3u8`,
-					url_nossl: `http://72.60.243.188:8080/1080/1080/ts:1080.m3u8`,
-				},
-				{
-					name: "720pDefault",
-					application: "720",
-					streamName: "720",
-					displayName: "720p HD",
-					description: "Qualidade HD 720p",
-					priority: 9,
-					url: `https://yustream.yurisp.com.br:8443/720/720/ts:720.m3u8`,
-					url_nossl: `http://72.60.243.188:8080/720/720/ts:720.m3u8`,
-				},
-				{
-					name: "360pDefault",
-					application: "360",
-					streamName: "360",
-					displayName: "360p SD",
-					description: "Qualidade SD 360p",
-					priority: 10,
-					url: `https://yustream.yurisp.com.br:8443/360/360/ts:360.m3u8`,
-					url_nossl: `http://72.60.243.188:8080/360/360/ts:360.m3u8`,
-				},
-			];
-
-			// Verificar quais qualidades estão ativas
-			const activeQualities = [];
-
-			for (const quality of availableQualities) {
-				try {
-					if (arrayStream.includes(quality.streamName)) {
-						activeQualities.push({
-							...quality,
-							active: true,
-							state: "Playing",
-							uptime: 0,
-							totalConnections: 0,
-						});
-					} else {
-						activeQualities.push({
-							...quality,
-							active: false,
-							state: "Stopped",
-						});
-					}
-				} catch (error) {
-					// Se não conseguir acessar a stream, considerá-la inativa
-					activeQualities.push({
-						...quality,
-						active: false,
-						state: "Not Found",
-						error: error.message,
-					});
-				}
-			}
-
-			// Ordenar por prioridade (menor número = maior prioridade)
-			activeQualities.sort((a, b) => a.priority - b.priority);
-
-			let abr = {};
-
-			if (activeQualities.length > 0) {
-				abr = {
+		for (const quality of availableQualities) {
+			try {
+				activeQualities.push({
+					...quality,
 					active: true,
-					url: `https://yustream.yurisp.com.br:8443/live/live/abr.m3u8`,
-					url_nossl: `http://72.60.243.188:8080/live/live/abr.m3u8`,
-					url_ts: `https://yustream.yurisp.com.br:8443/live/live/abr.m3u8`,
-					url_ts_nossl: `http://72.60.243.188:8080/live/live/ts:abr.m3u8`,
-					description: "Stream adaptativa com múltiplas qualidades",
-				};
-			} else {
-				abr = {
+					state: "Playing",
+					uptime: 0,
+					totalConnections: 0,
+				});
+			} catch (error) {
+				// Se não conseguir acessar a stream, considerá-la inativa
+				activeQualities.push({
+					...quality,
 					active: false,
-					url: null,
-					url_nossl: null,
-					url_ts: null,
-					url_ts_nossl: null,
-					description: "Stream adaptativa com múltiplas qualidades",
-				};
+					state: "Not Found",
+					error: error.message,
+				});
 			}
-
-			res.json({
-				qualities: activeQualities,
-				abr: abr,
-				timestamp: new Date().toISOString(),
-				totalQualities: availableQualities.length,
-				activeQualities: activeQualities.filter((q) => q.active).length,
-			});
-		} else {
-			res.json({
-				qualities: [],
-				abr: {
-					active: false,
-					url: null,
-					description: "",
-				},
-				timestamp: new Date().toISOString(),
-				totalQualities: 0,
-				activeQualities: 0,
-			});
 		}
+
+		// Ordenar por prioridade (menor número = maior prioridade)
+		activeQualities.sort((a, b) => a.priority - b.priority);
+
+		let abr = {};
+
+		if (activeQualities.length > 0) {
+			abr = {
+				active: true,
+				url: `https://yustream.yurisp.com.br:8443/live/live/abr.m3u8`,
+				url_nossl: `http://72.60.243.188:8080/live/live/abr.m3u8`,
+				url_ts: `https://yustream.yurisp.com.br:8443/live/live/abr.m3u8`,
+				url_ts_nossl: `http://72.60.243.188:8080/live/live/ts:abr.m3u8`,
+				description: "Stream adaptativa com múltiplas qualidades",
+			};
+		} else {
+			abr = {
+				active: false,
+				url: null,
+				url_nossl: null,
+				url_ts: null,
+				url_ts_nossl: null,
+				description: "Stream adaptativa com múltiplas qualidades",
+			};
+		}
+
+		res.json({
+			qualities: activeQualities,
+			abr: abr,
+			timestamp: new Date().toISOString(),
+			totalQualities: availableQualities.length,
+			activeQualities: activeQualities.filter((q) => q.active).length,
+		});
 	} catch (error) {
 		console.error("Erro ao listar qualidades:", error);
 		res.status(500).json({
