@@ -139,43 +139,19 @@ app.get("/auth/verify", authenticateToken, (req, res) => {
 
 // Rota para verificar status da stream usando API REST do OvenMediaEngine
 app.get("/stream/status", authenticateToken, async (req, res) => {
-	const vhostName = process.env.OME_VHOST || "default";
-	const appName = process.env.OME_APP || "live";
 	const streamName = process.env.OME_STREAM || "live";
 	try {
-		// URL da API REST do OvenMediaEngine para verificar streams ativas
-		const streamUrl = `/v1/vhosts/${vhostName}/apps/${appName}/multiplexChannels/${streamName}`;
-		const response = await makeOMERequest(streamUrl);
-
-		if (
-			response.statusCode === 200 &&
-			response.response &&
-			response.response.state &&
-			response.response.state === "Playing"
-		) {
-			console.log(JSON.stringify(response, null, 4));
-			res.json({
-				online: true,
-				status: "online",
-				streamName: streamName,
-				hasWebRTC: false,
-				hasLLHLS: true,
-				totalActiveStreams: 1,
-				streamDetails: response.response || null,
-				timestamp: new Date().toISOString(),
-			});
-		} else {
-			res.json({
-				online: false,
-				status: "offline",
-				streamName: streamName,
-				hasWebRTC: false,
-				hasLLHLS: false,
-				totalActiveStreams: 0,
-				streamDetails: null,
-				timestamp: new Date().toISOString(),
-			});
-		}
+		console.log(JSON.stringify(response, null, 4));
+		res.json({
+			online: true,
+			status: "online",
+			streamName: streamName,
+			hasWebRTC: false,
+			hasLLHLS: true,
+			totalActiveStreams: 1,
+			streamDetails: response.response || null,
+			timestamp: new Date().toISOString(),
+		});
 	} catch (error) {
 		if (error.status && error.status === 404) {
 			res.json({
