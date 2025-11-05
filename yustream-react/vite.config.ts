@@ -15,7 +15,7 @@ export default defineConfig({
           // Separar Material UI em chunk próprio
           'mui': ['@mui/material', '@mui/icons-material', '@emotion/react', '@emotion/styled'],
           // Separar bibliotecas de streaming
-          'streaming': ['ovenplayer', 'hls.js'],
+          'streaming': ['@vidstack/react', 'hls.js'],
           // Separar ícones
           'icons': ['lucide-react']
         }
@@ -24,12 +24,12 @@ export default defineConfig({
     chunkSizeWarningLimit: 1000
   },
   server: {
-    port: 3000,
+    port: 5173,
     host: true,
     cors: false,
     proxy: {
       '/api': {
-        target: 'http://localhost/api',
+        target: 'https://yustream.yurisp.com.br/api',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '')
       }

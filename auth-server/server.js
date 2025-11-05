@@ -3,16 +3,17 @@ const jwt = require("jsonwebtoken");
 const cors = require("cors");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
-const axios = require("axios");
 const { body, validationResult } = require("express-validator");
 require("dotenv").config();
 
 // Importar configuração do banco e modelos
 const connectDB = require("./config/database");
 const User = require("./models/User");
+const PlayerConfig = require("./models/PlayerConfig");
 const initUsers = require("./scripts/initUsers");
 
 const app = express();
+const router = express.Router();
 const PORT = process.env.PORT || 3001;
 const JWT_SECRET =
 	process.env.JWT_SECRET || "yustream-secret-key-change-in-production";
@@ -74,7 +75,7 @@ const loginValidation = [
 ];
 
 // Rota de login
-app.post("/auth/login", authLimiter, loginValidation, async (req, res) => {
+router.post("/auth/login", authLimiter, loginValidation, async (req, res) => {
 	try {
 		// Verificar erros de validação
 		const errors = validationResult(req);
@@ -130,223 +131,13 @@ app.post("/auth/login", authLimiter, loginValidation, async (req, res) => {
 });
 
 // Rota para verificar token
-app.get("/auth/verify", authenticateToken, (req, res) => {
+router.get("/auth/verify", authenticateToken, (req, res) => {
 	res.json({
 		valid: true,
 		user: req.user,
 	});
 });
 
-// Rota para verificar status da stream usando API REST do OvenMediaEngine
-app.get("/stream/status", authenticateToken, async (req, res) => {
-	const streamName = process.env.OME_STREAM || "live";
-	try {
-		res.json({
-			online: true,
-			status: "online",
-			streamName: streamName,
-			hasWebRTC: false,
-			hasLLHLS: true,
-			totalActiveStreams: 1,
-			streamDetails: null,
-			timestamp: new Date().toISOString(),
-		});
-	} catch (error) {
-		if (error.status && error.status === 404) {
-			res.json({
-				online: false,
-				status: "offline",
-				streamName: streamName,
-				hasWebRTC: false,
-				hasLLHLS: false,
-				totalActiveStreams: 0,
-				streamDetails: null,
-				timestamp: new Date().toISOString(),
-			});
-			return;
-		}
-		console.error(
-			"❌ Erro ao verificar status da stream via API OME:",
-			error.message
-		);
-
-		res.json({
-			online: false,
-			status: "offline",
-			error: "Falha ao conectar com o servidor de stream",
-			timestamp: new Date().toISOString(),
-		});
-	}
-});
-
-// Rota para gerar token de acesso para stream
-app.get("/stream/token", authenticateToken, (req, res) => {
-	// Gerar token temporário para acesso à stream (válido por 6 horas)
-	const streamToken = jwt.sign(
-		{
-			userId: req.user.id,
-			username: req.user.username,
-			streamAccess: true,
-		},
-		JWT_SECRET,
-		{ expiresIn: "6h" }
-	);
-
-	res.json({
-		streamToken,
-		expiresIn: 3600 * 6, // 6 horas em segundos
-	});
-});
-
-// Rota para listar qualidades disponíveis
-app.get("/stream/qualities", authenticateToken, async (req, res) => {
-	try {
-		const availableQualities = [
-			{
-				name: "Fonte",
-				application: "fonte",
-				streamName: "fonte",
-				displayName: "Fonte Original Baixa latencia",
-				description: "Qualidade original da fonte Baixa latencia",
-				priority: 1,
-				url: `https://yustream.yurisp.com.br:8443/live/live/fonte.m3u8`,
-				url_nossl: `http://72.60.243.188:8080/live/live/fonte.m3u8`,
-			},
-			{
-				name: "1080p",
-				application: "1080",
-				streamName: "1080",
-				displayName: "1080p Full HD Baixa latencia",
-				description: "Qualidade Full HD 1080p Baixa latencia",
-				priority: 2,
-				url: `https://yustream.yurisp.com.br:8443/live/live/1080.m3u8`,
-				url_nossl: `http://72.60.243.188:8080/live/live/1080.m3u8`,
-			},
-			{
-				name: "720p",
-				application: "720",
-				streamName: "720",
-				displayName: "720p HD Baixa latencia",
-				description: "Qualidade HD 720p Baixa latencia",
-				priority: 3,
-				url: `https://yustream.yurisp.com.br:8443/live/live/720.m3u8`,
-				url_nossl: `http://72.60.243.188:8080/live/live/720.m3u8`,
-			},
-			{
-				name: "480p",
-				application: "480",
-				streamName: "480",
-				displayName: "480 SD Baixa latencia",
-				description: "Qualidade SD 480 Baixa latencia",
-				priority: 4,
-				url: `https://yustream.yurisp.com.br:8443/live/live/480.m3u8`,
-				url_nossl: `http://72.60.243.188:8080/live/live/480.m3u8`,
-			},
-			{
-				name: "FonteDefault",
-				application: "fonte",
-				streamName: "fonte",
-				displayName: "Fonte Original",
-				description: "Qualidade original da fonte",
-				priority: 5,
-				url: `https://yustream.yurisp.com.br:8443/live/live/ts:fonte.m3u8`,
-				url_nossl: `http://72.60.243.188:8080/live/live/ts:fonte.m3u8`,
-			},
-			{
-				name: "1080pDefault",
-				application: "1080",
-				streamName: "1080",
-				displayName: "1080p Full HD",
-				description: "Qualidade Full HD 1080p",
-				priority: 6,
-				url: `https://yustream.yurisp.com.br:8443/live/live/ts:1080.m3u8`,
-				url_nossl: `http://72.60.243.188:8080/live/live/ts:1080.m3u8`,
-			},
-			{
-				name: "720pDefault",
-				application: "720",
-				streamName: "720",
-				displayName: "720p HD",
-				description: "Qualidade HD 720p",
-				priority: 7,
-				url: `https://yustream.yurisp.com.br:8443/live/live/ts:720.m3u8`,
-				url_nossl: `http://72.60.243.188:8080/live/live/ts:720.m3u8`,
-			},
-			{
-				name: "480pDefault",
-				application: "480",
-				streamName: "480",
-				displayName: "480p SD",
-				description: "Qualidade SD 480p",
-				priority: 8,
-				url: `https://yustream.yurisp.com.br:8443/live/live/ts:480.m3u8`,
-				url_nossl: `http://72.60.243.188:8080/live/live/ts:480.m3u8`,
-			},
-		];
-
-		// Verificar quais qualidades estão ativas
-		const activeQualities = [];
-
-		for (const quality of availableQualities) {
-			try {
-				activeQualities.push({
-					...quality,
-					active: true,
-					state: "Playing",
-					uptime: 0,
-					totalConnections: 0,
-				});
-			} catch (error) {
-				// Se não conseguir acessar a stream, considerá-la inativa
-				activeQualities.push({
-					...quality,
-					active: false,
-					state: "Not Found",
-					error: error.message,
-				});
-			}
-		}
-
-		// Ordenar por prioridade (menor número = maior prioridade)
-		activeQualities.sort((a, b) => a.priority - b.priority);
-
-		let abr = {};
-
-		if (activeQualities.length > 0) {
-			abr = {
-				active: true,
-				url: `https://yustream.yurisp.com.br:8443/live/live/abr.m3u8`,
-				url_nossl: `http://72.60.243.188:8080/live/live/abr.m3u8`,
-				url_ts: `https://yustream.yurisp.com.br:8443/live/live/abr.m3u8`,
-				url_ts_nossl: `http://72.60.243.188:8080/live/live/ts:abr.m3u8`,
-				description: "Stream adaptativa com múltiplas qualidades",
-			};
-		} else {
-			abr = {
-				active: false,
-				url: null,
-				url_nossl: null,
-				url_ts: null,
-				url_ts_nossl: null,
-				description: "Stream adaptativa com múltiplas qualidades",
-			};
-		}
-
-		res.json({
-			qualities: activeQualities,
-			abr: abr,
-			timestamp: new Date().toISOString(),
-			totalQualities: availableQualities.length,
-			activeQualities: activeQualities.filter((q) => q.active).length,
-		});
-	} catch (error) {
-		console.error("Erro ao listar qualidades:", error);
-		res.status(500).json({
-			message: "Erro ao obter qualidades disponíveis",
-			error: error.message,
-		});
-	}
-});
 
 // Middleware para verificar se é admin
 const requireAdmin = (req, res, next) => {
@@ -404,10 +195,71 @@ const updateUserValidation = [
 		.withMessage("isActive deve ser true ou false"),
 ];
 
+const extractYouTubeVideoId = (input = "") => {
+	if (typeof input !== "string") {
+		return null;
+	}
+
+	const trimmed = input.trim();
+	if (!trimmed) {
+		return null;
+	}
+
+	const directIdPattern = /^[a-zA-Z0-9_-]{11}$/;
+	if (directIdPattern.test(trimmed)) {
+		return trimmed;
+	}
+
+	const urlPatterns = [
+		/https?:\/\/youtu\.be\/([a-zA-Z0-9_-]{11})/i,
+		/[?&]v=([a-zA-Z0-9_-]{11})/i,
+		/\/embed\/([a-zA-Z0-9_-]{11})/i,
+		/\/shorts\/([a-zA-Z0-9_-]{11})/i,
+	];
+
+	for (const pattern of urlPatterns) {
+		const match = trimmed.match(pattern);
+		if (match && match[1]) {
+			return match[1];
+		}
+	}
+
+	return null;
+};
+
+const toPlayerConfigResponse = (config) => {
+	if (!config) {
+		return { videoId: "" };
+	}
+
+	const plain =
+		typeof config.toObject === "function" ? config.toObject() : { ...config };
+	const updatedAtValue =
+		plain.updatedAt instanceof Date
+			? plain.updatedAt.toISOString()
+			: typeof plain.updatedAt === "string"
+			? plain.updatedAt
+			: undefined;
+
+	return {
+		videoId: plain.videoId || "",
+		updatedAt: updatedAtValue,
+		updatedBy: plain.updatedBy || undefined,
+	};
+};
+
+const updatePlayerConfigValidation = [
+	body("videoId")
+		.isString()
+		.trim()
+		.notEmpty()
+		.withMessage("ID do vídeo é obrigatório"),
+];
+
 // ROTAS DE GERENCIAMENTO DE USUÁRIOS (apenas para admins)
 
 // Listar todos os usuários
-app.get("/admin/users", authenticateToken, requireAdmin, async (req, res) => {
+router.get("/admin/users", authenticateToken, requireAdmin, async (req, res) => {
 	try {
 		const page = parseInt(req.query.page) || 1;
 		const limit = parseInt(req.query.limit) || 10;
@@ -436,8 +288,39 @@ app.get("/admin/users", authenticateToken, requireAdmin, async (req, res) => {
 	}
 });
 
+router.get(
+	"/admin/users/emails",
+	authenticateToken,
+	requireAdmin,
+	async (req, res) => {
+		try {
+			const users = await User.find({
+				email: { $exists: true, $ne: null },
+			})
+				.select("email -_id")
+				.sort({ email: 1 })
+				.lean();
+
+			const uniqueEmails = Array.from(
+				new Set(
+					(users || [])
+						.map((user) => user.email)
+						.filter(
+							(email) => typeof email === "string" && email.trim() !== ""
+						)
+				)
+			);
+
+			res.json({ emails: uniqueEmails });
+		} catch (error) {
+			console.error("Erro ao exportar emails:", error);
+			res.status(500).json({ message: "Erro ao exportar emails dos usuários" });
+		}
+	}
+);
+
 // Buscar usuário por ID
-app.get(
+router.get(
 	"/admin/users/:id",
 	authenticateToken,
 	requireAdmin,
@@ -456,7 +339,7 @@ app.get(
 );
 
 // Criar novo usuário
-app.post(
+router.post(
 	"/admin/users",
 	authenticateToken,
 	requireAdmin,
@@ -509,7 +392,7 @@ app.post(
 );
 
 // Atualizar usuário
-app.put(
+router.put(
 	"/admin/users/:id",
 	authenticateToken,
 	requireAdmin,
@@ -559,7 +442,7 @@ app.put(
 );
 
 // Deletar usuário
-app.delete(
+router.delete(
 	"/admin/users/:id",
 	authenticateToken,
 	requireAdmin,
@@ -589,7 +472,7 @@ app.delete(
 );
 
 // Estatísticas de usuários
-app.get("/admin/stats", authenticateToken, requireAdmin, async (req, res) => {
+router.get("/admin/stats", authenticateToken, requireAdmin, async (req, res) => {
 	try {
 		const totalUsers = await User.countDocuments();
 		const activeUsers = await User.countDocuments({ isActive: true });
@@ -613,518 +496,110 @@ app.get("/admin/stats", authenticateToken, requireAdmin, async (req, res) => {
 	}
 });
 
-// ROTAS DE CONTROLE ABR VIA OVENMEDIAENGINE API
-
-// Configurações do OvenMediaEngine
-const getOMEConfig = () => ({
-	hostname: process.env.OME_HOSTNAME || "ovenmediaengine",
-	apiPort: process.env.OME_API_PORT || "8081",
-	vhostName: process.env.OME_VHOST || "default",
-	appName: process.env.OME_APP || "live",
-	accessToken: process.env.OME_ACCESS_TOKEN || "maketears",
-});
-
-// Helper para fazer requisições para OME
-const makeOMERequest = async (endpoint, method = "GET", data = null) => {
-	const config = getOMEConfig();
-	const authHeader = Buffer.from(config.accessToken).toString("base64");
-
-	const url = `http://${config.hostname}:${config.apiPort}${endpoint}`;
-
-	const options = {
-		method,
-		headers: {
-			Accept: "application/json",
-			"Content-Type": "application/json",
-			Authorization: `Basic ${authHeader}`,
-		},
-		timeout: 10000,
-	};
-
-	if (data) {
-		options.data = data;
-	}
-
+router.get("/player-config", async (req, res) => {
 	try {
-		const response = await axios(url, options);
-		return response.data;
+		const config = await PlayerConfig.findOne()
+			.sort({ updatedAt: -1 })
+			.lean();
+		res.json(toPlayerConfigResponse(config));
 	} catch (error) {
-		console.error(
-			`Erro na requisição OME ${method} ${endpoint}:`,
-			error.message
-		);
-		throw error;
-	}
-};
-
-// GET /api/abr/config - Obter configuração atual do ABR
-app.get("/abr/config", authenticateToken, requireAdmin, async (req, res) => {
-	try {
-		const config = getOMEConfig();
-		const channelName = "live"; // Nome do canal multiplex
-
-		// Tentar obter informações do canal multiplex
-		try {
-			const channelInfo = await makeOMERequest(
-				`/v1/vhosts/${config.vhostName}/apps/${config.appName}/multiplexChannels/${channelName}`
-			);
-
-			// Converter resposta do OME para formato do frontend
-			const qualities = [
-				{
-					name: "Fonte",
-					enabled: false,
-					videoTrack: "fonte_video",
-					audioTrack: "fonte_audio",
-					url: "stream://default/fonte/fonte",
-				},
-				{
-					name: "1440",
-					enabled: false,
-					videoTrack: "1440_video",
-					audioTrack: "1440_audio",
-					url: "stream://default/1440/1440",
-				},
-				{
-					name: "1080",
-					enabled: false,
-					videoTrack: "1080_video",
-					audioTrack: "1080_audio",
-					url: "stream://default/1080/1080",
-				},
-				{
-					name: "720",
-					enabled: false,
-					videoTrack: "720_video",
-					audioTrack: "720_audio",
-					url: "stream://default/720/720",
-				},
-				{
-					name: "360",
-					enabled: false,
-					videoTrack: "360_video",
-					audioTrack: "360_audio",
-					url: "stream://default/360/360",
-				},
-			];
-
-			// Verificar quais qualidades estão ativas baseado nos sourceStreams
-			if (channelInfo.response && channelInfo.response.sourceStreams) {
-				channelInfo.response.sourceStreams.forEach((stream) => {
-					const qualityName =
-						stream.name.charAt(0).toUpperCase() + stream.name.slice(1);
-					const quality = qualities.find((q) => q.name === qualityName);
-					if (quality) {
-						quality.enabled = true;
-					}
-				});
-			}
-
-			const abrConfig = {
-				qualities,
-				playlistName: channelInfo.response?.playlists?.[0]?.name || "LLHLS ABR",
-				fileName: channelInfo.response?.playlists?.[0]?.fileName || "abr",
-			};
-
-			res.json(abrConfig);
-		} catch (error) {
-			// Se canal não existe, retornar configuração padrão
-			if (error.response?.status === 404) {
-				const defaultConfig = {
-					qualities: [
-						{
-							name: "Fonte",
-							enabled: true,
-							videoTrack: "fonte_video",
-							audioTrack: "fonte_audio",
-							url: "stream://default/fonte/fonte",
-						},
-						{
-							name: "1440",
-							enabled: false,
-							videoTrack: "1440_video",
-							audioTrack: "1440_audio",
-							url: "stream://default/1440/1440",
-						},
-						{
-							name: "1080",
-							enabled: false,
-							videoTrack: "1080_video",
-							audioTrack: "1080_audio",
-							url: "stream://default/1080/1080",
-						},
-						{
-							name: "720",
-							enabled: true,
-							videoTrack: "720_video",
-							audioTrack: "720_audio",
-							url: "stream://default/720/720",
-						},
-						{
-							name: "360",
-							enabled: false,
-							videoTrack: "360_video",
-							audioTrack: "360_audio",
-							url: "stream://default/360/360",
-						},
-					],
-					playlistName: "LLHLS ABR",
-					fileName: "abr",
-				};
-				res.json(defaultConfig);
-			} else {
-				throw error;
-			}
-		}
-	} catch (error) {
-		console.error("Erro ao carregar configuração ABR:", error);
-		res.status(500).json({ message: "Erro ao carregar configuração ABR" });
+		console.error("Erro ao obter configuração do player:", error);
+		res
+			.status(500)
+			.json({ message: "Não foi possível obter a configuração do player" });
 	}
 });
 
-// PUT /api/abr/config - Atualizar configuração completa do ABR
-app.put("/abr/config", authenticateToken, requireAdmin, async (req, res) => {
-	try {
-		const { qualities, playlistName, fileName } = req.body;
-		const config = getOMEConfig();
-		const channelName = "live";
-
-		// Converter para formato OME
-		const enabledQualities = qualities.filter((q) => q.enabled);
-
-		const omeConfig = {
-			outputStream: {
-				name: channelName,
-			},
-			sourceStreams: enabledQualities.map((quality) => ({
-				name: quality.name.toLowerCase(),
-				url: quality.url,
-				trackMap: [
-					{
-						sourceTrackName: "bypass_video",
-						newTrackName: quality.videoTrack,
-					},
-					{
-						sourceTrackName: "bypass_audio",
-						newTrackName: quality.audioTrack,
-					},
-				],
-			})),
-			playlists: [
-				{
-					name: playlistName,
-					fileName: fileName,
-					options: {
-						webrtcAutoAbr: true,
-						hlsChunklistPathDepth: 0,
-						enableTsPackaging: true,
-					},
-					renditions: enabledQualities.map((quality) => ({
-						name: quality.name,
-						video: quality.videoTrack,
-						audio: quality.audioTrack,
-					})),
-				},
-			],
-		};
-
-		// Primeiro tentar deletar canal existente se houver
-		try {
-			await makeOMERequest(
-				`/v1/vhosts/${config.vhostName}/apps/${config.appName}/multiplexChannels/${channelName}`,
-				"DELETE"
-			);
-		} catch (error) {
-			// Ignorar erro se canal não existir
-		}
-
-		// Criar novo canal
-		await makeOMERequest(
-			`/v1/vhosts/${config.vhostName}/apps/${config.appName}/multiplexChannels`,
-			"POST",
-			omeConfig
-		);
-
-		res.json({ message: "Configuração ABR atualizada com sucesso" });
-	} catch (error) {
-		console.error("Erro ao atualizar configuração ABR:", error);
-		res.status(500).json({ message: "Erro ao atualizar configuração ABR" });
-	}
-});
-
-// PATCH /api/abr/quality/:qualityName - Ativar/desativar uma qualidade específica
-app.patch(
-	"/abr/quality/:qualityName",
+router.get(
+	"/admin/player-config",
 	authenticateToken,
 	requireAdmin,
 	async (req, res) => {
 		try {
-			const { qualityName } = req.params;
-			const { enabled } = req.body;
-			const config = getOMEConfig();
-			const channelName = "live";
+			const config = await PlayerConfig.findOne()
+				.sort({ updatedAt: -1 })
+				.lean();
+			res.json(toPlayerConfigResponse(config));
+		} catch (error) {
+			console.error("Erro ao obter configuração do player (admin):", error);
+			res
+				.status(500)
+				.json({ message: "Não foi possível obter a configuração do player" });
+		}
+	}
+);
 
-			// Obter configuração atual
-			let currentConfig;
-			try {
-				const channelInfo = await makeOMERequest(
-					`/v1/vhosts/${config.vhostName}/apps/${config.appName}/multiplexChannels/${channelName}`
-				);
-				currentConfig = channelInfo.response;
-			} catch (error) {
-				// Se canal não existe, usar configuração padrão
-				currentConfig = {
-					playlists: [{ name: "LLHLS ABR", fileName: "abr" }],
-					sourceStreams: [],
-				};
-			}
+router.put(
+	"/admin/player-config",
+	authenticateToken,
+	requireAdmin,
+	updatePlayerConfigValidation,
+	async (req, res) => {
+		const errors = validationResult(req);
+		if (!errors.isEmpty()) {
+			return res.status(400).json({
+				message: "Dados inválidos",
+				errors: errors.array(),
+			});
+		}
 
-			// Atualizar configuração
-			const qualities = [
+		const parsedVideoId = extractYouTubeVideoId(req.body.videoId);
+		if (!parsedVideoId) {
+			return res.status(400).json({ message: "ID de vídeo do YouTube inválido" });
+		}
+
+		try {
+			const updatedConfig = await PlayerConfig.findOneAndUpdate(
+				{},
 				{
-					name: "Fonte",
-					enabled: false,
-					videoTrack: "fonte_video",
-					audioTrack: "fonte_audio",
-					url: "stream://default/fonte/fonte",
-				},
-				{
-					name: "1440",
-					enabled: false,
-					videoTrack: "1440_video",
-					audioTrack: "1440_audio",
-					url: "stream://default/1440/1440",
-				},
-				{
-					name: "1080",
-					enabled: false,
-					videoTrack: "1080_video",
-					audioTrack: "1080_audio",
-					url: "stream://default/1080/1080",
+					videoId: parsedVideoId,
+					updatedBy: req.user?.username || null,
 				},
 				{
-					name: "720",
-					enabled: false,
-					videoTrack: "720_video",
-					audioTrack: "720_audio",
-					url: "stream://default/720/720",
-				},
-				{
-					name: "360",
-					enabled: false,
-					videoTrack: "360_video",
-					audioTrack: "360_audio",
-					url: "stream://default/360/360",
-				},
-			];
-
-			// Mapear qualidades ativas atuais
-			if (currentConfig.sourceStreams) {
-				currentConfig.sourceStreams.forEach((stream) => {
-					const qualityName =
-						stream.name.charAt(0).toUpperCase() + stream.name.slice(1);
-					const quality = qualities.find((q) => q.name === qualityName);
-					if (quality) {
-						quality.enabled = true;
-					}
-				});
-			}
-
-			// Atualizar qualidade específica
-			const targetQuality = qualities.find((q) => q.name === qualityName);
-			if (targetQuality) {
-				targetQuality.enabled = enabled;
-			}
-
-			// Recriar canal com nova configuração
-			const enabledQualities = qualities.filter((q) => q.enabled);
-
-			const omeConfig = {
-				outputStream: {
-					name: channelName,
-				},
-				sourceStreams: enabledQualities.map((quality) => ({
-					name: quality.name.toLowerCase(),
-					url: quality.url,
-					trackMap: [
-						{
-							sourceTrackName: "bypass_video",
-							newTrackName: quality.videoTrack,
-						},
-						{
-							sourceTrackName: "bypass_audio",
-							newTrackName: quality.audioTrack,
-						},
-					],
-				})),
-				playlists: [
-					{
-						name: currentConfig.playlists?.[0]?.name || "LLHLS ABR",
-						fileName: currentConfig.playlists?.[0]?.fileName || "abr",
-						options: {
-							webrtcAutoAbr: true,
-							hlsChunklistPathDepth: 0,
-							enableTsPackaging: true,
-						},
-						renditions: enabledQualities.map((quality) => ({
-							name: quality.name,
-							video: quality.videoTrack,
-							audio: quality.audioTrack,
-						})),
-					},
-				],
-			};
-
-			// Deletar canal existente
-			try {
-				await makeOMERequest(
-					`/v1/vhosts/${config.vhostName}/apps/${config.appName}/multiplexChannels/${channelName}`,
-					"DELETE"
-				);
-			} catch (error) {
-				// Ignorar erro se canal não existir
-			}
-
-			// Criar novo canal
-			await makeOMERequest(
-				`/v1/vhosts/${config.vhostName}/apps/${config.appName}/multiplexChannels`,
-				"POST",
-				omeConfig
+					new: true,
+					upsert: true,
+					setDefaultsOnInsert: true,
+				}
 			);
 
-			res.json({
-				message: `Qualidade ${qualityName} ${
-					enabled ? "ativada" : "desativada"
-				} com sucesso`,
-			});
+			res.json(toPlayerConfigResponse(updatedConfig));
 		} catch (error) {
-			console.error("Erro ao alterar qualidade:", error);
-			res.status(500).json({ message: "Erro ao alterar qualidade" });
+			console.error("Erro ao atualizar configuração do player:", error);
+			res
+				.status(500)
+				.json({ message: "Erro ao atualizar configuração do player" });
+		}
+	}
+);
+
+router.delete(
+	"/admin/player-config",
+	authenticateToken,
+	requireAdmin,
+	async (req, res) => {
+		try {
+			await PlayerConfig.deleteMany({});
+			res.json(toPlayerConfigResponse(null));
+		} catch (error) {
+			console.error("Erro ao remover configuração do player:", error);
+			res
+				.status(500)
+				.json({ message: "Erro ao remover configuração do player" });
 		}
 	}
 );
 
 // WEBHOOK ENDPOINTS PARA OVENMEDIAENGINE
 
-// Webhook de admissão para OvenMediaEngine
-app.post("/webhook/admission", (req, res) => {
-	try {
-		const { request } = req.body;
-
-		if (!request) {
-			console.log("❌ Request inválido no webhook");
-			return res.status(400).json({
-				allowed: false,
-				new_url: request?.url,
-				lifetime: 0,
-			});
-		}
-
-		const { direction, protocol, url, stream, ip } = request;
-
-		console.log(request);
-		console.log(`📡 Webhook Request: ${direction} ${protocol} ${url}`);
-
-		// Extrair token da URL
-		let token = null;
-		try {
-			const urlObj = new URL(url, "http://localhost");
-			token = urlObj.searchParams.get("token");
-		} catch (error) {
-			console.log("❌ Erro ao parsear URL:", error.message);
-		}
-
-		// Para providers (RTMP de entrada), permitir sem token
-		if (direction === "incoming") {
-			console.log("✅ Incoming stream (RTMP) - permitido sem token");
-			return res.json({
-				allowed: true,
-				new_url: url,
-				lifetime: 0, // 0 = sem limite de tempo
-			});
-		}
-
-		// Para publishers (saída WebRTC/LLHLS), validar token
-		if (direction === "outgoing") {
-			if (!token) {
-				console.log("❌ Token requerido para stream de saída");
-				return res.json({
-					allowed: false,
-					new_url: url,
-					lifetime: 0,
-				});
-			}
-
-			// Validar token JWT
-			jwt.verify(token, JWT_SECRET, (err, decoded) => {
-				if (err) {
-					console.log("❌ Token inválido:", err.message);
-					return res.json({
-						allowed: false,
-						new_url: url,
-						lifetime: 0,
-					});
-				}
-
-				if (!decoded.streamAccess) {
-					console.log("❌ Token sem permissão de stream");
-					return res.json({
-						allowed: false,
-						new_url: url,
-						lifetime: 0,
-					});
-				}
-
-				console.log(`✅ Acesso permitido para usuário: ${decoded.username}`);
-
-				return res.json({
-					allowed: true,
-					new_url: url,
-					lifetime: 3600000 * 6, // 6 horas em segundos
-				});
-			});
-		} else {
-			// Direção desconhecida - negar acesso
-			console.log("❌ Direção desconhecida:", direction);
-			return res.json({
-				allowed: false,
-				new_url: url,
-				lifetime: 0,
-			});
-		}
-	} catch (error) {
-		console.error("❌ Erro no webhook de admissão:", error);
-		return res.status(500).json({
-			allowed: false,
-			new_url: req.body?.request?.url || "",
-			lifetime: 0,
-		});
-	}
-});
-
-// Webhook de fechamento de sessão
-app.post("/webhook/close", (req, res) => {
-	try {
-		const { request } = req.body;
-		const { direction, protocol, url, stream, ip } = request;
-
-		console.log(`📡 Sessão fechada: ${direction} ${protocol} ${url}`);
-
-		// Log da sessão fechada (aqui você pode implementar analytics)
-
-		return res.json({ allowed: true });
-	} catch (error) {
-		console.error("❌ Erro no webhook de fechamento:", error);
-		return res.status(500).json({ allowed: false });
-	}
-});
-
 // Endpoints do Stremio movidos para servidor dedicado (stremio-addon:7000)
 
 // Rota de health check
-app.get("/health", (req, res) => {
+router.get("/health", (req, res) => {
 	res.json({ status: "OK", timestamp: new Date().toISOString() });
 });
+
+app.use("/api", router);
+app.use("/", router);
 
 // Middleware de erro global
 app.use((err, req, res, next) => {

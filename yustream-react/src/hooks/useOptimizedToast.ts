@@ -2,7 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 
 export interface ToastMessage {
   message: string;
-  type: 'success' | 'error' | 'info';
+  type: 'success' | 'error' | 'info' | 'warning';
   id: number;
 }
 
@@ -10,7 +10,7 @@ export const useOptimizedToast = () => {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const toastIdRef = useRef(0);
 
-  const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'info') => {
+  const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' | 'warning' = 'info') => {
     const id = ++toastIdRef.current; // Incremento mais eficiente
     const toast: ToastMessage = { message, type, id };
     

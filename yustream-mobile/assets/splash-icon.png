@@ -1,9 +1,0 @@
-# splash-icon.png
-# Tamanho: 1284x2778
-# Live: true
-# 
-# Este arquivo é um placeholder.
-# Para produção, converta o SVG correspondente para PNG usando:
-# - Inkscape: inkscape --export-png=splash-icon.png --export-width=1284 --export-height=2778 splash-icon.svg
-# - Online: https://convertio.co/svg-png/
-# - Node.js: sharp, svg2png, etc.

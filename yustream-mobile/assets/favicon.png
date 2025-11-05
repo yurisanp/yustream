@@ -1,9 +1,0 @@
-# favicon.png
-# Tamanho: 32x32
-# Live: false
-# 
-# Este arquivo é um placeholder.
-# Para produção, converta o SVG correspondente para PNG usando:
-# - Inkscape: inkscape --export-png=favicon.png --export-width=32 --export-height=32 favicon.svg
-# - Online: https://convertio.co/svg-png/
-# - Node.js: sharp, svg2png, etc.

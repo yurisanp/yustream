@@ -15,9 +15,9 @@
     "@mui/icons-material": "^6.3.0",
     "@mui/material": "^6.3.0",
     "@mui/system": "^6.3.0",
-    "hls.js": "^1.6.11",
+    "@vidstack/react": "^1.12.13",
+    "hls.js": "^1.6.13",
     "lucide-react": "^0.542.0",
-    "ovenplayer": "^0.10.45",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-router-dom": "^7.9.2"

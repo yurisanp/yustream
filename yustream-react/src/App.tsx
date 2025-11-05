@@ -1,10 +1,9 @@
-import { useState, useEffect, memo, useCallback, useMemo, startTransition } from 'react'
+import { useState, useEffect, memo, useCallback, startTransition } from 'react'
 import { Box, CircularProgress, Typography, Backdrop } from '@mui/material'
 import './App.css'
-import OvenStreamPlayer from './components/OvenStreamPlayer'
+import YouTubePlayer from './components/YouTubePlayer'
 import Toast from './components/Toast'
 import Login from './components/Login'
-import StremioConfig from './components/StremioConfig'
 import AdminScreen from './components/AdminScreen'
 import { AuthProvider } from './contexts/AuthContextProvider'
 import { useAuth } from './hooks/useAuth'
@@ -13,42 +12,29 @@ import { useOptimizedToast } from './hooks/useOptimizedToast'
 const AppContent = memo(() => {
   const { isAuthenticated, isLoading, login, user } = useAuth()
   const { toasts, showToast, removeToast } = useOptimizedToast()
-  const [currentPage, setCurrentPage] = useState<'main' | 'stremio-config' | 'admin'>('main')
+  const [currentPage, setCurrentPage] = useState<'player' | 'admin'>('player')
 
-  // Otimizar detecção de rota com useMemo para evitar recálculos desnecessários
-  const routeInfo = useMemo(() => {
-    const path = window.location.pathname
-    return {
-      path,
-      isStremio: path === '/configure',
-      isAdmin: path === '/admin',
-      isMain: path === '/' || (!path.startsWith('/configure') && !path.startsWith('/admin'))
-    }
-  }, [currentPage]) // Dependência otimizada
-
-  // Detectar rota atual com startTransition para não bloquear UI
   useEffect(() => {
-    startTransition(() => {
-      if (routeInfo.isStremio) {
-        setCurrentPage('stremio-config')
-      } else if (routeInfo.isAdmin) {
-        setCurrentPage('admin')
-      } else {
-        setCurrentPage('main')
-      }
-    })
-  }, [routeInfo])
+    const syncWithLocation = () => {
+      const path = window.location.pathname
+      startTransition(() => {
+        setCurrentPage(path === '/admin' ? 'admin' : 'player')
+      })
+    }
+
+    syncWithLocation()
+    window.addEventListener('popstate', syncWithLocation)
+
+    return () => {
+      window.removeEventListener('popstate', syncWithLocation)
+    }
+  }, [])
 
   // Toast functions are now provided by useOptimizedToast hook
 
   const handleBackToMain = useCallback(() => {
-      setCurrentPage('main')
+      setCurrentPage('player')
       window.history.pushState({}, '', '/')
-  }, [])
-
-  const handleNavigateToStremio = useCallback(() => {
-      setCurrentPage('stremio-config')
-      window.history.pushState({}, '', '/configure')
   }, [])
 
   const handleNavigateToAdmin = useCallback(() => {
@@ -81,30 +67,6 @@ const AppContent = memo(() => {
           </Typography>
         </Box>
       </Backdrop>
-    )
-  }
-
-  // Renderizar página do Stremio sem necessidade de autenticação
-  if (currentPage === 'stremio-config') {
-    return (
-      <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
-        <StremioConfig 
-          showToast={showToast} 
-          onBack={handleBackToMain}
-          isAuthenticated={isAuthenticated}
-          currentUser={isAuthenticated ? { email: 'user@yustream.com', username: 'user' } : null}
-        />
-        
-        {/* Toast Container */}
-        {toasts.map(toast => (
-          <Toast
-            key={toast.id}
-            message={toast.message}
-            type={toast.type}
-            onClose={() => removeToast(toast.id)}
-          />
-        ))}
-      </Box>
     )
   }
 
@@ -152,9 +114,8 @@ const AppContent = memo(() => {
       {!isAuthenticated ? (
         <Login onLogin={login} showToast={showToast} />
       ) : (
-        <OvenStreamPlayer 
+        <YouTubePlayer 
           showToast={showToast} 
-          onNavigateToStremio={handleNavigateToStremio}
           onNavigateToAdmin={handleNavigateToAdmin}
         />
       )}

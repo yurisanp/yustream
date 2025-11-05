@@ -1,33 +1,4 @@
 services:
-  ovenmediaengine:
-    image: airensoft/ovenmediaengine:latest
-    container_name: ovenmediaengine
-    restart: unless-stopped
-    volumes:
-      - ./ome-config/VHostProd.xml:/opt/ovenmediaengine/bin/origin_conf/VHost.xml
-      - ./ome-config/Server.xml:/opt/ovenmediaengine/bin/origin_conf/Server.xml
-      - ome_mux_data:/opt/ovenmediaengine/bin/origin_conf/mux_files
-      - ./ome-logs:/var/log/ovenmediaengine
-      - /ssl/letsencrypt/live/yustream.yurisp.com.br/cert.pem:/opt/ovenmediaengine/bin/ssl_conf/cert.pem
-      - /ssl/letsencrypt/live/yustream.yurisp.com.br/privkey.pem:/opt/ovenmediaengine/bin/ssl_conf/privkey.pem
-      - /ssl/letsencrypt/live/yustream.yurisp.com.br/chain.pem:/opt/ovenmediaengine/bin/ssl_conf/chain.pem
-    environment:
-      - OME_HOST_IP=0.0.0.0
-    network_mode: host
-    # ports:
-    #   # RTMP port for OBS streaming
-    #   - "1935:1935"
-    #   # HLS/DASH HTTP port
-    #   - "8080:8080"
-    #   # HLS/DASH HTTP port
-    #   - "8081:8081"
-    #   # HLS/DASH HTTPS port
-    #   - "8443:8443"
-    #   # WebRTC UDP ports for ICE
-    #   - "9998:9998/udp"
-    # networks:
-    #   - streaming-network
-
   mongodb:
     image: mongo:7
     container_name: yustream-mongodb
@@ -74,24 +45,6 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
-  stremio-addon:
-    build: ./stremio-addon
-    container_name: yustream-stremio
-    restart: unless-stopped
-    environment:
-      - NODE_ENV=development
-      - STREMIO_PORT=7000
-      - JWT_SECRET=yustream-jwt-secret-change-in-production-2024
-      - AUTH_SERVER_URL=http://yustream-auth:3001
-      - MONGODB_URI=mongodb://yustream:yustream123@mongodb:27017/yustream?authSource=admin
-    volumes:
-      - ./stremio-addon:/app
-      - /app/node_modules
-    depends_on:
-      - mongodb
-    networks:
-      - streaming-network
-
   nginx:
     image: nginx:alpine
     container_name: nginx-proxy
@@ -104,8 +57,6 @@ services:
       - ./nginx/conf.d:/etc/nginx/conf.d
       - ./nginx/conf.d/ssl.conf.production:/etc/nginx/conf.d/ssl.conf
       - ./yustream-react/dist:/usr/share/nginx/html
-      - ./yustream-smarttv/dist/universal:/usr/share/nginx/html/smarttv
-      - ./yustream-mobile/dist:/usr/share/nginx/html/mobile
       - /ssl/letsencrypt:/etc/letsencrypt
       - ./ssl/certbot/www:/var/www/certbot
     depends_on:

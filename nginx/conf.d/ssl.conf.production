@@ -8,11 +8,6 @@ upstream auth_server_ssl {
     server yustream-auth:3001;
 }
 
-# Upstream para o addon Stremio
-upstream stremio_server_ssl {
-    server stremio-addon:7000;
-}
-
 # Redirecionamento HTTP para HTTPS
 server {
     listen 80;
@@ -58,114 +53,6 @@ server {
     gzip_min_length 1024;
     gzip_types text/plain text/css text/xml text/javascript application/javascript application/xml+rss application/json;
 
-    # Redirecionamentos para Stremio addon na raiz (usando SDK oficial) - DEVEM VIR ANTES DO FALLBACK
-    location ~ ^/manifest.json {
-        proxy_pass http://stremio_server_ssl;
-        proxy_pass_header Content-Length;
-        proxy_pass_header Content-Type;
-
-        proxy_set_header Accept-Encoding "";  # evita gzip
-        gzip off;
-
-        proxy_buffering off;
-        chunked_transfer_encoding off;
-    }
-
-    location = /configure {
-        root /usr/share/nginx/html;
-        index index.html;
-        try_files $uri $uri/ /index.html;
-    }
-
-    # URLs com credenciais JSON encoded para Stremio
-    location ~ ^/\{.*\}/manifest\.json$ {
-        proxy_pass http://stremio_server_ssl;
-        proxy_pass_header Content-Length;
-        proxy_pass_header Content-Type;
-
-        proxy_set_header Accept-Encoding "";  # evita gzip
-        gzip off;
-
-        proxy_buffering off;
-        chunked_transfer_encoding off;
-    }
-
-    location ~ ^/\{.*\}/catalog/(.+)\.json$ {
-        proxy_pass http://stremio_server_ssl;
-        proxy_set_header Host $host;
-        proxy_set_header Accept-Encoding "";  # evita gzip
-        gzip off;
-
-        proxy_buffering off;
-        chunked_transfer_encoding off;
-    }
-
-        location ~ ^/\{.*\}/meta/(.+)\.json$ {
-        proxy_pass http://stremio_server_ssl;
-        proxy_set_header Host $host;
-        proxy_set_header Accept-Encoding "";  # evita gzip
-        gzip off;
-
-        proxy_buffering off;
-        chunked_transfer_encoding off;
-    }
-
-    location ~ ^/\{.*\}/subtitles/(.+)\.json$ {
-        proxy_pass http://stremio_server_ssl;
-        proxy_set_header Host $host;
-        proxy_set_header Accept-Encoding "";  # evita gzip
-        gzip off;
-
-        proxy_buffering off;
-        chunked_transfer_encoding off;
-    }
-
-    location ~ ^/\{.*\}/stream/(.+)\.json$ {
-        proxy_pass http://stremio_server_ssl;
-        proxy_set_header Accept-Encoding "";  # evita gzip
-        gzip off;
-
-        proxy_buffering off;
-        chunked_transfer_encoding off;
-    }
-
-    # Fallback para outros padrões de catalog/stream
-    location ~ ^/catalog/(.+)\.json$ {
-        proxy_pass http://stremio_server_ssl;
-        proxy_set_header Accept-Encoding "";  # evita gzip
-        gzip off;
-
-        proxy_buffering off;
-        chunked_transfer_encoding off;
-    }
-
-        location ~ ^/meta/(.+)\.json$ {
-        proxy_pass http://stremio_server_ssl;
-        proxy_set_header Accept-Encoding "";  # evita gzip
-        gzip off;
-
-        proxy_buffering off;
-        chunked_transfer_encoding off;
-    }
-
-    location ~ ^/subtitles/(.+)\.json$ {
-        proxy_pass http://stremio_server_ssl;
-        proxy_set_header Accept-Encoding "";  # evita gzip
-        gzip off;
-
-        proxy_buffering off;
-        chunked_transfer_encoding off;
-    }
-
-    location ~ ^/stream/(.+)\.json$ {
-        proxy_pass http://stremio_server_ssl;
-        proxy_set_header Accept-Encoding "";  # evita gzip
-        gzip off;
-
-        proxy_buffering off;
-        chunked_transfer_encoding off;
-    }
-
     # Rotas da API de autenticação
     location /api/ {
         if ($request_method = OPTIONS) {
@@ -198,63 +85,7 @@ server {
         return 200 "YuStream Server SSL OK";
         add_header Content-Type text/plain;
     }
-
-    # ========== CONFIGURAÇÕES YUSTREAM SMART TV SSL ==========
     
-    # Smart TV App (rota específica)
-    location /tv {
-        alias /usr/share/nginx/html/smarttv;
-        index index.html;
-        try_files $uri $uri/ /smarttv/index.html;
-        
-        # Headers CORS para Smart TVs
-        add_header Access-Control-Allow-Origin "*" always;
-        add_header Access-Control-Allow-Methods "GET, POST, OPTIONS" always;
-        add_header Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept, Authorization" always;
-        
-        # Cache otimizado para Smart TV
-        location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
-            expires 1y;
-            add_header Cache-Control "public, immutable";
-            add_header Access-Control-Allow-Origin "*";
-            gzip_static on;
-        }
-        
-        # Manifest PWA
-        location ~ /tv/manifest\.json$ {
-            alias /usr/share/nginx/html/smarttv/manifest.json;
-            expires 1d;
-            add_header Cache-Control "public";
-            add_header Access-Control-Allow-Origin "*";
-        }
-        
-        # HTML - cache curto para atualizações
-        location ~* \.html$ {
-            expires 1h;
-            add_header Cache-Control "public, must-revalidate";
-            add_header Access-Control-Allow-Origin "*";
-        }
-    }
-
-    # Mobile Expo (rota específica)
-    location /mobile {
-        alias /usr/share/nginx/html/mobile;
-        index index.html;
-        try_files $uri $uri/ /mobile/index.html;
-        
-        # Headers CORS para Smart TVs
-        add_header Access-Control-Allow-Origin "*" always;
-        add_header Access-Control-Allow-Methods "GET, POST, OPTIONS" always;
-        add_header Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept, Authorization" always;
-    }
-    
-    # Status da aplicação Smart TV
-    location /tv/status {
-        access_log off;
-        return 200 "YuStream Smart TV SSL OK";
-        add_header Content-Type text/plain;
-        add_header Access-Control-Allow-Origin "*";
-    }
 
     # Página principal com player (fallback) - DEVE VIR POR ÚLTIMO
     location / {

@@ -1,7 +1,0 @@
-
-<svg width="130" height="130" viewBox="0 0 130 130" xmlns="http://www.w3.org/2000/svg">
-    <rect width="130" height="130" rx="25" fill="#000000"/>
-    <circle cx="65" cy="65" r="30" fill="#007AFF"/>
-    <polygon points="55,48 55,82 85,65" fill="#FFFFFF"/>
-    <text x="65" y="110" text-anchor="middle" fill="#FFFFFF" font-family="Arial" font-size="10" font-weight="bold">YuStream</text>
-</svg>

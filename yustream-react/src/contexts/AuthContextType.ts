@@ -11,5 +11,4 @@ export interface AuthContextType {
   isLoading: boolean
   login: (token: string, user: User) => void
   logout: () => void
-  getStreamToken: () => Promise<string | null>
 }

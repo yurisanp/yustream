@@ -4,7 +4,7 @@ import { CheckCircle, AlertCircle, Info } from 'lucide-react'
 
 interface ToastProps {
   message: string
-  type: 'success' | 'error' | 'info'
+  type: 'success' | 'error' | 'info' | 'warning'
   onClose: () => void
 }
 
@@ -33,6 +33,8 @@ const Toast = ({ message, type, onClose }: ToastProps) => {
         return 'error'
       case 'info':
         return 'info'
+      case 'warning':
+        return 'warning'
       default:
         return 'info'
     }
