@@ -9,7 +9,7 @@ import {
   Toolbar,
   Typography
 } from '@mui/material'
-import { Logout, Refresh, Settings } from '@mui/icons-material'
+import { Logout, Refresh, Settings, OpenInNew } from '@mui/icons-material'
 import { useAuth } from '../hooks/useAuth'
 import {
   getPlayerConfig as fetchPlayerConfig
@@ -96,6 +96,14 @@ const YouTubePlayer = ({ showToast, onNavigateToAdmin }: YouTubePlayerProps) => 
     return `https://www.youtube.com/embed/${config.videoId}?${params.toString()}`
   }, [config])
 
+  const externalVideoUrl = useMemo(() => {
+    if (!config?.videoId) {
+      return null
+    }
+
+    return `https://youtu.be/${config.videoId}`
+  }, [config])
+
   const handleManualRefresh = useCallback(() => {
     loadConfig('initial')
   }, [loadConfig])
@@ -104,6 +112,15 @@ const YouTubePlayer = ({ showToast, onNavigateToAdmin }: YouTubePlayerProps) => 
     logout()
     showToast('Logout realizado com sucesso', 'info')
   }, [logout, showToast])
+
+  const handleOpenExternal = useCallback(() => {
+    if (!externalVideoUrl) {
+      showToast('Nenhum vídeo configurado para abrir.', 'info')
+      return
+    }
+
+    window.open(externalVideoUrl, '_blank', 'noopener,noreferrer')
+  }, [externalVideoUrl, showToast])
 
   return (
     <Box
@@ -139,6 +156,27 @@ const YouTubePlayer = ({ showToast, onNavigateToAdmin }: YouTubePlayerProps) => 
               disabled={loading}
             >
               <Refresh />
+            </IconButton>
+            <Button
+              variant="outlined"
+              onClick={handleOpenExternal}
+              startIcon={<OpenInNew />}
+              sx={{
+                color: 'white',
+                borderColor: 'rgba(255,255,255,0.3)',
+                display: { xs: 'none', sm: 'flex' }
+              }}
+              disabled={!externalVideoUrl}
+            >
+              Abrir no YouTube
+            </Button>
+            <IconButton
+              onClick={handleOpenExternal}
+              color="inherit"
+              sx={{ display: { xs: 'inline-flex', sm: 'none' } }}
+              disabled={!externalVideoUrl}
+            >
+              <OpenInNew />
             </IconButton>
             {user?.role === 'admin' && (
               <Button
