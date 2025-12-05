@@ -195,7 +195,7 @@ const updateUserValidation = [
 		.withMessage("isActive deve ser true ou false"),
 ];
 
-const extractYouTubeVideoId = (input = "") => {
+const extractVimeoEventId = (input = "") => {
 	if (typeof input !== "string") {
 		return null;
 	}
@@ -205,16 +205,17 @@ const extractYouTubeVideoId = (input = "") => {
 		return null;
 	}
 
-	const directIdPattern = /^[a-zA-Z0-9_-]{11}$/;
-	if (directIdPattern.test(trimmed)) {
-		return trimmed;
-	}
+	// Aceita ID numérico simples
+	const directIdPattern = /^\d+$/;
+	if (directIdPattern.test(trimmed)) return trimmed;
 
+	// Aceita URLs típicas do Vimeo (evento ou vídeo)
 	const urlPatterns = [
-		/https?:\/\/youtu\.be\/([a-zA-Z0-9_-]{11})/i,
-		/[?&]v=([a-zA-Z0-9_-]{11})/i,
-		/\/embed\/([a-zA-Z0-9_-]{11})/i,
-		/\/shorts\/([a-zA-Z0-9_-]{11})/i,
+		/https?:\/\/vimeo\.com\/event\/(\d+)/i,
+		/https?:\/\/player\.vimeo\.com\/video\/(\d+)/i,
+		/https?:\/\/vimeo\.com\/video\/(\d+)/i,
+		/https?:\/\/vimeo\.com\/(\d+)/i,
+		/event\/(\d+)/i,
 	];
 
 	for (const pattern of urlPatterns) {
@@ -253,7 +254,7 @@ const updatePlayerConfigValidation = [
 		.isString()
 		.trim()
 		.notEmpty()
-		.withMessage("ID do vídeo é obrigatório"),
+		.withMessage("ID do evento do Vimeo é obrigatório"),
 ];
 
 // ROTAS DE GERENCIAMENTO DE USUÁRIOS (apenas para admins)
@@ -543,9 +544,9 @@ router.put(
 			});
 		}
 
-		const parsedVideoId = extractYouTubeVideoId(req.body.videoId);
+		const parsedVideoId = extractVimeoEventId(req.body.videoId);
 		if (!parsedVideoId) {
-			return res.status(400).json({ message: "ID de vídeo do YouTube inválido" });
+			return res.status(400).json({ message: "ID de evento do Vimeo inválido" });
 		}
 
 		try {
