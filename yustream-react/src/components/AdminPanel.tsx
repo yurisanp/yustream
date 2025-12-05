@@ -48,11 +48,11 @@ interface AdminPanelProps {
 }
 
 interface PlayerFormState {
-  videoInput: string
+  eventInput: string
 }
 
 const defaultPlayerForm: PlayerFormState = {
-  videoInput: ''
+  eventInput: ''
 }
 
 const AdminPanel = ({ showToast, onClose }: AdminPanelProps) => {
@@ -140,7 +140,7 @@ const AdminPanel = ({ showToast, onClose }: AdminPanelProps) => {
       const config = await playerConfigService.getPlayerConfig({ token, admin: true })
       setPlayerConfig(config)
       setPlayerForm({
-        videoInput: config?.videoId ? config.videoId : ''
+        eventInput: config?.videoId ? config.videoId : ''
       })
     } catch (error) {
       console.error('Erro ao carregar configuração do player:', error)
@@ -305,22 +305,23 @@ const AdminPanel = ({ showToast, onClose }: AdminPanelProps) => {
     })
   }
 
-  const extractVideoId = (input: string): string | null => {
+  const extractEventId = (input: string): string | null => {
     const trimmed = input.trim()
     if (!trimmed) {
       return null
     }
 
-    const directIdPattern = /^[a-zA-Z0-9_-]{11}$/
-    if (directIdPattern.test(trimmed)) {
-      return trimmed
+    const directIdMatch = trimmed.match(/^\d+$/)
+    if (directIdMatch) {
+      return directIdMatch[0]
     }
 
     const urlPatterns = [
-      /youtu\.be\/([a-zA-Z0-9_-]{11})/,
-      /v=([a-zA-Z0-9_-]{11})/,
-      /embed\/([a-zA-Z0-9_-]{11})/,
-      /shorts\/([a-zA-Z0-9_-]{11})/
+      /vimeo\.com\/event\/(\d+)/i,
+      /player\.vimeo\.com\/video\/(\d+)/i,
+      /vimeo\.com\/video\/(\d+)/i,
+      /vimeo\.com\/(\d+)/i,
+      /event\/(\d+)/i
     ]
 
     for (const pattern of urlPatterns) {
@@ -342,7 +343,7 @@ const AdminPanel = ({ showToast, onClose }: AdminPanelProps) => {
 
   const handlePlayerFormChange = (value: string) => {
     setPlayerForm({
-      videoInput: value
+      eventInput: value
     })
   }
 
@@ -354,17 +355,17 @@ const AdminPanel = ({ showToast, onClose }: AdminPanelProps) => {
       return
     }
 
-    const videoId = extractVideoId(playerForm.videoInput)
+    const eventId = extractEventId(playerForm.eventInput)
 
-    if (!videoId) {
-      showToast('Informe um ID ou URL de vídeo do YouTube válido.', 'error')
+    if (!eventId) {
+      showToast('Informe um ID ou URL de evento do Vimeo válido.', 'error')
       return
     }
 
     try {
       setPlayerSaving(true)
       const payload: PlayerConfigInput = {
-        videoId
+        videoId: eventId
       }
 
       const updatedConfig = await playerConfigService.updatePlayerConfig({
@@ -374,7 +375,7 @@ const AdminPanel = ({ showToast, onClose }: AdminPanelProps) => {
 
       setPlayerConfig(updatedConfig)
       setPlayerForm({
-        videoInput: updatedConfig.videoId
+        eventInput: updatedConfig.videoId
       })
 
       showToast('Configuração do player atualizada com sucesso.', 'success')
@@ -672,7 +673,7 @@ const AdminPanel = ({ showToast, onClose }: AdminPanelProps) => {
           <div className="player-config-header">
             <div>
               <h2>Configuração do Player</h2>
-              <p>Defina qual vídeo do YouTube será exibido para os usuários.</p>
+              <p>Defina qual evento do Vimeo será exibido para os usuários.</p>
             </div>
             <button
               className="btn-secondary"
@@ -698,15 +699,15 @@ const AdminPanel = ({ showToast, onClose }: AdminPanelProps) => {
             <div className="player-config-grid">
               <form className="player-form" onSubmit={handlePlayerConfigSubmit}>
                 <div className="form-group">
-                  <label>URL ou ID do Vídeo</label>
+                  <label>URL ou ID do Evento</label>
                   <input
                     type="text"
-                    value={playerForm.videoInput}
+                    value={playerForm.eventInput}
                     onChange={(e) => handlePlayerFormChange(e.target.value)}
-                    placeholder="Ex: https://youtu.be/abcdefghijk"
+                    placeholder="Ex: https://vimeo.com/event/5500429"
                     required
                   />
-                  <small>Informe a URL completa, um link curto ou apenas o ID do vídeo.</small>
+                  <small>Informe a URL completa do evento no Vimeo ou apenas o ID numérico.</small>
                 </div>
 
                 <div className="form-actions">
@@ -729,14 +730,15 @@ const AdminPanel = ({ showToast, onClose }: AdminPanelProps) => {
                   <div className="preview-frame">
                     <iframe
                       title="Pré-visualização do player"
-                      src={`https://www.youtube.com/embed/${playerConfig.videoId}`}
-                      allow="autoplay; encrypted-media; picture-in-picture"
+                      src={`https://vimeo.com/event/${playerConfig.videoId}/embed`}
+                      allow="autoplay; fullscreen; picture-in-picture; encrypted-media; web-share"
+                      referrerPolicy="strict-origin-when-cross-origin"
                       allowFullScreen
                     />
                   </div>
                 ) : (
                   <div className="preview-placeholder">
-                    <p>Nenhum vídeo configurado.</p>
+                    <p>Nenhum evento configurado.</p>
                     <p>Adicione um ID ou URL e salve para visualizar aqui.</p>
                   </div>
                 )}

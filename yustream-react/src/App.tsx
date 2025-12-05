@@ -1,7 +1,7 @@
 import { useState, useEffect, memo, useCallback, startTransition } from 'react'
 import { Box, CircularProgress, Typography, Backdrop } from '@mui/material'
 import './App.css'
-import YouTubePlayer from './components/YouTubePlayer'
+import VimeoPlayer from './components/YouTubePlayer'
 import Toast from './components/Toast'
 import Login from './components/Login'
 import AdminScreen from './components/AdminScreen'
@@ -114,7 +114,7 @@ const AppContent = memo(() => {
       {!isAuthenticated ? (
         <Login onLogin={login} showToast={showToast} />
       ) : (
-        <YouTubePlayer 
+        <VimeoPlayer 
           showToast={showToast} 
           onNavigateToAdmin={handleNavigateToAdmin}
         />

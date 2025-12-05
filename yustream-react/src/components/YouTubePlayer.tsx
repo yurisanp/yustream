@@ -16,14 +16,14 @@ import {
 } from '../services/playerConfigService'
 import type { PlayerConfig } from '../types/playerConfig'
 
-interface YouTubePlayerProps {
+interface PlayerProps {
   showToast: (message: string, type: 'success' | 'error' | 'info') => void
   onNavigateToAdmin: () => void
 }
 
 const AUTO_REFRESH_INTERVAL = 30000
 
-const YouTubePlayer = ({ showToast, onNavigateToAdmin }: YouTubePlayerProps) => {
+const VimeoPlayer = ({ showToast, onNavigateToAdmin }: PlayerProps) => {
   const { user, token, logout } = useAuth()
   const [config, setConfig] = useState<PlayerConfig | null>(null)
   const [loading, setLoading] = useState(true)
@@ -87,13 +87,7 @@ const YouTubePlayer = ({ showToast, onNavigateToAdmin }: YouTubePlayerProps) => 
       return null
     }
 
-    const params = new URLSearchParams({
-      rel: '0',
-      playsinline: '1',
-      modestbranding: '1'
-    })
-
-    return `https://www.youtube.com/embed/${config.videoId}?${params.toString()}`
+    return `https://vimeo.com/event/${config.videoId}/embed`
   }, [config])
 
   const externalVideoUrl = useMemo(() => {
@@ -101,7 +95,7 @@ const YouTubePlayer = ({ showToast, onNavigateToAdmin }: YouTubePlayerProps) => 
       return null
     }
 
-    return `https://youtu.be/${config.videoId}`
+    return `https://vimeo.com/event/${config.videoId}`
   }, [config])
 
   const handleManualRefresh = useCallback(() => {
@@ -115,7 +109,7 @@ const YouTubePlayer = ({ showToast, onNavigateToAdmin }: YouTubePlayerProps) => 
 
   const handleOpenExternal = useCallback(() => {
     if (!externalVideoUrl) {
-      showToast('Nenhum vídeo configurado para abrir.', 'info')
+      showToast('Nenhum evento configurado para abrir.', 'info')
       return
     }
 
@@ -168,7 +162,7 @@ const YouTubePlayer = ({ showToast, onNavigateToAdmin }: YouTubePlayerProps) => 
               }}
               disabled={!externalVideoUrl}
             >
-              Abrir no YouTube
+              Abrir no Vimeo
             </Button>
             <IconButton
               onClick={handleOpenExternal}
@@ -251,10 +245,10 @@ const YouTubePlayer = ({ showToast, onNavigateToAdmin }: YouTubePlayerProps) => 
             }}
           >
             <Typography variant="h6" gutterBottom>
-              Nenhum vídeo configurado
+              Nenhum evento configurado
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Solicite ao administrador que defina um vídeo no painel.
+              Solicite ao administrador que defina um evento no painel.
             </Typography>
           </Paper>
         ) : (
@@ -274,7 +268,8 @@ const YouTubePlayer = ({ showToast, onNavigateToAdmin }: YouTubePlayerProps) => 
               src={embedUrl}
               width="100%"
               height="100%"
-              allow="autoplay; encrypted-media; picture-in-picture"
+              allow="autoplay; fullscreen; picture-in-picture; encrypted-media; web-share"
+              referrerPolicy="strict-origin-when-cross-origin"
               allowFullScreen
               style={{ border: 0, display: 'block', width: '100%', height: '100%' }}
             />
@@ -294,5 +289,5 @@ const YouTubePlayer = ({ showToast, onNavigateToAdmin }: YouTubePlayerProps) => 
   )
 }
 
-export default YouTubePlayer
+export default VimeoPlayer
 
